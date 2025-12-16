@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: rtls-postgres
+    environment:
+      POSTGRES_USER: rtls_user
+      POSTGRES_PASSWORD: rtls_password
+      POSTGRES_DB: rtls_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rtls_user -d rtls_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build: .
+    container_name: rtls-backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 3000 --reload
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://rtls_user:rtls_password@postgres:5432/rtls_db
+      - HOST=0.0.0.0
+      - PORT=3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local

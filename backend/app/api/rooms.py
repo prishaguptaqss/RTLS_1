@@ -1,0 +1,88 @@
+"""
+Room CRUD endpoints.
+"""
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+from typing import List, Optional
+
+from app.schemas.room import Room, RoomCreate, RoomUpdate
+from app.models.room import Room as RoomModel
+from app.services.room_cache import room_cache
+from app.api.deps import get_db
+
+router = APIRouter()
+
+
+@router.get("/", response_model=List[Room])
+async def list_rooms(
+    floor_id: Optional[int] = Query(None, description="Filter by floor ID"),
+    db: Session = Depends(get_db)
+):
+    """List all rooms, optionally filtered by floor."""
+    query = db.query(RoomModel)
+    if floor_id:
+        query = query.filter(RoomModel.floor_id == floor_id)
+    return query.all()
+
+
+@router.post("/", response_model=Room, status_code=201)
+async def create_room(room: RoomCreate, db: Session = Depends(get_db)):
+    """Create a new room."""
+    db_room = RoomModel(**room.model_dump())
+    db.add(db_room)
+    db.commit()
+    db.refresh(db_room)
+
+    # Invalidate room cache for this room name
+    room_cache.invalidate(db_room.room_name)
+
+    return db_room
+
+
+@router.get("/{room_id}", response_model=Room)
+async def get_room(room_id: int, db: Session = Depends(get_db)):
+    """Get room by ID."""
+    room = db.query(RoomModel).filter(RoomModel.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+    return room
+
+
+@router.put("/{room_id}", response_model=Room)
+async def update_room(room_id: int, room_update: RoomUpdate, db: Session = Depends(get_db)):
+    """Update room."""
+    room = db.query(RoomModel).filter(RoomModel.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    # Store old room name for cache invalidation
+    old_room_name = room.room_name
+
+    update_data = room_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(room, key, value)
+
+    db.commit()
+    db.refresh(room)
+
+    # Invalidate cache for both old and new room names
+    room_cache.invalidate(old_room_name)
+    if room.room_name != old_room_name:
+        room_cache.invalidate(room.room_name)
+
+    return room
+
+
+@router.delete("/{room_id}", status_code=204)
+async def delete_room(room_id: int, db: Session = Depends(get_db)):
+    """Delete room."""
+    room = db.query(RoomModel).filter(RoomModel.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    # Invalidate cache
+    room_cache.invalidate(room.room_name)
+
+    db.delete(room)
+    db.commit()
+    return None
