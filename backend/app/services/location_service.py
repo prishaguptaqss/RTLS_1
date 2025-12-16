@@ -116,11 +116,14 @@ class LocationService:
         )
         db.add(new_history)
 
+        # Get room name before commit (to avoid detached instance error)
+        room_name = to_room.room_name if to_room else "Unknown"
+
         db.commit()
         logger.info(f"LOCATION_CHANGE: Tag {event.tag_id} moved to {event.to_room}")
 
         # Broadcast WebSocket event
-        await self._broadcast_location_update(tag, to_room.room_name if to_room else "Unknown", timestamp)
+        await self._broadcast_location_update(tag, room_name, timestamp)
 
         return {"status": "success", "message": "Location updated"}
 
@@ -151,13 +154,20 @@ class LocationService:
             tag.last_seen = timestamp
             tag.status = TagStatus.active
 
-        # Insert live location
-        live_loc = LiveLocation(
-            tag_id=event.tag_id,
-            room_id=to_room.id if to_room else None,
-            updated_at=timestamp
-        )
-        db.add(live_loc)
+        # Insert or update live location
+        live_loc = db.query(LiveLocation).filter(LiveLocation.tag_id == event.tag_id).first()
+        if live_loc:
+            # Already exists, update it
+            live_loc.room_id = to_room.id if to_room else None
+            live_loc.updated_at = timestamp
+        else:
+            # Create new
+            live_loc = LiveLocation(
+                tag_id=event.tag_id,
+                room_id=to_room.id if to_room else None,
+                updated_at=timestamp
+            )
+            db.add(live_loc)
 
         # Insert history entry
         history = LocationHistory(
@@ -167,11 +177,14 @@ class LocationService:
         )
         db.add(history)
 
+        # Get room name before commit (to avoid detached instance error)
+        room_name = to_room.room_name if to_room else "Unknown"
+
         db.commit()
         logger.info(f"INITIAL_LOCATION: Tag {event.tag_id} detected in {event.to_room}")
 
         # Broadcast WebSocket event
-        await self._broadcast_location_update(tag, to_room.room_name if to_room else "Unknown", timestamp)
+        await self._broadcast_location_update(tag, room_name, timestamp)
 
         return {"status": "success", "message": "Initial location recorded"}
 

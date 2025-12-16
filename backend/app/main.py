@@ -96,7 +96,7 @@ app.include_router(tags.router, prefix="/api/tags", tags=["Tags"])
 app.include_router(devices.router, prefix="/api/devices", tags=["Devices"])
 app.include_router(positions.router, prefix="/api/positions", tags=["Live Positions"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
-app.include_router(events.router, prefix="/api", tags=["Events"])
+app.include_router(events.router, prefix="/api/events", tags=["Events"])
 app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
 
 

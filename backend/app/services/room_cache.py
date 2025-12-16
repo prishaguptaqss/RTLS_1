@@ -41,22 +41,26 @@ class RoomCache:
         Returns:
             Room object if found, None otherwise
         """
-        # Check cache first
+        # Check cache for room_id
         if room_name in self._cache:
             logger.debug(f"Room cache HIT: {room_name}")
-            return self._cache[room_name]
+            room_id = self._cache[room_name]
+            if room_id is None:
+                return None
+            # Re-query from current session to avoid detached instance
+            return db.query(Room).filter(Room.id == room_id).first()
 
         logger.debug(f"Room cache MISS: {room_name}")
 
         # Query database
         room = db.query(Room).filter(Room.room_name == room_name).first()
 
-        # Cache result (even if None to avoid repeated DB queries)
+        # Cache only the room_id (not the object itself to avoid detached instances)
         if len(self._cache) >= self.maxsize:
             # Simple FIFO eviction (pop first item)
             self._cache.pop(next(iter(self._cache)))
 
-        self._cache[room_name] = room
+        self._cache[room_name] = room.id if room else None
         return room
 
     def invalidate(self, room_name: str = None):
