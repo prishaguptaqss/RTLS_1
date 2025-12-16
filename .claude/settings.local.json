@@ -4,7 +4,19 @@
       "Bash(docker-compose down:*)",
       "Bash(docker stop:*)",
       "Bash(docker rm:*)",
-      "Bash(docker volume rm:*)"
+      "Bash(docker volume rm:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(nvm ls:*)",
+      "Bash(export NVM_DIR=\"$HOME/.nvm\")",
+      "Bash([ -s \"$NVM_DIR/nvm.sh\" ])",
+      "Bash(. \"$NVM_DIR/nvm.sh\")",
+      "Bash(nvm install:*)",
+      "Bash(nvm use:*)",
+      "Bash(npm run dev:*)",
+      "Bash(pgrep:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(find:*)"
     ]
   }
 }

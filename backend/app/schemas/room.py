@@ -27,5 +27,6 @@ class RoomUpdate(BaseModel):
 class Room(RoomBase):
     """Schema for reading a room (includes database fields)."""
     id: int
+    building_id: Optional[int] = None  # Derived from floor relationship
 
     model_config = ConfigDict(from_attributes=True)

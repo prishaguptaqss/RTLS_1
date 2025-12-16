@@ -94,8 +94,9 @@ export const deleteUser = async (id) => {
 };
 
 // Rooms
-export const fetchRooms = async () => {
-  return api.get('/rooms');
+export const fetchRooms = async (floorId = null) => {
+  const params = floorId ? `?floor_id=${floorId}` : '';
+  return api.get(`/rooms${params}`);
 };
 
 export const createRoom = async (roomData) => {
@@ -125,6 +126,24 @@ export const updateBuilding = async (id, buildingData) => {
 
 export const deleteBuilding = async (id) => {
   return api.delete(`/buildings/${id}`);
+};
+
+// Floors
+export const fetchFloors = async (buildingId = null) => {
+  const params = buildingId ? `?building_id=${buildingId}` : '';
+  return api.get(`/floors${params}`);
+};
+
+export const createFloor = async (floorData) => {
+  return api.post('/floors', floorData);
+};
+
+export const updateFloor = async (id, floorData) => {
+  return api.put(`/floors/${id}`, floorData);
+};
+
+export const deleteFloor = async (id) => {
+  return api.delete(`/floors/${id}`);
 };
 
 // Devices (ESP32 Anchors)

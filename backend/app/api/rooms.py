@@ -16,22 +16,41 @@ router = APIRouter()
 @router.get("/", response_model=List[Room])
 async def list_rooms(
     floor_id: Optional[int] = Query(None, description="Filter by floor ID"),
+    building_id: Optional[int] = Query(None, description="Filter by building ID"),
     db: Session = Depends(get_db)
 ):
-    """List all rooms, optionally filtered by floor."""
+    """List all rooms, optionally filtered by floor or building."""
     query = db.query(RoomModel)
     if floor_id:
         query = query.filter(RoomModel.floor_id == floor_id)
-    return query.all()
+    if building_id:
+        # Join with floors to filter by building
+        query = query.join(RoomModel.floor).filter_by(building_id=building_id)
+
+    rooms = query.all()
+    # Add building_id to each room from its floor relationship
+    for room in rooms:
+        if room.floor:
+            room.building_id = room.floor.building_id
+    return rooms
 
 
 @router.post("/", response_model=Room, status_code=201)
 async def create_room(room: RoomCreate, db: Session = Depends(get_db)):
     """Create a new room."""
+    # Verify the floor exists
+    from app.models.floor import Floor as FloorModel
+    floor = db.query(FloorModel).filter(FloorModel.id == room.floor_id).first()
+    if not floor:
+        raise HTTPException(status_code=404, detail="Floor not found")
+
     db_room = RoomModel(**room.model_dump())
     db.add(db_room)
     db.commit()
     db.refresh(db_room)
+
+    # Add building_id from floor relationship
+    db_room.building_id = floor.building_id
 
     # Invalidate room cache for this room name
     room_cache.invalidate(db_room.room_name)
@@ -45,6 +64,9 @@ async def get_room(room_id: int, db: Session = Depends(get_db)):
     room = db.query(RoomModel).filter(RoomModel.id == room_id).first()
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
+    # Add building_id from floor relationship
+    if room.floor:
+        room.building_id = room.floor.building_id
     return room
 
 
@@ -55,6 +77,13 @@ async def update_room(room_id: int, room_update: RoomUpdate, db: Session = Depen
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
 
+    # If floor_id is being updated, verify the floor exists
+    if room_update.floor_id is not None:
+        from app.models.floor import Floor as FloorModel
+        floor = db.query(FloorModel).filter(FloorModel.id == room_update.floor_id).first()
+        if not floor:
+            raise HTTPException(status_code=404, detail="Floor not found")
+
     # Store old room name for cache invalidation
     old_room_name = room.room_name
 
@@ -64,6 +93,10 @@ async def update_room(room_id: int, room_update: RoomUpdate, db: Session = Depen
 
     db.commit()
     db.refresh(room)
+
+    # Add building_id from floor relationship
+    if room.floor:
+        room.building_id = room.floor.building_id
 
     # Invalidate cache for both old and new room names
     room_cache.invalidate(old_room_name)
