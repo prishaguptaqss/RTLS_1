@@ -93,6 +93,10 @@ export const deleteUser = async (id) => {
   return api.delete(`/users/${id}`);
 };
 
+export const fetchUserLocationHistory = async (userId) => {
+  return api.get(`/users/${userId}/location-history`);
+};
+
 // Rooms
 export const fetchRooms = async (floorId = null) => {
   const params = floorId ? `?floor_id=${floorId}` : '';
@@ -161,6 +165,23 @@ export const updateDevice = async (id, deviceData) => {
 
 export const deleteDevice = async (id) => {
   return api.delete(`/devices/${id}`);
+};
+
+// Tags (BLE Beacons)
+export const fetchTags = async () => {
+  return api.get('/tags');
+};
+
+export const createTag = async (tagData) => {
+  return api.post('/tags', tagData);
+};
+
+export const updateTag = async (id, tagData) => {
+  return api.put(`/tags/${id}`, tagData);
+};
+
+export const deleteTag = async (id) => {
+  return api.delete(`/tags/${id}`);
 };
 
 // Dashboard Stats

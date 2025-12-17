@@ -3,7 +3,8 @@ Pydantic schemas for location events.
 CRITICAL: These schemas define the event format from the Python MQTT service.
 """
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
+from datetime import datetime
 from app.utils.enums import EventType
 
 
@@ -31,3 +32,22 @@ class LocationEventResponse(BaseModel):
     status: str
     message: str
     tag_id: str
+
+
+class LocationHistoryItem(BaseModel):
+    """Schema for a single location history record."""
+    id: int
+    room_name: str
+    building_name: str
+    floor_number: int
+    entered_at: datetime
+    exited_at: Optional[datetime]
+    duration_minutes: Optional[int]
+
+
+class LocationHistoryResponse(BaseModel):
+    """Schema for user location history response."""
+    user_id: str
+    user_name: str
+    history: List[LocationHistoryItem]
+    total_records: int

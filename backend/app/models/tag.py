@@ -22,8 +22,8 @@ class Tag(Base):
         comment="BLE MAC address (e.g., 'E0:C0:74:C6:AD:C8')"
     )
     assigned_user_id = Column(
-        Integer,
-        ForeignKey("users.id", ondelete="SET NULL"),
+        String,
+        ForeignKey("users.user_id", ondelete="SET NULL"),
         nullable=True,
         comment="Foreign key to users table (nullable for unassigned tags)"
     )

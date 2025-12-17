@@ -16,7 +16,7 @@ class User(Base):
     """
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(String, primary_key=True, index=True, comment="User-provided unique identifier (e.g., 'EMP-12345', 'DOC-001')")
     name = Column(String, nullable=False, comment="Full name of the person")
     email = Column(String, unique=True, nullable=True, index=True, comment="Email address (optional)")
     role = Column(String, nullable=True, comment="Role in hospital (e.g., Doctor, Nurse, Patient)")
@@ -36,4 +36,4 @@ class User(Base):
     tags = relationship("Tag", back_populates="assigned_user", cascade="all")
 
     def __repr__(self):
-        return f"<User(id={self.id}, name='{self.name}', status='{self.status}')>"
+        return f"<User(user_id='{self.user_id}', name='{self.name}', status='{self.status}')>"

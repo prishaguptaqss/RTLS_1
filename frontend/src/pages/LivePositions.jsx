@@ -42,7 +42,8 @@ const LivePositions = () => {
   const filteredPositions = positions.filter(position =>
     position.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     position.handbandSerial?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    position.lastSeenRoom?.toLowerCase().includes(searchTerm.toLowerCase())
+    position.lastSeenRoom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    position.fullLocation?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const formatDateTime = (date) => {
@@ -120,7 +121,7 @@ const LivePositions = () => {
                 <Table.Row>
                   <Table.Head>User Name</Table.Head>
                   <Table.Head>Handband Serial</Table.Head>
-                  <Table.Head>Last Seen Room</Table.Head>
+                  <Table.Head>Location</Table.Head>
                   <Table.Head>Last RSSI</Table.Head>
                   <Table.Head>Updated At</Table.Head>
                 </Table.Row>
@@ -139,7 +140,9 @@ const LivePositions = () => {
                     <Table.Cell>
                       <code className="serial-code">{position.handbandSerial || '-'}</code>
                     </Table.Cell>
-                    <Table.Cell>{position.lastSeenRoom || '-'}</Table.Cell>
+                    <Table.Cell>
+                      {position.fullLocation || position.lastSeenRoom || '-'}
+                    </Table.Cell>
                     <Table.Cell className={position.lastRSSI < -70 ? 'negative' : ''}>
                       {position.lastRSSI || '-'}
                     </Table.Cell>

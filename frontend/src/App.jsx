@@ -3,6 +3,7 @@ import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Buildings from './pages/Buildings';
 import Users from './pages/Users';
+import Devices from './pages/Devices';
 import LivePositions from './pages/LivePositions';
 import './App.css';
 
@@ -14,6 +15,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="buildings" element={<Buildings />} />
           <Route path="users" element={<Users />} />
+          <Route path="devices" element={<Devices />} />
           <Route path="live-positions" element={<LivePositions />} />
         </Route>
       </Routes>

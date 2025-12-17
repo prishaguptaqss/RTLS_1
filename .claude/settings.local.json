@@ -16,7 +16,9 @@
       "Bash(pgrep:*)",
       "Bash(curl:*)",
       "Bash(python3:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(alembic revision:*)",
+      "Bash(python -m alembic revision:*)"
     ]
   }
 }

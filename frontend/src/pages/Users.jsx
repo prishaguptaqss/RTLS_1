@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Table from '../components/ui/Table';
 import Modal from '../components/ui/Modal';
-import { fetchUsers, createUser, updateUser, deleteUser } from '../services/api';
+import { fetchUsers, createUser, updateUser, deleteUser, fetchUserLocationHistory } from '../services/api';
 import './Users.css';
-import { FiEdit2 } from "react-icons/fi";
-import { FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiClock } from "react-icons/fi";
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -14,8 +13,12 @@ const Users = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [locationHistory, setLocationHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [formData, setFormData] = useState({
+    user_id: '',
     name: '',
     email: '',
     role: '',
@@ -42,8 +45,18 @@ const Users = () => {
     }
   };
 
-  const validateForm = () => {
+  const validateForm = (isCreate = false) => {
     const errors = {};
+
+    if (isCreate) {
+      // Validate user_id only during creation
+      if (!formData.user_id.trim()) {
+        errors.user_id = 'User ID is required';
+      } else if (!/^[A-Za-z0-9_-]+$/.test(formData.user_id)) {
+        errors.user_id = 'User ID can only contain letters, numbers, hyphens, and underscores';
+      }
+    }
+
     if (!formData.name.trim()) {
       errors.name = 'Name is required';
     }
@@ -56,11 +69,12 @@ const Users = () => {
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm(true)) return;
 
     try {
       setSubmitting(true);
       const userData = {
+        user_id: formData.user_id.trim(),
         name: formData.name.trim(),
         email: formData.email.trim() || null,
         role: formData.role.trim() || null,
@@ -80,7 +94,7 @@ const Users = () => {
 
   const handleUpdateUser = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm(false)) return;
 
     try {
       setSubmitting(true);
@@ -90,7 +104,7 @@ const Users = () => {
         role: formData.role.trim() || null,
         status: formData.status
       };
-      await updateUser(selectedUser.id, userData);
+      await updateUser(selectedUser.user_id, userData);
       await loadUsers();
       setIsEditModalOpen(false);
       resetForm();
@@ -106,7 +120,7 @@ const Users = () => {
   const handleDeleteUser = async () => {
     try {
       setSubmitting(true);
-      await deleteUser(selectedUser.id);
+      await deleteUser(selectedUser.user_id);
       await loadUsers();
       setIsDeleteModalOpen(false);
       setSelectedUser(null);
@@ -126,6 +140,7 @@ const Users = () => {
   const openEditModal = (user) => {
     setSelectedUser(user);
     setFormData({
+      user_id: user.user_id,
       name: user.name,
       email: user.email || '',
       role: user.role || '',
@@ -140,8 +155,24 @@ const Users = () => {
     setIsDeleteModalOpen(true);
   };
 
+  const openHistoryModal = async (user) => {
+    setSelectedUser(user);
+    setIsHistoryModalOpen(true);
+    setLoadingHistory(true);
+    try {
+      const data = await fetchUserLocationHistory(user.user_id);
+      setLocationHistory(data.history);
+    } catch (err) {
+      console.error('Error loading location history:', err);
+      setLocationHistory([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
+      user_id: '',
       name: '',
       email: '',
       role: '',
@@ -160,6 +191,19 @@ const Users = () => {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString();
+  };
+
+  const formatHistoryDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
   };
 
   const getStatusBadge = (status) => {
@@ -232,7 +276,7 @@ const Users = () => {
             <Table>
               <Table.Header>
                 <Table.Row>
-                  {/* <Table.Head>ID</Table.Head> */}
+                  <Table.Head>User ID</Table.Head>
                   <Table.Head>Name</Table.Head>
                   <Table.Head>Email</Table.Head>
                   <Table.Head>Role</Table.Head>
@@ -243,8 +287,8 @@ const Users = () => {
               </Table.Header>
               <Table.Body>
                 {users.map((user) => (
-                  <Table.Row key={user.id}>
-                    {/* <Table.Cell>{user.id}</Table.Cell> */}
+                  <Table.Row key={user.user_id}>
+                    <Table.Cell><strong>{user.user_id}</strong></Table.Cell>
                     <Table.Cell>{user.name}</Table.Cell>
                     <Table.Cell>{user.email || '-'}</Table.Cell>
                     <Table.Cell>{user.role || '-'}</Table.Cell>
@@ -252,6 +296,13 @@ const Users = () => {
                     <Table.Cell>{formatDate(user.created_at)}</Table.Cell>
                     <Table.Cell>
                       <div className="action-buttons">
+                        <button
+                          onClick={() => openHistoryModal(user)}
+                          className="btn-icon btn-info"
+                          title="View location history"
+                        >
+                          <FiClock size={16} />
+                        </button>
                         <button
                           onClick={() => openEditModal(user)}
                           className="btn-icon btn-edit"
@@ -286,6 +337,25 @@ const Users = () => {
             {formErrors.submit && (
               <div className="error-message">{formErrors.submit}</div>
             )}
+
+            <div className="form-group">
+              <label htmlFor="user_id">
+                User ID <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="user_id"
+                name="user_id"
+                value={formData.user_id}
+                onChange={handleInputChange}
+                placeholder="e.g., EMP-001, DOC-123"
+                required
+              />
+              {formErrors.user_id && (
+                <small className="error-text">{formErrors.user_id}</small>
+              )}
+              <small>Unique identifier for this user (cannot be changed later)</small>
+            </div>
 
             <div className="form-group">
               <label htmlFor="name">
@@ -380,6 +450,19 @@ const Users = () => {
             {formErrors.submit && (
               <div className="error-message">{formErrors.submit}</div>
             )}
+
+            <div className="form-group">
+              <label htmlFor="edit-user_id">User ID</label>
+              <input
+                type="text"
+                id="edit-user_id"
+                name="user_id"
+                value={formData.user_id}
+                disabled
+                style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+              />
+              <small>User ID cannot be changed after creation</small>
+            </div>
 
             <div className="form-group">
               <label htmlFor="edit-name">
@@ -491,6 +574,72 @@ const Users = () => {
             disabled={submitting}
           >
             {submitting ? 'Deleting...' : 'Delete User'}
+          </button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Location History Modal */}
+      <Modal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        size="large"
+      >
+        <Modal.Header onClose={() => setIsHistoryModalOpen(false)}>
+          Location History
+          {selectedUser && (
+            <div style={{ fontSize: '0.9rem', fontWeight: 'normal', marginTop: '0.5rem', color: '#666' }}>
+              {selectedUser.name} ({selectedUser.user_id})
+            </div>
+          )}
+        </Modal.Header>
+        <Modal.Body>
+          {loadingHistory ? (
+            <div className="loading-state">Loading location history...</div>
+          ) : locationHistory.length === 0 ? (
+            <div className="empty-state">
+              <p>No location history found for this user.</p>
+            </div>
+          ) : (
+            <Table>
+              <Table.Header>
+                <Table.Row>
+                  <Table.Head>Location</Table.Head>
+                  <Table.Head>Entered At</Table.Head>
+                  <Table.Head>Exited At</Table.Head>
+                  <Table.Head>Duration</Table.Head>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {locationHistory.map((record) => (
+                  <Table.Row key={record.id}>
+                    <Table.Cell>
+                      <strong>{record.building_name}</strong> &gt; Floor {record.floor_number} &gt; {record.room_name}
+                    </Table.Cell>
+                    <Table.Cell>{formatHistoryDate(record.entered_at)}</Table.Cell>
+                    <Table.Cell>
+                      {record.exited_at ? formatHistoryDate(record.exited_at) : (
+                        <span className="status-badge status-active">Still here</span>
+                      )}
+                    </Table.Cell>
+                    <Table.Cell>
+                      {record.duration_minutes !== null ? (
+                        `${record.duration_minutes} min`
+                      ) : (
+                        '-'
+                      )}
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            onClick={() => setIsHistoryModalOpen(false)}
+            className="btn btn-secondary"
+          >
+            Close
           </button>
         </Modal.Footer>
       </Modal>

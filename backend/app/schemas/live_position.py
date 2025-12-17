@@ -11,10 +11,13 @@ class LivePositionItem(BaseModel):
     Individual live position item.
     CRITICAL: Uses camelCase to match frontend schema.
     """
-    id: int  # User ID (not tag ID)
+    id: str  # User ID (changed from int to str)
     userName: str
     handbandSerial: str  # Tag ID (BLE MAC address)
     lastSeenRoom: Optional[str]
+    building: Optional[str] = None  # Building name
+    floor: Optional[int] = None  # Floor number
+    fullLocation: Optional[str] = None  # Full hierarchy: "Building > Floor N > Room"
     lastRSSI: Optional[int] = None  # Backend doesn't store RSSI, always None
     updatedAt: str  # Formatted datetime string
 
