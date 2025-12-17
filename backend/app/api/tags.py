@@ -35,6 +35,11 @@ async def list_available_tags(db: Session = Depends(get_db)):
 @router.post("/", response_model=Tag, status_code=201)
 async def create_tag(tag: TagCreate, db: Session = Depends(get_db)):
     """Create a new tag."""
+    # Check if tag_id already exists
+    existing_tag = db.query(TagModel).filter(TagModel.tag_id == tag.tag_id).first()
+    if existing_tag:
+        raise HTTPException(status_code=400, detail=f"Tag with tag_id '{tag.tag_id}' already exists")
+
     db_tag = TagModel(**tag.model_dump())
     db.add(db_tag)
     db.commit()

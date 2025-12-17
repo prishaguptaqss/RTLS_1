@@ -19,9 +19,20 @@ async def list_devices(db: Session = Depends(get_db)):
     return db.query(AnchorModel).all()
 
 
+@router.get("/unassigned", response_model=List[Anchor])
+async def list_unassigned_devices(db: Session = Depends(get_db)):
+    """List all unassigned devices (anchors without room assignment)."""
+    return db.query(AnchorModel).filter(AnchorModel.room_id == None).all()
+
+
 @router.post("/", response_model=Anchor, status_code=201)
 async def create_device(device: AnchorCreate, db: Session = Depends(get_db)):
     """Create a new device (anchor)."""
+    # Check if anchor_id already exists
+    existing_device = db.query(AnchorModel).filter(AnchorModel.anchor_id == device.anchor_id).first()
+    if existing_device:
+        raise HTTPException(status_code=400, detail=f"Anchor with anchor_id '{device.anchor_id}' already exists")
+
     db_device = AnchorModel(**device.model_dump())
     db.add(db_device)
     db.commit()

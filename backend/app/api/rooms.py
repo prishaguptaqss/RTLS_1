@@ -44,10 +44,38 @@ async def create_room(room: RoomCreate, db: Session = Depends(get_db)):
     if not floor:
         raise HTTPException(status_code=404, detail="Floor not found")
 
-    db_room = RoomModel(**room.model_dump())
+    # Check if room with same name already exists on the same floor
+    existing_room = db.query(RoomModel).filter(
+        RoomModel.room_name == room.room_name,
+        RoomModel.floor_id == room.floor_id
+    ).first()
+    if existing_room:
+        raise HTTPException(status_code=400, detail=f"Room '{room.room_name}' already exists on this floor")
+
+    # Handle anchor assignment if provided
+    anchor_id = room.anchor_id
+    room_data = room.model_dump(exclude={'anchor_id'})
+
+    db_room = RoomModel(**room_data)
     db.add(db_room)
     db.commit()
     db.refresh(db_room)
+
+    # Assign anchor to this room if provided
+    if anchor_id:
+        from app.models.anchor import Anchor as AnchorModel
+        anchor = db.query(AnchorModel).filter(AnchorModel.anchor_id == anchor_id).first()
+        if anchor:
+            # Unassign anchor from any previous room
+            if anchor.room_id:
+                pass  # Just reassign
+            anchor.room_id = db_room.id
+            db.commit()
+        else:
+            # Rollback room creation if anchor not found
+            db.delete(db_room)
+            db.commit()
+            raise HTTPException(status_code=404, detail=f"Anchor '{anchor_id}' not found")
 
     # Add building_id from floor relationship
     db_room.building_id = floor.building_id
@@ -83,6 +111,20 @@ async def update_room(room_id: int, room_update: RoomUpdate, db: Session = Depen
         floor = db.query(FloorModel).filter(FloorModel.id == room_update.floor_id).first()
         if not floor:
             raise HTTPException(status_code=404, detail="Floor not found")
+
+    # Check room name uniqueness if being updated
+    update_dict = room_update.model_dump(exclude_unset=True)
+    new_floor_id = update_dict.get('floor_id', room.floor_id)
+    new_room_name = update_dict.get('room_name', room.room_name)
+
+    if 'room_name' in update_dict or 'floor_id' in update_dict:
+        existing_room = db.query(RoomModel).filter(
+            RoomModel.room_name == new_room_name,
+            RoomModel.floor_id == new_floor_id,
+            RoomModel.id != room_id
+        ).first()
+        if existing_room:
+            raise HTTPException(status_code=400, detail=f"Room '{new_room_name}' already exists on this floor")
 
     # Store old room name for cache invalidation
     old_room_name = room.room_name

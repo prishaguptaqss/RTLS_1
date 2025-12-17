@@ -87,8 +87,18 @@ const Patients = () => {
       errors.age = 'Age must be between 0 and 150';
     }
 
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Invalid email format';
+    if (formData.email && formData.email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.(com|org|net|edu|gov|in|co\.in)$/i;
+      if (!emailRegex.test(formData.email.trim())) {
+        errors.email = 'Please enter a valid email address (e.g., user@example.com)';
+      }
+    }
+
+    if (formData.mobile_number && formData.mobile_number.trim()) {
+      const mobileRegex = /^[0-9]{10}$/;
+      if (!mobileRegex.test(formData.mobile_number.trim().replace(/[\s-]/g, ''))) {
+        errors.mobile_number = 'Please enter a valid 10-digit mobile number';
+      }
     }
 
     setFormErrors(errors);
@@ -116,7 +126,18 @@ const Patients = () => {
       resetForm();
     } catch (err) {
       console.error('Error creating patient:', err);
-      setFormErrors({ submit: err.response?.data?.detail || 'Failed to create patient' });
+      const errorDetail = err.response?.data?.detail || 'Failed to create patient';
+
+      // Handle specific uniqueness errors
+      if (errorDetail.toLowerCase().includes('patient_id') && errorDetail.toLowerCase().includes('already exists')) {
+        setFormErrors({ patient_id: 'Patient ID already exists. Please use a different ID.' });
+      } else if (errorDetail.toLowerCase().includes('email') && errorDetail.toLowerCase().includes('already')) {
+        setFormErrors({ email: 'Email already exists. Please use a different email address.' });
+      } else if (errorDetail.toLowerCase().includes('mobile') && errorDetail.toLowerCase().includes('already')) {
+        setFormErrors({ mobile_number: 'Mobile number already exists. Please use a different number.' });
+      } else {
+        setFormErrors({ submit: errorDetail });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -142,7 +163,16 @@ const Patients = () => {
       setSelectedPatient(null);
     } catch (err) {
       console.error('Error updating patient:', err);
-      setFormErrors({ submit: err.response?.data?.detail || 'Failed to update patient' });
+      const errorDetail = err.response?.data?.detail || 'Failed to update patient';
+
+      // Handle specific uniqueness errors
+      if (errorDetail.toLowerCase().includes('email') && errorDetail.toLowerCase().includes('already')) {
+        setFormErrors({ email: 'Email already exists. Please use a different email address.' });
+      } else if (errorDetail.toLowerCase().includes('mobile') && errorDetail.toLowerCase().includes('already')) {
+        setFormErrors({ mobile_number: 'Mobile number already exists. Please use a different number.' });
+      } else {
+        setFormErrors({ submit: errorDetail });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -497,9 +527,12 @@ const Patients = () => {
                 name="mobile_number"
                 value={formData.mobile_number}
                 onChange={handleInputChange}
-                placeholder="e.g., +1234567890"
+                placeholder="e.g., 9876543210"
               />
-              <small>Optional - Mobile number for contact</small>
+              {formErrors.mobile_number && (
+                <small className="error-text">{formErrors.mobile_number}</small>
+              )}
+              <small>Optional - 10-digit mobile number for contact</small>
             </div>
 
             <div className="form-group">
@@ -625,8 +658,12 @@ const Patients = () => {
                 name="mobile_number"
                 value={formData.mobile_number}
                 onChange={handleInputChange}
-                placeholder="e.g., +1234567890"
+                placeholder="e.g., 9876543210"
               />
+              {formErrors.mobile_number && (
+                <small className="error-text">{formErrors.mobile_number}</small>
+              )}
+              <small>Optional - 10-digit mobile number for contact</small>
             </div>
 
             <div className="form-group">

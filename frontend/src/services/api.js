@@ -185,6 +185,10 @@ export const fetchDevices = async () => {
   return api.get('/devices');
 };
 
+export const fetchUnassignedDevices = async () => {
+  return api.get('/devices/unassigned');
+};
+
 export const createDevice = async (deviceData) => {
   return api.post('/devices', deviceData);
 };

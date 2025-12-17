@@ -50,6 +50,18 @@ async def create_patient(patient: PatientCreate, db: Session = Depends(get_db)):
     if existing_patient:
         raise HTTPException(status_code=400, detail=f"Patient with patient_id '{patient.patient_id}' already exists")
 
+    # Check if email already exists (if provided)
+    if patient.email:
+        existing_email = db.query(PatientModel).filter(PatientModel.email == patient.email).first()
+        if existing_email:
+            raise HTTPException(status_code=400, detail=f"Email '{patient.email}' already exists")
+
+    # Check if mobile_number already exists (if provided)
+    if patient.mobile_number:
+        existing_mobile = db.query(PatientModel).filter(PatientModel.mobile_number == patient.mobile_number).first()
+        if existing_mobile:
+            raise HTTPException(status_code=400, detail=f"Mobile number '{patient.mobile_number}' already exists")
+
     # If tag is being assigned, verify it exists and is available
     if patient.assigned_tag_id:
         tag = db.query(TagModel).filter(TagModel.tag_id == patient.assigned_tag_id).first()
@@ -97,6 +109,25 @@ async def update_patient(patient_id: str, patient_update: PatientUpdate, db: Ses
     patient = db.query(PatientModel).filter(PatientModel.patient_id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
+
+    # Check email uniqueness if being updated
+    update_dict = patient_update.model_dump(exclude_unset=True)
+    if 'email' in update_dict and update_dict['email']:
+        existing_email = db.query(PatientModel).filter(
+            PatientModel.email == update_dict['email'],
+            PatientModel.id != patient.id
+        ).first()
+        if existing_email:
+            raise HTTPException(status_code=400, detail=f"Email '{update_dict['email']}' already exists")
+
+    # Check mobile_number uniqueness if being updated
+    if 'mobile_number' in update_dict and update_dict['mobile_number']:
+        existing_mobile = db.query(PatientModel).filter(
+            PatientModel.mobile_number == update_dict['mobile_number'],
+            PatientModel.id != patient.id
+        ).first()
+        if existing_mobile:
+            raise HTTPException(status_code=400, detail=f"Mobile number '{update_dict['mobile_number']}' already exists")
 
     # Handle tag assignment changes
     if 'assigned_tag_id' in patient_update.model_dump(exclude_unset=True):

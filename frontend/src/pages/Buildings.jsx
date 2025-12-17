@@ -17,7 +17,8 @@ import {
   fetchRooms,
   createRoom,
   updateRoom,
-  deleteRoom
+  deleteRoom,
+  fetchUnassignedDevices
 } from '../services/api';
 import './Buildings.css';
 
@@ -26,6 +27,7 @@ const Buildings = () => {
   const [floors, setFloors] = useState([]);
   const [allFloors, setAllFloors] = useState([]); // All floors from all buildings
   const [rooms, setRooms] = useState([]);
+  const [unassignedAnchors, setUnassignedAnchors] = useState([]);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [selectedFloor, setSelectedFloor] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,12 +55,13 @@ const Buildings = () => {
 
   const [buildingFormData, setBuildingFormData] = useState({ name: '' });
   const [floorFormData, setFloorFormData] = useState({ floor_number: '', building_id: '' });
-  const [roomFormData, setRoomFormData] = useState({ room_name: '', room_type: '', floor_id: '', building_id: '' });
+  const [roomFormData, setRoomFormData] = useState({ room_name: '', room_type: '', floor_id: '', building_id: '', anchor_id: '' });
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadBuildings();
+    loadUnassignedAnchors();
   }, []);
 
   useEffect(() => {
@@ -120,6 +123,15 @@ const Buildings = () => {
       console.error('Error loading rooms:', err);
     } finally {
       setRoomsLoading(false);
+    }
+  };
+
+  const loadUnassignedAnchors = async () => {
+    try {
+      const data = await fetchUnassignedDevices();
+      setUnassignedAnchors(data);
+    } catch (err) {
+      console.error('Error loading unassigned anchors:', err);
     }
   };
 
@@ -342,17 +354,29 @@ const Buildings = () => {
       await createRoom({
         floor_id: parseInt(roomFormData.floor_id),
         room_name: roomFormData.room_name.trim(),
-        room_type: roomFormData.room_type.trim() || null
+        room_type: roomFormData.room_type.trim() || null,
+        anchor_id: roomFormData.anchor_id || null
       });
       // Reload rooms for the currently selected floor
       if (selectedFloor) {
         await loadRooms(selectedFloor.id);
       }
+      // Reload unassigned anchors since one may have been assigned
+      await loadUnassignedAnchors();
       setIsRoomCreateModalOpen(false);
       resetRoomForm();
     } catch (err) {
       console.error('Error creating room:', err);
-      setFormErrors({ submit: err.response?.data?.detail || 'Failed to create room' });
+      const errorDetail = err.response?.data?.detail || 'Failed to create room';
+
+      // Handle specific uniqueness errors
+      if (errorDetail.toLowerCase().includes('room') && errorDetail.toLowerCase().includes('already exists')) {
+        setFormErrors({ room_name: 'Room name already exists on this floor. Please use a different name.' });
+      } else if (errorDetail.toLowerCase().includes('duplicate') || errorDetail.toLowerCase().includes('unique')) {
+        setFormErrors({ room_name: 'Room name already exists. Please use a different name.' });
+      } else {
+        setFormErrors({ submit: errorDetail });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -378,7 +402,16 @@ const Buildings = () => {
       setSelectedRoom(null);
     } catch (err) {
       console.error('Error updating room:', err);
-      setFormErrors({ submit: err.response?.data?.detail || 'Failed to update room' });
+      const errorDetail = err.response?.data?.detail || 'Failed to update room';
+
+      // Handle specific uniqueness errors
+      if (errorDetail.toLowerCase().includes('room') && errorDetail.toLowerCase().includes('already exists')) {
+        setFormErrors({ room_name: 'Room name already exists on this floor. Please use a different name.' });
+      } else if (errorDetail.toLowerCase().includes('duplicate') || errorDetail.toLowerCase().includes('unique')) {
+        setFormErrors({ room_name: 'Room name already exists. Please use a different name.' });
+      } else {
+        setFormErrors({ submit: errorDetail });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -421,7 +454,8 @@ const Buildings = () => {
       room_name: room.room_name,
       room_type: room.room_type || '',
       floor_id: room.floor_id.toString(),
-      building_id: room.building_id ? room.building_id.toString() : selectedBuilding?.id.toString() || ''
+      building_id: room.building_id ? room.building_id.toString() : selectedBuilding?.id.toString() || '',
+      anchor_id: room.anchor_id || ''
     });
     setFormErrors({});
     setIsRoomEditModalOpen(true);
@@ -443,7 +477,7 @@ const Buildings = () => {
   };
 
   const resetRoomForm = () => {
-    setRoomFormData({ room_name: '', room_type: '', floor_id: '', building_id: '' });
+    setRoomFormData({ room_name: '', room_type: '', floor_id: '', building_id: '', anchor_id: '' });
     setFormErrors({});
   };
 
@@ -1120,6 +1154,25 @@ const Buildings = () => {
                 placeholder="e.g., ICU, Ward, ER, Operating Room"
               />
               <small>Optional: Specify the type of room</small>
+            </div>
+            <div className="form-group">
+              <label htmlFor="anchor_id">
+                Assign Anchor
+              </label>
+              <select
+                id="anchor_id"
+                name="anchor_id"
+                value={roomFormData.anchor_id}
+                onChange={handleRoomInputChange}
+              >
+                <option value="">No anchor (can assign later)</option>
+                {unassignedAnchors.map((anchor) => (
+                  <option key={anchor.anchor_id} value={anchor.anchor_id}>
+                    {anchor.anchor_id}
+                  </option>
+                ))}
+              </select>
+              <small>Optional: Assign an available anchor to this room</small>
             </div>
           </Modal.Body>
           <Modal.Footer>
