@@ -20,6 +20,9 @@ class LivePositionItem(BaseModel):
     fullLocation: Optional[str] = None  # Full hierarchy: "Building > Floor N > Room"
     lastRSSI: Optional[int] = None  # Backend doesn't store RSSI, always None
     updatedAt: str  # Formatted datetime string
+    isMissing: bool = False  # True if person hasn't been seen for threshold duration
+    missingDuration: Optional[int] = None  # Seconds since last seen (only if missing)
+    lastSeenAt: Optional[str] = None  # Formatted datetime of last signal (only if missing)
 
 
 class LivePositionStats(BaseModel):

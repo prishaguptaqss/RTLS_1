@@ -10,6 +10,7 @@ import logging
 from app.models.tag import Tag
 from app.models.live_location import LiveLocation
 from app.models.location_history import LocationHistory
+from app.models.missing_person import MissingPerson
 from app.schemas.location import LocationEvent
 from app.utils.enums import EventType, TagStatus
 from app.services.room_cache import room_cache
@@ -116,8 +117,38 @@ class LocationService:
         )
         db.add(new_history)
 
+        # AUTO-RESOLVE: Check if this person was missing
+        missing_record = db.query(MissingPerson).filter(
+            MissingPerson.tag_id == event.tag_id,
+            MissingPerson.is_resolved == False
+        ).first()
+
         # Get room name before commit (to avoid detached instance error)
         room_name = to_room.room_name if to_room else "Unknown"
+
+        if missing_record:
+            missing_record.is_resolved = True
+            missing_record.found_at = timestamp
+            missing_record.found_in_room_id = to_room.id if to_room else None
+
+            # Get person name for alert
+            person_name = "Unknown"
+            if tag.assigned_user:
+                person_name = tag.assigned_user.name
+            elif tag.assigned_patient:
+                person_name = tag.assigned_patient.name
+
+            logger.info(f"PERSON FOUND: {person_name} ({event.tag_id}) reappeared in {event.to_room}")
+
+            # Broadcast "person found" WebSocket event
+            await websocket_manager.broadcast({
+                "type": "PERSON_FOUND",
+                "tag_id": event.tag_id,
+                "person_name": person_name,
+                "found_in_room": event.to_room,
+                "missing_duration_seconds": int((timestamp - missing_record.last_seen_at).total_seconds()),
+                "timestamp": int(timestamp.timestamp())
+            })
 
         db.commit()
         logger.info(f"LOCATION_CHANGE: Tag {event.tag_id} moved to {event.to_room}")
@@ -177,8 +208,38 @@ class LocationService:
         )
         db.add(history)
 
+        # AUTO-RESOLVE: Check if this person was missing
+        missing_record = db.query(MissingPerson).filter(
+            MissingPerson.tag_id == event.tag_id,
+            MissingPerson.is_resolved == False
+        ).first()
+
         # Get room name before commit (to avoid detached instance error)
         room_name = to_room.room_name if to_room else "Unknown"
+
+        if missing_record:
+            missing_record.is_resolved = True
+            missing_record.found_at = timestamp
+            missing_record.found_in_room_id = to_room.id if to_room else None
+
+            # Get person name for alert
+            person_name = "Unknown"
+            if tag.assigned_user:
+                person_name = tag.assigned_user.name
+            elif tag.assigned_patient:
+                person_name = tag.assigned_patient.name
+
+            logger.info(f"PERSON FOUND: {person_name} ({event.tag_id}) reappeared in {event.to_room}")
+
+            # Broadcast "person found" WebSocket event
+            await websocket_manager.broadcast({
+                "type": "PERSON_FOUND",
+                "tag_id": event.tag_id,
+                "person_name": person_name,
+                "found_in_room": event.to_room,
+                "missing_duration_seconds": int((timestamp - missing_record.last_seen_at).total_seconds()),
+                "timestamp": int(timestamp.timestamp())
+            })
 
         db.commit()
         logger.info(f"INITIAL_LOCATION: Tag {event.tag_id} detected in {event.to_room}")
@@ -195,7 +256,8 @@ class LocationService:
         Steps:
         1. Update tag status to 'offline'
         2. Close open location_history entry
-        3. Broadcast WebSocket event
+        3. Create missing_persons record if tag is assigned to user/patient
+        4. Broadcast WebSocket event
         """
         timestamp = datetime.fromtimestamp(event.timestamp)
 
@@ -214,6 +276,55 @@ class LocationService:
         ).first()
         if history:
             history.exited_at = timestamp
+
+        # CREATE MISSING PERSON RECORD if tag is assigned to user/patient
+        if tag.assigned_user_id or tag.assigned_patient_id:
+            # Check if already reported as missing (unresolved record exists)
+            existing_missing = db.query(MissingPerson).filter(
+                MissingPerson.tag_id == tag.tag_id,
+                MissingPerson.is_resolved == False
+            ).first()
+
+            if not existing_missing:
+                # Get last known location
+                live_loc = db.query(LiveLocation).filter(
+                    LiveLocation.tag_id == tag.tag_id
+                ).first()
+
+                last_room_id = live_loc.room_id if live_loc else None
+                last_room = "Unknown"
+                if live_loc and live_loc.room:
+                    last_room = live_loc.room.room_name
+
+                # Calculate missing duration (time since last_seen)
+                if tag.last_seen:
+                    missing_duration = int((timestamp - tag.last_seen).total_seconds())
+                else:
+                    missing_duration = 0
+
+                # Create missing person record
+                missing_record = MissingPerson(
+                    tag_id=tag.tag_id,
+                    user_id=tag.assigned_user_id,
+                    patient_id=tag.assigned_patient_id,
+                    last_seen_room_id=last_room_id,
+                    last_seen_at=tag.last_seen or timestamp,
+                    missing_duration_seconds=missing_duration,
+                    is_resolved=False
+                )
+                db.add(missing_record)
+
+                # Get person name for alert
+                person_name = "Unknown"
+                if tag.assigned_user:
+                    person_name = tag.assigned_user.name
+                elif tag.assigned_patient:
+                    person_name = tag.assigned_patient.name
+
+                logger.warning(
+                    f"NEW MISSING PERSON (TAG_LOST): {person_name} ({tag.tag_id}) "
+                    f"last seen {missing_duration}s ago in {last_room}"
+                )
 
         db.commit()
         logger.info(f"TAG_LOST: Tag {event.tag_id} marked as offline")

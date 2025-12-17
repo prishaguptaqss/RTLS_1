@@ -12,6 +12,7 @@ from app.database import Base
 # Import all models to ensure they're registered with SQLAlchemy Base
 from app.models import (
     User,
+    Patient,
     Building,
     Floor,
     Room,
@@ -19,6 +20,7 @@ from app.models import (
     Anchor,
     LiveLocation,
     LocationHistory,
+    MissingPerson,
 )
 
 # this is the Alembic Config object, which provides

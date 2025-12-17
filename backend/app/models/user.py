@@ -34,6 +34,7 @@ class User(Base):
 
     # Relationships
     tags = relationship("Tag", back_populates="assigned_user", cascade="all")
+    missing_person_records = relationship("MissingPerson", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User(user_id='{self.user_id}', name='{self.name}', status='{self.status}')>"

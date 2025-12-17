@@ -48,6 +48,7 @@ class Patient(Base):
 
     # Relationships
     tags = relationship("Tag", back_populates="assigned_patient")
+    missing_person_records = relationship("MissingPerson", back_populates="patient", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Patient(patient_id='{self.patient_id}', name='{self.name}', status='{self.status}')>"
