@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Table from '../components/ui/Table';
 import Modal from '../components/ui/Modal';
+import { FiEdit2 } from "react-icons/fi";
+import { FiTrash2 } from "react-icons/fi";
+
 import {
   fetchBuildings,
   createBuilding,
@@ -564,14 +567,14 @@ const Buildings = () => {
                           className="btn-icon btn-edit"
                           title="Edit building"
                         >
-                          ✏️
+                           <FiEdit2 size={16} />
                         </button>
                         <button
                           onClick={() => openBuildingDeleteModal(building)}
                           className="btn-icon btn-delete"
                           title="Delete building"
                         >
-                          🗑️
+                          <FiTrash2 size={16} />
                         </button>
                       </div>
                     </Table.Cell>
@@ -593,9 +596,7 @@ const Buildings = () => {
                 <button onClick={openFloorCreateModal} className="btn btn-secondary">
                   + Add Floor
                 </button>
-                <button onClick={openRoomCreateModal} className="btn btn-secondary">
-                  + Add Room
-                </button>
+                
               </div>
             </div>
             {floorsLoading ? (
@@ -648,14 +649,14 @@ const Buildings = () => {
                             className="btn-icon btn-edit"
                             title="Edit floor"
                           >
-                            ✏️
+                             <FiEdit2 size={16} />
                           </button>
                           <button
                             onClick={() => openFloorDeleteModal(floor)}
                             className="btn-icon btn-delete"
                             title="Delete floor"
                           >
-                            🗑️
+                            <FiTrash2 size={16} />
                           </button>
                         </div>
                       </Table.Cell>
@@ -708,14 +709,14 @@ const Buildings = () => {
                             className="btn-icon btn-edit"
                             title="Edit room"
                           >
-                            ✏️
+                             <FiEdit2 size={16} />
                           </button>
                           <button
                             onClick={() => openRoomDeleteModal(room)}
                             className="btn-icon btn-delete"
                             title="Delete room"
                           >
-                            🗑️
+                            <FiTrash2 size={16} />
                           </button>
                         </div>
                       </Table.Cell>

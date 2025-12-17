@@ -4,6 +4,8 @@ import Table from '../components/ui/Table';
 import Modal from '../components/ui/Modal';
 import { fetchUsers, createUser, updateUser, deleteUser } from '../services/api';
 import './Users.css';
+import { FiEdit2 } from "react-icons/fi";
+import { FiTrash2 } from "react-icons/fi";
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -255,14 +257,14 @@ const Users = () => {
                           className="btn-icon btn-edit"
                           title="Edit user"
                         >
-                          ✏️
+                           <FiEdit2 size={16} />
                         </button>
                         <button
                           onClick={() => openDeleteModal(user)}
                           className="btn-icon btn-delete"
                           title="Delete user"
                         >
-                          🗑️
+                          <FiTrash2 size={16} />
                         </button>
                       </div>
                     </Table.Cell>
