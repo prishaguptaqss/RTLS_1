@@ -18,6 +18,20 @@ async def list_tags(db: Session = Depends(get_db)):
     return db.query(TagModel).all()
 
 
+@router.get("/available", response_model=List[Tag])
+async def list_available_tags(db: Session = Depends(get_db)):
+    """List all available (unassigned) tags.
+
+    Returns tags where both assigned_user_id and assigned_patient_id are NULL
+    and status is 'active'.
+    """
+    return db.query(TagModel).filter(
+        TagModel.assigned_user_id == None,
+        TagModel.assigned_patient_id == None,
+        TagModel.status == "active"
+    ).all()
+
+
 @router.post("/", response_model=Tag, status_code=201)
 async def create_tag(tag: TagCreate, db: Session = Depends(get_db)):
     """Create a new tag."""

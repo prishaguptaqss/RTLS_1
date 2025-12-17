@@ -12,6 +12,7 @@ from app.config import settings
 from app.database import engine, Base, SessionLocal
 from app.api import (
     users,
+    patients,
     buildings,
     floors,
     rooms,
@@ -89,6 +90,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
+app.include_router(patients.router, prefix="/api/patients", tags=["Patients"])
 app.include_router(buildings.router, prefix="/api/buildings", tags=["Buildings"])
 app.include_router(floors.router, prefix="/api/floors", tags=["Floors"])
 app.include_router(rooms.router, prefix="/api/rooms", tags=["Rooms"])

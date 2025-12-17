@@ -11,6 +11,7 @@ class TagBase(BaseModel):
     """Base schema with common tag fields."""
     tag_id: str
     assigned_user_id: Optional[str] = None
+    assigned_patient_id: Optional[int] = None
     status: Optional[TagStatus] = TagStatus.active
 
 
@@ -22,6 +23,7 @@ class TagCreate(TagBase):
 class TagUpdate(BaseModel):
     """Schema for updating a tag (all fields optional except tag_id)."""
     assigned_user_id: Optional[str] = None
+    assigned_patient_id: Optional[int] = None
     status: Optional[TagStatus] = None
     last_seen: Optional[datetime] = None
 

@@ -97,6 +97,36 @@ export const fetchUserLocationHistory = async (userId) => {
   return api.get(`/users/${userId}/location-history`);
 };
 
+// Patients
+export const fetchPatients = async (status = null) => {
+  const params = status ? `?status=${status}` : '';
+  return api.get(`/patients${params}`);
+};
+
+export const createPatient = async (patientData) => {
+  return api.post('/patients', patientData);
+};
+
+export const updatePatient = async (patientId, patientData) => {
+  return api.put(`/patients/${patientId}`, patientData);
+};
+
+export const deletePatient = async (patientId) => {
+  return api.delete(`/patients/${patientId}`);
+};
+
+export const dischargePatient = async (patientId) => {
+  return api.post(`/patients/${patientId}/discharge`);
+};
+
+export const fetchPatientLocationHistory = async (patientId) => {
+  return api.get(`/patients/${patientId}/location-history`);
+};
+
+export const fetchAvailableTags = async () => {
+  return api.get('/tags/available');
+};
+
 // Rooms
 export const fetchRooms = async (floorId = null) => {
   const params = floorId ? `?floor_id=${floorId}` : '';
