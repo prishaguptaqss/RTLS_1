@@ -195,7 +195,8 @@ async def discharge_patient(patient_id: str, discharge_data: PatientDischarge = 
     1. Set discharge_time to current timestamp
     2. Update status to 'discharged'
     3. Unassign the patient's tag (make it available)
-    4. Close any open location history records
+    4. Delete all location history records for the tag
+    5. Delete live location record for the tag
     """
     patient = db.query(PatientModel).filter(PatientModel.patient_id == patient_id).first()
     if not patient:
@@ -211,17 +212,18 @@ async def discharge_patient(patient_id: str, discharge_data: PatientDischarge = 
     # Find and unassign the patient's tag
     tag = db.query(TagModel).filter(TagModel.assigned_patient_id == patient.id).first()
     if tag:
+        # Delete all location history records for this tag
+        db.query(LocationHistoryModel).filter(
+            LocationHistoryModel.tag_id == tag.tag_id
+        ).delete(synchronize_session=False)
+
+        # Delete live location record for this tag
+        db.query(LiveLocationModel).filter(
+            LiveLocationModel.tag_id == tag.tag_id
+        ).delete(synchronize_session=False)
+
         # Unassign tag
         tag.assigned_patient_id = None
-
-        # Close any open location history records for this tag
-        open_history_records = db.query(LocationHistoryModel).filter(
-            LocationHistoryModel.tag_id == tag.tag_id,
-            LocationHistoryModel.exited_at == None
-        ).all()
-
-        for record in open_history_records:
-            record.exited_at = datetime.now()
 
     db.commit()
     db.refresh(patient)

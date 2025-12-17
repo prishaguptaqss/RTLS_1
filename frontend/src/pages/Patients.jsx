@@ -393,15 +393,16 @@ const Patients = () => {
                     <Table.Cell>{getStatusBadge(patient.status)}</Table.Cell>
                     <Table.Cell>
                       <div className="action-buttons">
-                        <button
-                          onClick={() => openHistoryModal(patient)}
-                          className="btn-icon btn-info"
-                          title="View location history"
-                        >
-                          <FiClock size={16} />
-                        </button>
+                        
                         {patient.status === 'admitted' && (
                           <>
+                            < button
+                            onClick={() => openHistoryModal(patient)}
+                            className="btn-icon btn-info"
+                            title="View location history"
+                            >
+                            <FiClock size={16} />
+                            </button>
                             <button
                               onClick={() => openEditModal(patient)}
                               className="btn-icon btn-edit"
