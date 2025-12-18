@@ -1,50 +1,73 @@
 import { useState, useEffect } from 'react';
-import { Users, DoorOpen, Clock, Search } from 'lucide-react';
+import { Users, DoorOpen, Clock, Search, AlertTriangle } from 'lucide-react';
 import Card from '../components/ui/Card';
 import StatCard from '../components/ui/StatCard';
 import Table from '../components/ui/Table';
-import { fetchLivePositions } from '../services/api';
+import { fetchPatients } from '../services/api';
 import './LivePositions.css';
 
 const LivePositions = () => {
-  const [positions, setPositions] = useState([]);
+  const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('tracked'); // 'tracked' or 'untracked'
   const [stats, setStats] = useState({
-    trackedUsers: 0,
-    roomsDetected: 0,
+    trackedCount: 0,
+    untrackedCount: 0,
     lastUpdate: null
   });
 
   useEffect(() => {
-    loadPositions();
+    loadPatients();
     // Auto-refresh every 5 seconds
-    const interval = setInterval(loadPositions, 5000);
+    const interval = setInterval(loadPatients, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  const loadPositions = async () => {
+  const loadPatients = async () => {
     try {
-      const data = await fetchLivePositions();
-      setPositions(data.positions || []);
+      const data = await fetchPatients();
+      // Only get admitted patients with assigned tags
+      const patientsWithTags = (data || []).filter(p => p.status === 'admitted' && p.assigned_tag_id);
+      setPatients(patientsWithTags);
+
+      const tracked = patientsWithTags.filter(p => p.tracking_status === 'tracked').length;
+      const untracked = patientsWithTags.filter(p => p.tracking_status === 'untracked').length;
+
       setStats({
-        trackedUsers: data.stats?.trackedUsers || 0,
-        roomsDetected: data.stats?.roomsDetected || 0,
+        trackedCount: tracked,
+        untrackedCount: untracked,
         lastUpdate: new Date()
       });
     } catch (error) {
-      console.error('Failed to fetch positions:', error);
+      console.error('Failed to fetch patients:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredPositions = positions.filter(position =>
-    position.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    position.handbandSerial?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    position.lastSeenRoom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    position.fullLocation?.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter by active tab
+  const tabFilteredPatients = patients.filter(p => p.tracking_status === activeTab);
+
+  // Then filter by search
+  const filteredPatients = tabFilteredPatients.filter(patient =>
+    patient.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.patient_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.assigned_tag_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.current_location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const formatTimeAgo = (dateString) => {
+    if (!dateString) return '-';
+    const now = new Date();
+    const then = new Date(dateString);
+    const seconds = Math.floor((now - then) / 1000);
+
+    if (seconds < 60) return `${seconds}s ago`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
+  };
 
   const formatDateTime = (date) => {
     if (!date) return '-';
@@ -63,28 +86,28 @@ const LivePositions = () => {
     <div className="live-positions">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Live User Positions</h1>
-          {/* <p className="page-subtitle">Auto-refreshing every 5 seconds</p> */}
+          <h1 className="page-title">Patient Tracking</h1>
+          <p className="page-subtitle">Auto-refreshing every 5 seconds</p>
         </div>
       </div>
 
       <div className="stats-grid">
         <StatCard
-          title="Tracked Users"
-          value={stats.trackedUsers}
-          subtitle="Users with recent signals"
+          title="Tracked Patients"
+          value={stats.trackedCount}
+          subtitle="Currently being tracked"
           icon={Users}
         />
         <StatCard
-          title="Rooms Detected"
-          value={stats.roomsDetected}
-          subtitle="Unique rooms"
-          icon={DoorOpen}
+          title="Untracked Patients"
+          value={stats.untrackedCount}
+          subtitle="Lost signal"
+          icon={AlertTriangle}
         />
         <StatCard
           title="Latest Update"
           value={stats.lastUpdate ? formatDateTime(stats.lastUpdate).split(',')[0] : '-'}
-          subtitle={stats.lastUpdate ? formatDateTime(stats.lastUpdate).split(',')[1] : 'Most recent signal'}
+          subtitle={stats.lastUpdate ? formatDateTime(stats.lastUpdate).split(',')[1] : 'Most recent update'}
           icon={Clock}
         />
       </div>
@@ -93,14 +116,14 @@ const LivePositions = () => {
         <Card.Header>
           <div className="card-header-content">
             <div>
-              <Card.Title>User Positions</Card.Title>
-              <p className="table-subtitle">Showing {filteredPositions.length} of {positions.length} users</p>
+              <Card.Title>Patient Positions</Card.Title>
+              <p className="table-subtitle">Showing {filteredPatients.length} of {tabFilteredPatients.length} patients</p>
             </div>
             <div className="search-box">
               <Search size={18} />
               <input
                 type="text"
-                placeholder="Search user, room, or handband..."
+                placeholder="Search patient, tag, or location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-box-input"
@@ -108,45 +131,68 @@ const LivePositions = () => {
             </div>
           </div>
         </Card.Header>
+
+        {/* Tabs */}
+        <div className="tabs-container">
+          <button
+            className={`tab ${activeTab === 'tracked' ? 'active' : ''}`}
+            onClick={() => setActiveTab('tracked')}
+          >
+            <Users size={16} />
+            Tracked ({stats.trackedCount})
+          </button>
+          <button
+            className={`tab ${activeTab === 'untracked' ? 'active' : ''}`}
+            onClick={() => setActiveTab('untracked')}
+          >
+            <AlertTriangle size={16} />
+            Untracked ({stats.untrackedCount})
+          </button>
+        </div>
+
         <Card.Content className="table-content">
           {loading ? (
-            <div className="loading-state">Loading positions...</div>
-          ) : filteredPositions.length === 0 ? (
+            <div className="loading-state">Loading patients...</div>
+          ) : filteredPatients.length === 0 ? (
             <div className="empty-state">
-              {searchTerm ? 'No matching positions found' : 'No user positions available'}
+              {searchTerm ? 'No matching patients found' : `No ${activeTab} patients`}
             </div>
           ) : (
             <Table>
               <Table.Header>
                 <Table.Row>
-                  <Table.Head>User Name</Table.Head>
-                  <Table.Head>Handband Serial</Table.Head>
-                  <Table.Head>Location</Table.Head>
-                  <Table.Head>Last RSSI</Table.Head>
-                  <Table.Head>Updated At</Table.Head>
+                  <Table.Head>Patient ID</Table.Head>
+                  <Table.Head>Name</Table.Head>
+                  <Table.Head>Tag ID</Table.Head>
+                  <Table.Head>{activeTab === 'tracked' ? 'Current Location' : 'Last Location'}</Table.Head>
+                  {activeTab === 'untracked' && <Table.Head></Table.Head>}
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {filteredPositions.map((position, index) => (
-                  <Table.Row key={position.id || index}>
+                {filteredPatients.map((patient) => (
+                  <Table.Row key={patient.patient_id}>
+                    <Table.Cell>
+                      <strong>{patient.patient_id}</strong>
+                    </Table.Cell>
                     <Table.Cell>
                       <div className="user-cell">
                         <div className="user-avatar">
-                          {position.userName?.charAt(0).toUpperCase() || 'U'}
+                          {patient.name?.charAt(0).toUpperCase() || 'P'}
                         </div>
-                        <span>{position.userName || 'Unknown'}</span>
+                        <span>{patient.name || 'Unknown'}</span>
                       </div>
                     </Table.Cell>
                     <Table.Cell>
-                      <code className="serial-code">{position.handbandSerial || '-'}</code>
+                      <code className="serial-code">{patient.assigned_tag_id}</code>
                     </Table.Cell>
                     <Table.Cell>
-                      {position.fullLocation || position.lastSeenRoom || '-'}
+                      {patient.current_location || <span className="text-muted">Unknown</span>}
                     </Table.Cell>
-                    <Table.Cell className={position.lastRSSI < -70 ? 'negative' : ''}>
-                      {position.lastRSSI || '-'}
-                    </Table.Cell>
-                    <Table.Cell>{formatDateTime(position.updatedAt)}</Table.Cell>
+                    {/* {activeTab === 'untracked' && (
+                      <Table.Cell>
+                        <span className="warning-text">{formatTimeAgo(patient.last_seen)}</span>
+                      </Table.Cell>
+                    )} */}
                   </Table.Row>
                 ))}
               </Table.Body>

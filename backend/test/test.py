@@ -112,17 +112,19 @@ last_seen = {}
 ema_rssi = defaultdict(dict)  # mac -> gw -> ema_rssi
  
 # ---------------- BACKEND SENDER ----------------
-def send_location_event(event_type, tag_id, to_room=None, from_room=None):
+def send_location_event(event_type, tag_id, to_room=None, from_room=None, last_room=None):
     payload = {
         "event_type": event_type,
         "tag_id": tag_id,
         "timestamp": int(time.time())
     }
- 
+
     if to_room:
         payload["to_room"] = to_room
     if from_room:
         payload["from_room"] = from_room
+    if last_room:
+        payload["last_room"] = last_room
  
     try:
         r = requests.post(BACKEND_URL, json=payload, timeout=3)

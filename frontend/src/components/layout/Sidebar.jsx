@@ -16,7 +16,7 @@ const Sidebar = () => {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Building2, label: 'Buildings', path: '/buildings' },
-    { icon: Users, label: 'Users', path: '/users' },
+    // { icon: Users, label: 'Users', path: '/users' },
     { icon: UserPlus, label: 'Patients', path: '/patients' },
     { icon: Wifi, label: 'Devices', path: '/devices' },
     { icon: MapPin, label: 'Live Positions', path: '/live-positions' },

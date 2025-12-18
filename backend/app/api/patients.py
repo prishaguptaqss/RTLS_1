@@ -15,7 +15,7 @@ from app.models.live_location import LiveLocation as LiveLocationModel
 from app.models.room import Room as RoomModel
 from app.models.floor import Floor as FloorModel
 from app.models.building import Building as BuildingModel
-from app.utils.enums import PatientStatus
+from app.utils.enums import PatientStatus, TagStatus
 from app.api.deps import get_db
 
 router = APIRouter()
@@ -34,10 +34,32 @@ async def list_patients(
 
     patients = query.all()
 
-    # Add assigned_tag_id to response
+    # Add assigned_tag_id and tracking info to response
     for patient in patients:
         tag = db.query(TagModel).filter(TagModel.assigned_patient_id == patient.id).first()
-        patient.assigned_tag_id = tag.tag_id if tag else None
+
+        if tag:
+            patient.assigned_tag_id = tag.tag_id
+            patient.tracking_status = "tracked" if tag.status == TagStatus.active else "untracked"
+            patient.last_seen = tag.last_seen
+
+            # Get current location from LiveLocation
+            live_loc = db.query(LiveLocationModel).filter(LiveLocationModel.tag_id == tag.tag_id).first()
+            if live_loc and live_loc.room_id:
+                room = db.query(RoomModel).filter(RoomModel.id == live_loc.room_id).first()
+                if room:
+                    floor = db.query(FloorModel).filter(FloorModel.id == room.floor_id).first()
+                    building = db.query(BuildingModel).filter(BuildingModel.id == floor.building_id).first()
+                    patient.current_location = f"{building.name} > Floor {floor.floor_number} > {room.room_name}"
+                else:
+                    patient.current_location = None
+            else:
+                patient.current_location = None
+        else:
+            patient.assigned_tag_id = None
+            patient.tracking_status = None
+            patient.current_location = None
+            patient.last_seen = None
 
     return patients
 
