@@ -40,6 +40,12 @@ async def create_tag(tag: TagCreate, db: Session = Depends(get_db)):
     if existing_tag:
         raise HTTPException(status_code=400, detail=f"Tag with tag_id '{tag.tag_id}' already exists")
 
+    # Check if name already exists (if name is provided)
+    if tag.name:
+        existing_name = db.query(TagModel).filter(TagModel.name == tag.name).first()
+        if existing_name:
+            raise HTTPException(status_code=400, detail=f"Tag with name '{tag.name}' already exists")
+
     db_tag = TagModel(**tag.model_dump())
     db.add(db_tag)
     db.commit()
@@ -63,7 +69,16 @@ async def update_tag(tag_id: str, tag_update: TagUpdate, db: Session = Depends(g
     if not tag:
         raise HTTPException(status_code=404, detail="Tag not found")
 
+    # Check if name already exists (if name is being updated)
     update_data = tag_update.model_dump(exclude_unset=True)
+    if 'name' in update_data and update_data['name']:
+        existing_name = db.query(TagModel).filter(
+            TagModel.name == update_data['name'],
+            TagModel.tag_id != tag_id  # Exclude current tag
+        ).first()
+        if existing_name:
+            raise HTTPException(status_code=400, detail=f"Tag with name '{update_data['name']}' already exists")
+
     for key, value in update_data.items():
         setattr(tag, key, value)
 

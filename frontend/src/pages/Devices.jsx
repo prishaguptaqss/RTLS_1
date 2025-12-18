@@ -29,7 +29,7 @@ const Devices = () => {
   const [isAnchorEditModalOpen, setIsAnchorEditModalOpen] = useState(false);
   const [isAnchorDeleteModalOpen, setIsAnchorDeleteModalOpen] = useState(false);
   const [selectedAnchor, setSelectedAnchor] = useState(null);
-  const [anchorFormData, setAnchorFormData] = useState({ anchor_id: '' });
+  const [anchorFormData, setAnchorFormData] = useState({ anchor_id: '', room_id: '' });
 
   // Tags state
   const [tags, setTags] = useState([]);
@@ -38,7 +38,7 @@ const Devices = () => {
   const [isTagEditModalOpen, setIsTagEditModalOpen] = useState(false);
   const [isTagDeleteModalOpen, setIsTagDeleteModalOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState(null);
-  const [tagFormData, setTagFormData] = useState({ tag_id: '' });
+  const [tagFormData, setTagFormData] = useState({ tag_id: '', name: '', assigned_patient_id: '' });
 
   // Shared state
   const [patients, setPatients] = useState([]);
@@ -134,7 +134,7 @@ const Devices = () => {
       setSubmitting(true);
       const anchorData = {
         anchor_id: anchorFormData.anchor_id.trim(),
-        room_id: null,
+        room_id: anchorFormData.room_id ? parseInt(anchorFormData.room_id) : null,
         status: 'active'
       };
       await createDevice(anchorData);
@@ -224,7 +224,7 @@ const Devices = () => {
   };
 
   const resetAnchorForm = () => {
-    setAnchorFormData({ anchor_id: '' });
+    setAnchorFormData({ anchor_id: '', room_id: '' });
     setFormErrors({});
   };
 
@@ -246,12 +246,14 @@ const Devices = () => {
       setSubmitting(true);
       const tagData = {
         tag_id: tagFormData.tag_id.trim(),
+        name: tagFormData.name.trim() || null,
         assigned_user_id: null,
-        assigned_patient_id: null,
+        assigned_patient_id: tagFormData.assigned_patient_id ? parseInt(tagFormData.assigned_patient_id) : null,
         status: 'active'
       };
       await createTag(tagData);
       await loadTags();
+      await loadPatients(); // Reload patients to update assignment status
       setIsTagCreateModalOpen(false);
       resetTagForm();
     } catch (err) {
@@ -261,6 +263,8 @@ const Devices = () => {
       // Handle specific uniqueness errors
       if (errorDetail.toLowerCase().includes('tag_id') && errorDetail.toLowerCase().includes('already exists')) {
         setFormErrors({ tag_id: 'Tag ID already exists. Please use a different ID.' });
+      } else if (errorDetail.toLowerCase().includes('name') && errorDetail.toLowerCase().includes('already exists')) {
+        setFormErrors({ name: 'Tag name already exists. Please use a different name.' });
       } else if (errorDetail.toLowerCase().includes('duplicate') || errorDetail.toLowerCase().includes('unique')) {
         setFormErrors({ tag_id: 'Tag ID already exists. Please use a different ID.' });
       } else {
@@ -278,7 +282,7 @@ const Devices = () => {
 
   const openTagEditModal = (tag) => {
     setSelectedTag(tag);
-    setTagFormData({ tag_id: tag.tag_id });
+    setTagFormData({ tag_id: tag.tag_id, name: tag.name || '' });
     setFormErrors({});
     setIsTagEditModalOpen(true);
   };
@@ -296,6 +300,7 @@ const Devices = () => {
       setSubmitting(true);
       const tagData = {
         tag_id: tagFormData.tag_id.trim(),
+        name: tagFormData.name.trim() || null,
         assigned_user_id: selectedTag.assigned_user_id,
         assigned_patient_id: selectedTag.assigned_patient_id,
         status: selectedTag.status
@@ -312,6 +317,8 @@ const Devices = () => {
       // Handle specific uniqueness errors
       if (errorDetail.toLowerCase().includes('tag_id') && errorDetail.toLowerCase().includes('already exists')) {
         setFormErrors({ tag_id: 'Tag ID already exists. Please use a different ID.' });
+      } else if (errorDetail.toLowerCase().includes('name') && errorDetail.toLowerCase().includes('already exists')) {
+        setFormErrors({ name: 'Tag name already exists. Please use a different name.' });
       } else if (errorDetail.toLowerCase().includes('duplicate') || errorDetail.toLowerCase().includes('unique')) {
         setFormErrors({ tag_id: 'Tag ID already exists. Please use a different ID.' });
       } else {
@@ -338,7 +345,7 @@ const Devices = () => {
   };
 
   const resetTagForm = () => {
-    setTagFormData({ tag_id: '' });
+    setTagFormData({ tag_id: '', name: '', assigned_patient_id: '' });
     setFormErrors({});
   };
 
@@ -377,6 +384,19 @@ const Devices = () => {
     return `${building.name} > Floor ${floor.floor_number} > ${room.room_name}`;
   };
 
+  // Get available rooms (not assigned to any anchor)
+  const getAvailableRooms = () => {
+    const assignedRoomIds = anchors
+      .filter(a => a.room_id !== null)
+      .map(a => a.room_id);
+    return allRooms.filter(room => !assignedRoomIds.includes(room.id));
+  };
+
+  // Get unassigned patients (no tag assigned)
+  const getUnassignedPatients = () => {
+    return patients.filter(patient => !patient.assigned_tag_id && patient.status === 'admitted');
+  };
+
   if (error) {
     return (
       <div className="page-container">
@@ -403,7 +423,7 @@ const Devices = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title">Devices</h1>
-          <p className="page-subtitle">Manage ESP32 anchors and BLE tags</p>
+          <p className="page-subtitle">Manage anchors and BLE tags</p>
         </div>
       </div>
 
@@ -433,7 +453,7 @@ const Devices = () => {
               <div>
                 <div className="section-title">
                   <FiWifi size={20} />
-                  <h2>Anchors (ESP32 Devices)</h2>
+                  <h2>Anchors (Devices)</h2>
                 </div>
                 <p className="section-subtitle">{anchors.length} anchors configured</p>
               </div>
@@ -537,6 +557,7 @@ const Devices = () => {
                 <Table.Header>
                   <Table.Row>
                     <Table.Head>Tag ID</Table.Head>
+                    <Table.Head>Name</Table.Head>
                     <Table.Head>Status</Table.Head>
                     <Table.Head>Assigned To</Table.Head>
                     <Table.Head>Actions</Table.Head>
@@ -548,6 +569,7 @@ const Devices = () => {
                     return (
                       <Table.Row key={tag.tag_id}>
                         <Table.Cell><code>{tag.tag_id}</code></Table.Cell>
+                        <Table.Cell>{tag.name || <span className="text-muted">-</span>}</Table.Cell>
                         <Table.Cell>
                           <span className={`status-badge status-${assignment.status}`}>
                             {assignment.status}
@@ -602,14 +624,39 @@ const Devices = () => {
                 id="anchor_id"
                 name="anchor_id"
                 value={anchorFormData.anchor_id}
-                onChange={(e) => setAnchorFormData({ anchor_id: e.target.value })}
-                placeholder="e.g., ESP32-001, ANCHOR-A1"
+                onChange={(e) => setAnchorFormData({ ...anchorFormData, anchor_id: e.target.value })}
+                placeholder="e.g. ANCHOR-A1, Room 101"
                 required
               />
               {formErrors.anchor_id && (
                 <small className="error-text">{formErrors.anchor_id}</small>
               )}
-              <small>Unique identifier for this anchor device. Assign to a room later via Buildings page.</small>
+              <small>Unique identifier for this anchor device.</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="room_id">Assign to Room (Optional)</label>
+              <select
+                id="room_id"
+                name="room_id"
+                value={anchorFormData.room_id}
+                onChange={(e) => setAnchorFormData({ ...anchorFormData, room_id: e.target.value })}
+              >
+                <option value="">No room assigned</option>
+                {getAvailableRooms().map((room) => {
+                  const floor = allFloors.find(f => f.id === room.floor_id);
+                  const building = buildings.find(b => b.id === floor?.building_id);
+                  const locationText = building && floor
+                    ? `${building.name} > Floor ${floor.floor_number} > ${room.room_name}`
+                    : room.room_name;
+                  return (
+                    <option key={room.id} value={room.id}>
+                      {locationText}
+                    </option>
+                  );
+                })}
+              </select>
+              <small>Select which room this anchor will be placed in. Only unassigned rooms are shown.</small>
             </div>
           </Modal.Body>
           <Modal.Footer>
@@ -652,14 +699,48 @@ const Devices = () => {
                 id="tag_id"
                 name="tag_id"
                 value={tagFormData.tag_id}
-                onChange={(e) => setTagFormData({ tag_id: e.target.value })}
+                onChange={(e) => setTagFormData({ ...tagFormData, tag_id: e.target.value })}
                 placeholder="e.g., E0:C0:74:C6:AD:C8"
                 required
               />
               {formErrors.tag_id && (
                 <small className="error-text">{formErrors.tag_id}</small>
               )}
-              <small>BLE MAC address of the tag. Assign to patients later via Patients page.</small>
+              <small>BLE MAC address of the tag.</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="tag_name">Tag Name (Optional)</label>
+              <input
+                type="text"
+                id="tag_name"
+                name="name"
+                value={tagFormData.name}
+                onChange={(e) => setTagFormData({ ...tagFormData, name: e.target.value })}
+                placeholder="e.g., Tag A, Tag 1"
+              />
+              {formErrors.name && (
+                <small className="error-text">{formErrors.name}</small>
+              )}
+              <small>Optional unique name for easy identification of the tag.</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="assigned_patient_id">Assign to Entity (Optional)</label>
+              <select
+                id="assigned_patient_id"
+                name="assigned_patient_id"
+                value={tagFormData.assigned_patient_id}
+                onChange={(e) => setTagFormData({ ...tagFormData, assigned_patient_id: e.target.value })}
+              >
+                <option value="">No entity assigned</option>
+                {getUnassignedPatients().map((patient) => (
+                  <option key={patient.id} value={patient.id}>
+                    {patient.name} (ID: {patient.patient_id})
+                  </option>
+                ))}
+              </select>
+              <small>Select which patient this tag will be assigned to. Only unassigned admitted patients are shown.</small>
             </div>
           </Modal.Body>
           <Modal.Footer>
@@ -702,7 +783,7 @@ const Devices = () => {
                 id="edit_tag_id"
                 name="tag_id"
                 value={tagFormData.tag_id}
-                onChange={(e) => setTagFormData({ tag_id: e.target.value })}
+                onChange={(e) => setTagFormData({ ...tagFormData, tag_id: e.target.value })}
                 placeholder="e.g., E0:C0:74:C6:AD:C8"
                 required
               />
@@ -710,6 +791,22 @@ const Devices = () => {
                 <small className="error-text">{formErrors.tag_id}</small>
               )}
               <small>BLE MAC address of the tag.</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit_tag_name">Tag Name (Optional)</label>
+              <input
+                type="text"
+                id="edit_tag_name"
+                name="name"
+                value={tagFormData.name}
+                onChange={(e) => setTagFormData({ ...tagFormData, name: e.target.value })}
+                placeholder="e.g., Tag A, Tag 1"
+              />
+              {formErrors.name && (
+                <small className="error-text">{formErrors.name}</small>
+              )}
+              <small>Optional unique name for easy identification of the tag.</small>
             </div>
           </Modal.Body>
           <Modal.Footer>
@@ -787,7 +884,7 @@ const Devices = () => {
                 name="anchor_id"
                 value={anchorFormData.anchor_id}
                 onChange={(e) => setAnchorFormData({ anchor_id: e.target.value })}
-                placeholder="e.g., ESP32-001, ANCHOR-A1"
+                placeholder="e.g. ANCHOR-A1"
                 required
               />
               {formErrors.anchor_id && (

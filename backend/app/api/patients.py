@@ -40,6 +40,7 @@ async def list_patients(
 
         if tag:
             patient.assigned_tag_id = tag.tag_id
+            patient.tag_name = tag.name  # Add tag name
             patient.tracking_status = "tracked" if tag.status == TagStatus.active else "untracked"
             patient.last_seen = tag.last_seen
 
@@ -57,6 +58,7 @@ async def list_patients(
                 patient.current_location = None
         else:
             patient.assigned_tag_id = None
+            patient.tag_name = None
             patient.tracking_status = None
             patient.current_location = None
             patient.last_seen = None

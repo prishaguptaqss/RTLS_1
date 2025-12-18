@@ -21,6 +21,12 @@ class Tag(Base):
         primary_key=True,
         comment="BLE MAC address (e.g., 'E0:C0:74:C6:AD:C8')"
     )
+    name = Column(
+        String,
+        nullable=True,
+        unique=True,
+        comment="Optional unique name for the tag (e.g., 'Tag A', 'Patient Tag 1')"
+    )
     assigned_user_id = Column(
         String,
         ForeignKey("users.user_id", ondelete="SET NULL"),

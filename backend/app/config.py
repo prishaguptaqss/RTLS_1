@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     PORT: int = 3000
 
     # CORS Configuration
-    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:5174,http://192.168.1.204:5173/"
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:5174,http://192.168.1.204:5173/,https://hhx14gpq-5173.inc1.devtunnels.ms/"
 
     # Missing Person Detection Settings
     MISSING_PERSON_THRESHOLD_SECONDS: int = 300  # 5 minutes

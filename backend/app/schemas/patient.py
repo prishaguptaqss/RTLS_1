@@ -63,6 +63,7 @@ class Patient(PatientBase):
     discharge_time: Optional[datetime] = None
     created_at: datetime
     assigned_tag_id: Optional[str] = None
+    tag_name: Optional[str] = None  # Name of the assigned tag (if any)
     tracking_status: Optional[str] = None  # "tracked", "untracked", or None (no tag)
     current_location: Optional[str] = None  # "Building > Floor X > Room" or None
     last_seen: Optional[datetime] = None   # When tag was last detected

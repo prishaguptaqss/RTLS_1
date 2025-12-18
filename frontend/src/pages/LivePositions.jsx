@@ -54,6 +54,7 @@ const LivePositions = () => {
     patient.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     patient.patient_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     patient.assigned_tag_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.tag_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     patient.current_location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -87,7 +88,6 @@ const LivePositions = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title">Patient Tracking</h1>
-          <p className="page-subtitle">Auto-refreshing every 5 seconds</p>
         </div>
       </div>
 
@@ -163,7 +163,7 @@ const LivePositions = () => {
                 <Table.Row>
                   <Table.Head>Patient ID</Table.Head>
                   <Table.Head>Name</Table.Head>
-                  <Table.Head>Tag ID</Table.Head>
+                  <Table.Head>Tag</Table.Head>
                   <Table.Head>{activeTab === 'tracked' ? 'Current Location' : 'Last Location'}</Table.Head>
                   {activeTab === 'untracked' && <Table.Head></Table.Head>}
                 </Table.Row>
@@ -183,7 +183,16 @@ const LivePositions = () => {
                       </div>
                     </Table.Cell>
                     <Table.Cell>
-                      <code className="serial-code">{patient.assigned_tag_id}</code>
+                      {patient.tag_name ? (
+                        <div>
+                          <div>{patient.tag_name}</div>
+                          <code className="serial-code" style={{ fontSize: '0.75rem', color: '#6c757d' }}>
+                            {patient.assigned_tag_id}
+                          </code>
+                        </div>
+                      ) : (
+                        <code className="serial-code">{patient.assigned_tag_id}</code>
+                      )}
                     </Table.Cell>
                     <Table.Cell>
                       {patient.current_location || <span className="text-muted">Unknown</span>}
