@@ -2,7 +2,7 @@
 Missing person detector - background task that monitors tags for inactivity.
 """
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import asyncio
 import logging
 
@@ -55,7 +55,7 @@ class MissingPersonDetector:
             db: Database session
         """
         threshold = timedelta(seconds=settings.MISSING_PERSON_THRESHOLD_SECONDS)
-        current_time = datetime.utcnow()
+        current_time = datetime.now(timezone.utc)
 
         # Query active tags
         active_tags = db.query(Tag).filter(Tag.status == TagStatus.active).all()

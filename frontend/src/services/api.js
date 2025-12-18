@@ -76,6 +76,21 @@ export const fetchLivePositions = async () => {
   }
 };
 
+// Untracked Users
+export const fetchUntrackedUsers = async () => {
+  try {
+    const response = await api.get('/positions/untracked');
+    return response;
+  } catch (error) {
+    console.error('Error fetching untracked users:', error);
+    // Return mock data for development
+    return {
+      untracked_tags: [],
+      total: 0
+    };
+  }
+};
+
 // Users
 export const fetchUsers = async () => {
   return api.get('/users');

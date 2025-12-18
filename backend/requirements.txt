@@ -8,3 +8,5 @@ pydantic-settings==2.1.0
 python-dotenv==1.0.0
 websockets==12.0
 email-validator
+requests
+paho-mqtt

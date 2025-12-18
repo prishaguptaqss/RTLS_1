@@ -98,7 +98,7 @@ MIN_SAMPLES = 2        # 3, minimum packets per gateway per window *************
 HYSTERESIS_DB = 5.0 # 6 ********************************
 EMA_ALPHA = 0.5  # 0.4 ******************smoothing factor (0.2–0.4 is good)
  
-BACKEND_URL = "http://192.168.1.204:3000/api/events/location-event"
+BACKEND_URL = "http://192.168.1.125:3000/api/events/location-event"
  
 _messages = []            # shared list of incoming records
 _lock = threading.Lock()  # protects _messages
@@ -112,7 +112,7 @@ last_seen = {}
 ema_rssi = defaultdict(dict)  # mac -> gw -> ema_rssi
  
 # ---------------- BACKEND SENDER ----------------
-def send_location_event(event_type, tag_id, to_room=None, from_room=None):
+def send_location_event(event_type, tag_id, to_room=None, from_room=None, last_room=None):
     payload = {
         "event_type": event_type,
         "tag_id": tag_id,
@@ -134,6 +134,8 @@ def send_location_event(event_type, tag_id, to_room=None, from_room=None):
         print(f"    ✗ Backend send failed: {e}")
  
 def async_send(*args, **kwargs):
+    print("Starting async send thread")
+    print(kwargs)
     threading.Thread(
         target=send_location_event,
         args=args,

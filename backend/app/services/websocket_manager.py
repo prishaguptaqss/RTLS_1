@@ -66,7 +66,10 @@ class WebSocketManager:
 
         for connection_id, websocket in self.active_connections.items():
             try:
+                print("yesyseydcsdc")
                 await websocket.send_json(message)
+                print(f"Message sent to {connection_id}: {message.get('type')}")
+                logger.info(f"Message sent to {connection_id}: {message.get('type')}")
                 logger.debug(f"Message sent to {connection_id}: {message.get('type')}")
             except Exception as e:
                 logger.warning(f"Failed to send to {connection_id}: {e}")

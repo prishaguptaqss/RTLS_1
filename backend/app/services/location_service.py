@@ -3,13 +3,14 @@ Location service - handles all location event processing.
 CRITICAL: This is the core business logic of the RTLS system.
 """
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict
 import logging
 
 from app.models.tag import Tag
 from app.models.live_location import LiveLocation
 from app.models.location_history import LocationHistory
+from app.models.untracked_tag import UntrackedTag
 from app.schemas.location import LocationEvent
 from app.utils.enums import EventType, TagStatus
 from app.services.room_cache import room_cache
@@ -67,7 +68,7 @@ class LocationService:
         6. Insert new location_history row
         7. Broadcast WebSocket event
         """
-        timestamp = datetime.fromtimestamp(event.timestamp)
+        timestamp = datetime.fromtimestamp(event.timestamp, tz=timezone.utc)
 
         # Lookup rooms (using cache)
         from_room = await room_cache.get_room_by_name(db, event.from_room) if event.from_room else None
@@ -86,6 +87,9 @@ class LocationService:
         else:
             tag.last_seen = timestamp
             tag.status = TagStatus.active
+
+        # Remove from untracked_tags if it was marked as lost before
+        db.query(UntrackedTag).filter(UntrackedTag.tag_id == event.tag_id).delete()
 
         # Update live location
         live_loc = db.query(LiveLocation).filter(LiveLocation.tag_id == event.tag_id).first()
@@ -138,7 +142,7 @@ class LocationService:
         4. Insert location_history
         5. Broadcast WebSocket event
         """
-        timestamp = datetime.fromtimestamp(event.timestamp)
+        timestamp = datetime.fromtimestamp(event.timestamp, tz=timezone.utc)
         to_room = await room_cache.get_room_by_name(db, event.to_room) if event.to_room else None
 
         if not to_room and event.to_room:
@@ -153,6 +157,9 @@ class LocationService:
         else:
             tag.last_seen = timestamp
             tag.status = TagStatus.active
+
+        # Remove from untracked_tags if it was marked as lost before
+        db.query(UntrackedTag).filter(UntrackedTag.tag_id == event.tag_id).delete()
 
         # Insert or update live location
         live_loc = db.query(LiveLocation).filter(LiveLocation.tag_id == event.tag_id).first()
@@ -195,9 +202,10 @@ class LocationService:
         Steps:
         1. Update tag status to 'offline'
         2. Close open location_history entry
-        3. Broadcast WebSocket event
+        3. Save untracked tag record with last known information
+        4. Broadcast WebSocket event
         """
-        timestamp = datetime.fromtimestamp(event.timestamp)
+        timestamp = datetime.fromtimestamp(event.timestamp, tz=timezone.utc)
 
         # Update tag status
         tag = db.query(Tag).filter(Tag.tag_id == event.tag_id).first()
@@ -207,6 +215,21 @@ class LocationService:
             logger.warning(f"TAG_LOST event for unknown tag: {event.tag_id}")
             return {"status": "error", "message": "Tag not found"}
 
+        # Get last known location from live_locations
+        live_loc = db.query(LiveLocation).filter(LiveLocation.tag_id == event.tag_id).first()
+        last_room = None
+        last_room_name = None
+        last_seen_at = tag.last_seen or timestamp
+
+        if live_loc and live_loc.room:
+            last_room = live_loc.room
+            last_room_name = live_loc.room.room_name
+            last_seen_at = live_loc.updated_at or last_seen_at
+        elif event.last_room:
+            # Try to get room from event data
+            last_room = await room_cache.get_room_by_name(db, event.last_room)
+            last_room_name = event.last_room
+
         # Close open history entry
         history = db.query(LocationHistory).filter(
             LocationHistory.tag_id == event.tag_id,
@@ -215,15 +238,27 @@ class LocationService:
         if history:
             history.exited_at = timestamp
 
+        # Create untracked tag record
+        untracked_tag = UntrackedTag(
+            tag_id=event.tag_id,
+            user_id=tag.assigned_user_id,
+            user_name=tag.assigned_user.name if tag.assigned_user else None,
+            last_room_id=last_room.id if last_room else None,
+            last_room_name=last_room_name,
+            last_seen_at=last_seen_at,
+            marked_untracked_at=timestamp
+        )
+        db.add(untracked_tag)
+
         db.commit()
-        logger.info(f"TAG_LOST: Tag {event.tag_id} marked as offline")
+        logger.info(f"TAG_LOST: Tag {event.tag_id} marked as offline and saved to untracked_tags")
 
         # Broadcast WebSocket event
         await websocket_manager.broadcast({
             "type": "TAG_LOST",
             "tag_id": event.tag_id,
             "user_name": tag.assigned_user.name if tag.assigned_user else "Unknown",
-            "last_room": event.last_room or "Unknown",
+            "last_room": last_room_name or "Unknown",
             "timestamp": event.timestamp
         })
 
