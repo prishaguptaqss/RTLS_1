@@ -64,7 +64,7 @@ const LivePositions = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title">Live User Positions</h1>
-          <p className="page-subtitle">Auto-refreshing every 5 seconds</p>
+          {/* <p className="page-subtitle">Auto-refreshing every 5 seconds</p> */}
         </div>
       </div>
 

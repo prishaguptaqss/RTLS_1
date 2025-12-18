@@ -1,5 +1,37 @@
 /* Patients page specific styles */
 
+/* Form error messages */
+.error-text {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  display: block;
+  font-weight: 500;
+}
+
+.error-message {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background-color: #f8d7da;
+  border: 1px solid #f5c2c7;
+  border-radius: 4px;
+  color: #842029;
+  font-size: 0.9rem;
+}
+
+/* Input field with error */
+.form-group input.input-error,
+.form-group select.input-error {
+  border-color: #dc3545;
+  background-color: #fff5f5;
+}
+
+.form-group input.input-error:focus,
+.form-group select.input-error:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
 .delete-patient-info,
 .discharge-patient-info {
   margin: 1rem 0;

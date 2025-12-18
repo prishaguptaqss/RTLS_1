@@ -458,6 +458,7 @@ const Patients = () => {
                 value={formData.patient_id}
                 onChange={handleInputChange}
                 placeholder="e.g., PAT-001, PATIENT-123"
+                className={formErrors.patient_id ? 'input-error' : ''}
                 required
               />
               {formErrors.patient_id && (
@@ -477,6 +478,7 @@ const Patients = () => {
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Enter patient name"
+                className={formErrors.name ? 'input-error' : ''}
                 required
               />
               {formErrors.name && (
@@ -497,6 +499,7 @@ const Patients = () => {
                 placeholder="Enter age"
                 min="0"
                 max="150"
+                className={formErrors.age ? 'input-error' : ''}
                 required
               />
               {formErrors.age && (
@@ -513,6 +516,7 @@ const Patients = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="patient@example.com"
+                className={formErrors.email ? 'input-error' : ''}
               />
               {formErrors.email && (
                 <small className="error-text">{formErrors.email}</small>
@@ -529,6 +533,7 @@ const Patients = () => {
                 value={formData.mobile_number}
                 onChange={handleInputChange}
                 placeholder="e.g., 9876543210"
+                className={formErrors.mobile_number ? 'input-error' : ''}
               />
               {formErrors.mobile_number && (
                 <small className="error-text">{formErrors.mobile_number}</small>
@@ -609,6 +614,7 @@ const Patients = () => {
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Enter patient name"
+                className={formErrors.name ? 'input-error' : ''}
                 required
               />
               {formErrors.name && (
@@ -629,6 +635,7 @@ const Patients = () => {
                 placeholder="Enter age"
                 min="0"
                 max="150"
+                className={formErrors.age ? 'input-error' : ''}
                 required
               />
               {formErrors.age && (
@@ -645,6 +652,7 @@ const Patients = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="patient@example.com"
+                className={formErrors.email ? 'input-error' : ''}
               />
               {formErrors.email && (
                 <small className="error-text">{formErrors.email}</small>
@@ -660,6 +668,7 @@ const Patients = () => {
                 value={formData.mobile_number}
                 onChange={handleInputChange}
                 placeholder="e.g., 9876543210"
+                className={formErrors.mobile_number ? 'input-error' : ''}
               />
               {formErrors.mobile_number && (
                 <small className="error-text">{formErrors.mobile_number}</small>

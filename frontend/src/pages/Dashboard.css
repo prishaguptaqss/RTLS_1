@@ -40,9 +40,43 @@
   box-shadow: 0 0 8px rgba(0, 184, 148, 0.4);
 }
 
+.status-indicator.inactive {
+  background: var(--danger);
+  box-shadow: 0 0 8px rgba(235, 77, 75, 0.4);
+}
+
 .placeholder-text {
   color: var(--text-light);
   text-align: center;
   padding: 40px 20px;
   margin: 0;
+}
+
+.quick-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.stat-value {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--primary);
 }
