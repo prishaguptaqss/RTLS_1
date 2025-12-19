@@ -7,25 +7,32 @@ from typing import List, Optional
 
 from app.schemas.room import Room, RoomCreate, RoomUpdate
 from app.models.room import Room as RoomModel
+from app.models.floor import Floor as FloorModel
+from app.models.building import Building as BuildingModel
+from app.models.organization import Organization
 from app.services.room_cache import room_cache
-from app.api.deps import get_db
+from app.api.deps import get_db, get_current_organization
 
 router = APIRouter()
 
 
 @router.get("/", response_model=List[Room])
 async def list_rooms(
+    organization: Organization = Depends(get_current_organization),
     floor_id: Optional[int] = Query(None, description="Filter by floor ID"),
     building_id: Optional[int] = Query(None, description="Filter by building ID"),
     db: Session = Depends(get_db)
 ):
-    """List all rooms, optionally filtered by floor or building."""
-    query = db.query(RoomModel)
+    """List all rooms within the organization, optionally filtered by floor or building."""
+    # Join with floors and buildings to filter by organization
+    query = db.query(RoomModel).join(FloorModel).join(BuildingModel).filter(
+        BuildingModel.organization_id == organization.id
+    )
+
     if floor_id:
         query = query.filter(RoomModel.floor_id == floor_id)
     if building_id:
-        # Join with floors to filter by building
-        query = query.join(RoomModel.floor).filter_by(building_id=building_id)
+        query = query.filter(BuildingModel.id == building_id)
 
     rooms = query.all()
     # Add building_id to each room from its floor relationship

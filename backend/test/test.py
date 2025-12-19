@@ -103,6 +103,7 @@ HYSTERESIS_DB = 5.0 # 6 ********************************
 EMA_ALPHA = 0.5  # 0.4 ******************smoothing factor (0.2–0.4 is good)
 
 BACKEND_URL = "http://192.168.1.204:3000/api/events/location-event"
+ORGANIZATION_ID = "ORG-001"  # SET THIS TO YOUR ORGANIZATION ID
  
 _messages = []            # shared list of incoming records
 _lock = threading.Lock()  # protects _messages
@@ -149,9 +150,15 @@ def send_location_event(event_type, tag_id, to_room=None, from_room=None, last_r
         payload["from_room"] = from_room
     if last_room:
         payload["last_room"] = last_room
- 
+
+    # Add organization ID to headers
+    headers = {
+        "Content-Type": "application/json",
+        "X-Organization-ID": str(ORGANIZATION_ID)
+    }
+
     try:
-        r = requests.post(BACKEND_URL, json=payload, timeout=3)
+        r = requests.post(BACKEND_URL, json=payload, headers=headers, timeout=3)
         if r.status_code == 200:
             print("    ✓ Backend updated")
         else:

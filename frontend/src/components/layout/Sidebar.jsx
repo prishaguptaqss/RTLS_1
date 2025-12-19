@@ -22,6 +22,7 @@ const Sidebar = () => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Building, label: 'Organizations', path: '/organizations' },
     { icon: Users, label: 'Entities', path: '/entities' },
+    { icon: Building2, label: 'Locations', path: '/locations' },
     { icon: Wifi, label: 'Devices', path: '/devices' },
     { icon: MapPin, label: 'Live Positions', path: '/live-positions' },
     { icon: Settings, label: 'Settings', path: '/settings' },

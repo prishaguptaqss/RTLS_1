@@ -7,20 +7,26 @@ from typing import List, Optional
 
 from app.schemas.floor import Floor, FloorCreate, FloorUpdate
 from app.models.floor import Floor as FloorModel
-from app.api.deps import get_db
+from app.models.building import Building as BuildingModel
+from app.models.organization import Organization
+from app.api.deps import get_db, get_current_organization
 
 router = APIRouter()
 
 
 @router.get("/", response_model=List[Floor])
 async def list_floors(
+    organization: Organization = Depends(get_current_organization),
     building_id: Optional[int] = Query(None, description="Filter by building ID"),
     db: Session = Depends(get_db)
 ):
-    """List all floors, optionally filtered by building."""
-    query = db.query(FloorModel)
+    """List all floors within the organization, optionally filtered by building."""
+    # Join with buildings to filter by organization
+    query = db.query(FloorModel).join(BuildingModel).filter(BuildingModel.organization_id == organization.id)
+
     if building_id:
         query = query.filter(FloorModel.building_id == building_id)
+
     return query.all()
 
 
