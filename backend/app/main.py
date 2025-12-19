@@ -23,7 +23,11 @@ from app.api import (
     dashboard,
     events,
     websocket,
-    settings as settings_api
+    settings as settings_api,
+    auth,
+    staff,
+    roles,
+    permissions
 )
 from app.services.missing_person_detector import missing_person_detector
 from app.services.websocket_manager import websocket_manager
@@ -91,6 +95,13 @@ app.add_middleware(
 )
 
 # Include routers
+# Authentication & RBAC (no prefix needed, already defined in routers)
+app.include_router(auth.router, prefix="/api")
+app.include_router(staff.router, prefix="/api")
+app.include_router(roles.router, prefix="/api")
+app.include_router(permissions.router, prefix="/api")
+
+# Existing routers
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(organizations.router, prefix="/api/organizations", tags=["Organizations"])
 app.include_router(entities.router, prefix="/api/entities", tags=["Entities"])

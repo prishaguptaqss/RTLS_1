@@ -220,7 +220,7 @@ const Organizations = () => {
           <Card.Content>
             <div className="empty-state">
               <p>No organizations found. Create your first organization to get started.</p>
-              <button onClick={openCreateModal} className="btn btn-primary">
+              <button onClick={openCreateModal} className="btn btn-primary" style={{marginTop:"20px"}}>
                 + Create Organization
               </button>
             </div>

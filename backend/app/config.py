@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # Database Configuration
-    DATABASE_URL: str = "postgresql://rtls_user:password@localhost:5432/rtls_db"
+    DATABASE_URL: str = "postgresql://qss_user:admin@localhost:5432/rtls_db"
+
 
     # Server Configuration
     HOST: str = "0.0.0.0"
@@ -34,6 +35,16 @@ class Settings(BaseSettings):
 
     # Optional: API Key for Python service authentication
     PYTHON_SERVICE_API_KEY: str = ""
+
+    # JWT Authentication Settings
+    SECRET_KEY: str = "your-secret-key-change-in-production-min-32-chars-long"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+
+    # Default Admin User (created via migration)
+    DEFAULT_ADMIN_EMAIL: str = "admin@rtls.com"
+    DEFAULT_ADMIN_PASSWORD: str = "admin123"  # Change in production
+    DEFAULT_ADMIN_NAME: str = "System Administrator"
 
     @property
     def cors_origins_list(self) -> List[str]:

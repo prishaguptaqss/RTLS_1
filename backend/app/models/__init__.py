@@ -12,6 +12,10 @@ from app.models.tag import Tag
 from app.models.anchor import Anchor
 from app.models.live_location import LiveLocation
 from app.models.location_history import LocationHistory
+# RBAC models
+from app.models.staff import Staff
+from app.models.role import Role
+from app.models.permission import Permission
 
 __all__ = [
     "User",
@@ -25,4 +29,8 @@ __all__ = [
     "Anchor",
     "LiveLocation",
     "LocationHistory",
+    # RBAC models
+    "Staff",
+    "Role",
+    "Permission",
 ]

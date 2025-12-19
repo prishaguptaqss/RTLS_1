@@ -21,3 +21,5 @@ class Organization(Base):
     entities = relationship("Entity", back_populates="organization", cascade="all, delete-orphan")
     tags = relationship("Tag", back_populates="organization", cascade="all, delete-orphan")
     anchors = relationship("Anchor", back_populates="organization", cascade="all, delete-orphan")
+    staff_members = relationship("Staff", back_populates="organization")
+    roles = relationship("Role", back_populates="organization", cascade="all, delete-orphan")

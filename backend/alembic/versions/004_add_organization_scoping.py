@@ -49,8 +49,8 @@ def upgrade():
 
     # Create default organization if none exists
     op.execute("""
-        INSERT INTO organizations (id, name, created_at)
-        SELECT 1, 'Default Organization', NOW()
+        INSERT INTO organizations (id, org_id, name, created_at)
+        SELECT 1, 'default-org', 'Default Organization', NOW()
         WHERE NOT EXISTS (SELECT 1 FROM organizations WHERE id = 1)
     """)
 
