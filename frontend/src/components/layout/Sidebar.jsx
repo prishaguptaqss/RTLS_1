@@ -10,12 +10,14 @@ import {
   MapPin,
   Search,
   Settings,
-  Building
+  Building,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useOrganization } from '../../contexts/OrganizationContext';
 import './Sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ isCollapsed, onToggle }) => {
   const { currentOrganization, organizations, switchOrganization, loading } = useOrganization();
 
   const menuItems = [
@@ -29,12 +31,12 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
-        <h2 className="sidebar-title">Entity Tracking</h2>
+        {!isCollapsed && <h2 className="sidebar-title">Entity Tracking</h2>}
 
         {/* Organization Selector */}
-        {!loading && organizations.length > 0 && (
+        {!isCollapsed && !loading && organizations.length > 0 && (
           <div className="org-selector">
             <label className="org-label">Organization:</label>
             <select
@@ -50,6 +52,15 @@ const Sidebar = () => {
             </select>
           </div>
         )}
+
+        {/* Toggle Button */}
+        <button
+          className="sidebar-toggle"
+          onClick={onToggle}
+          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+        </button>
       </div>
       <nav className="sidebar-nav">
         {menuItems.map((item) => (
@@ -59,9 +70,10 @@ const Sidebar = () => {
             className={({ isActive }) =>
               `sidebar-link ${isActive ? 'active' : ''}`
             }
+            title={isCollapsed ? item.label : ''}
           >
             <item.icon size={20} />
-            <span>{item.label}</span>
+            {!isCollapsed && <span>{item.label}</span>}
           </NavLink>
         ))}
       </nav>

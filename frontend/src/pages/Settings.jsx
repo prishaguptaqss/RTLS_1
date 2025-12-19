@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import { fetchSettings, updateSettings } from '../services/api';
+import { useOrganization } from '../contexts/OrganizationContext';
 import './Settings.css';
 
 const Settings = () => {
+  const { currentOrganization, loading: orgLoading } = useOrganization();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -14,8 +16,10 @@ const Settings = () => {
   });
 
   useEffect(() => {
-    loadSettings();
-  }, []);
+    if (!orgLoading && currentOrganization) {
+      loadSettings();
+    }
+  }, [orgLoading, currentOrganization]);
 
   const loadSettings = async () => {
     try {
@@ -68,16 +72,36 @@ const Settings = () => {
     setSuccess(false);
   };
 
-  if (loading) {
+  if (orgLoading || (loading && !currentOrganization)) {
     return (
       <div className="page-container">
         <div className="page-header">
           <h1 className="page-title">Settings</h1>
-          <p className="page-subtitle">Configure system settings</p>
+          <p className="page-subtitle">Configure organization settings</p>
         </div>
         <Card>
           <Card.Content>
-            <div className="loading-state">Loading settings...</div>
+            <div className="loading-state">
+              {orgLoading ? 'Loading organization...' : 'Loading settings...'}
+            </div>
+          </Card.Content>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!currentOrganization) {
+    return (
+      <div className="page-container">
+        <div className="page-header">
+          <h1 className="page-title">Settings</h1>
+          <p className="page-subtitle">Configure organization settings</p>
+        </div>
+        <Card>
+          <Card.Content>
+            <div className="error-state">
+              <p>No organization selected. Please select an organization from the sidebar.</p>
+            </div>
           </Card.Content>
         </Card>
       </div>
@@ -87,8 +111,10 @@ const Settings = () => {
   return (
     <div className="page-container">
       <div className="page-header">
-        <h1 className="page-title">Settings</h1>
-        <p className="page-subtitle">Configure system settings</p>
+        <div>
+          <h1 className="page-title">Settings</h1>
+          <p className="page-subtitle">Configure settings for {currentOrganization.name}</p>
+        </div>
       </div>
 
       <Card>
@@ -106,7 +132,9 @@ const Settings = () => {
 
               {success && (
                 <div className="alert alert-success">
-                  Settings updated successfully! Both backend and Python service have been configured.
+                  Settings saved successfully for {currentOrganization.name}!
+                  The untracked threshold has been updated in the database.
+                  Note: Restart the Python scanner service to apply the new threshold.
                 </div>
               )}
 
@@ -127,12 +155,14 @@ const Settings = () => {
                   className="settings-input"
                 />
                 <small className="help-text">
-                  Entities not seen for this duration will be marked as untracked.
-                  This setting applies to both tag loss detection (Python service) and missing entity alerts (backend).
+                  Tags not seen for this duration will be marked as lost/untracked.
+                  This setting is specific to <strong>{currentOrganization.name}</strong>.
                   <br />
                   <strong>Range:</strong> 5-3600 seconds (5 seconds to 1 hour)
                   <br />
-                  <strong>Current:</strong> {formData.untracked_threshold_seconds} seconds ({Math.round(formData.untracked_threshold_seconds / 60)} minutes)
+                  <strong>Current:</strong> {formData.untracked_threshold_seconds} seconds (~{Math.round(formData.untracked_threshold_seconds / 60)} minutes)
+                  <br />
+                  <em>Note: After changing this value, restart the Python scanner service for it to take effect.</em>
                 </small>
               </div>
 

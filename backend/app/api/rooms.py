@@ -43,25 +43,35 @@ async def list_rooms(
 
 
 @router.post("/", response_model=Room, status_code=201)
-async def create_room(room: RoomCreate, db: Session = Depends(get_db)):
+async def create_room(
+    room: RoomCreate,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
     """Create a new room."""
-    # Verify the floor exists
+    # Verify the floor exists and belongs to this organization
     from app.models.floor import Floor as FloorModel
-    floor = db.query(FloorModel).filter(FloorModel.id == room.floor_id).first()
+    floor = db.query(FloorModel).join(BuildingModel).filter(
+        FloorModel.id == room.floor_id,
+        BuildingModel.organization_id == organization.id
+    ).first()
     if not floor:
         raise HTTPException(status_code=404, detail="Floor not found")
 
-    # Check if room with same name already exists on the same floor
+    # Check if room with same name already exists in this organization
     existing_room = db.query(RoomModel).filter(
         RoomModel.room_name == room.room_name,
-        RoomModel.floor_id == room.floor_id
+        RoomModel.organization_id == organization.id
     ).first()
     if existing_room:
-        raise HTTPException(status_code=400, detail=f"Room '{room.room_name}' already exists on this floor")
+        raise HTTPException(status_code=400, detail=f"Room '{room.room_name}' already exists in this organization")
 
     # Handle anchor assignment if provided
     anchor_id = room.anchor_id
     room_data = room.model_dump(exclude={'anchor_id'})
+
+    # Auto-assign organization_id
+    room_data['organization_id'] = organization.id
 
     db_room = RoomModel(**room_data)
     db.add(db_room)
@@ -71,7 +81,10 @@ async def create_room(room: RoomCreate, db: Session = Depends(get_db)):
     # Assign anchor to this room if provided
     if anchor_id:
         from app.models.anchor import Anchor as AnchorModel
-        anchor = db.query(AnchorModel).filter(AnchorModel.anchor_id == anchor_id).first()
+        anchor = db.query(AnchorModel).filter(
+            AnchorModel.anchor_id == anchor_id,
+            AnchorModel.organization_id == organization.id
+        ).first()
         if anchor:
             # Unassign anchor from any previous room
             if anchor.room_id:
@@ -94,9 +107,16 @@ async def create_room(room: RoomCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{room_id}", response_model=Room)
-async def get_room(room_id: int, db: Session = Depends(get_db)):
+async def get_room(
+    room_id: int,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
     """Get room by ID."""
-    room = db.query(RoomModel).filter(RoomModel.id == room_id).first()
+    room = db.query(RoomModel).filter(
+        RoomModel.id == room_id,
+        RoomModel.organization_id == organization.id
+    ).first()
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
     # Add building_id from floor relationship
@@ -106,32 +126,42 @@ async def get_room(room_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{room_id}", response_model=Room)
-async def update_room(room_id: int, room_update: RoomUpdate, db: Session = Depends(get_db)):
+async def update_room(
+    room_id: int,
+    room_update: RoomUpdate,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
     """Update room."""
-    room = db.query(RoomModel).filter(RoomModel.id == room_id).first()
+    room = db.query(RoomModel).filter(
+        RoomModel.id == room_id,
+        RoomModel.organization_id == organization.id
+    ).first()
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
 
-    # If floor_id is being updated, verify the floor exists
+    # If floor_id is being updated, verify the floor exists and belongs to this organization
     if room_update.floor_id is not None:
         from app.models.floor import Floor as FloorModel
-        floor = db.query(FloorModel).filter(FloorModel.id == room_update.floor_id).first()
+        floor = db.query(FloorModel).join(BuildingModel).filter(
+            FloorModel.id == room_update.floor_id,
+            BuildingModel.organization_id == organization.id
+        ).first()
         if not floor:
             raise HTTPException(status_code=404, detail="Floor not found")
 
     # Check room name uniqueness if being updated
     update_dict = room_update.model_dump(exclude_unset=True)
-    new_floor_id = update_dict.get('floor_id', room.floor_id)
     new_room_name = update_dict.get('room_name', room.room_name)
 
-    if 'room_name' in update_dict or 'floor_id' in update_dict:
+    if 'room_name' in update_dict:
         existing_room = db.query(RoomModel).filter(
             RoomModel.room_name == new_room_name,
-            RoomModel.floor_id == new_floor_id,
+            RoomModel.organization_id == organization.id,
             RoomModel.id != room_id
         ).first()
         if existing_room:
-            raise HTTPException(status_code=400, detail=f"Room '{new_room_name}' already exists on this floor")
+            raise HTTPException(status_code=400, detail=f"Room '{new_room_name}' already exists in this organization")
 
     # Store old room name for cache invalidation
     old_room_name = room.room_name
@@ -156,9 +186,16 @@ async def update_room(room_id: int, room_update: RoomUpdate, db: Session = Depen
 
 
 @router.delete("/{room_id}", status_code=204)
-async def delete_room(room_id: int, db: Session = Depends(get_db)):
+async def delete_room(
+    room_id: int,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
     """Delete room."""
-    room = db.query(RoomModel).filter(RoomModel.id == room_id).first()
+    room = db.query(RoomModel).filter(
+        RoomModel.id == room_id,
+        RoomModel.organization_id == organization.id
+    ).first()
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
 

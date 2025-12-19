@@ -103,7 +103,7 @@ HYSTERESIS_DB = 5.0 # 6 ********************************
 EMA_ALPHA = 0.5  # 0.4 ******************smoothing factor (0.2–0.4 is good)
 
 BACKEND_URL = "http://192.168.1.204:3000/api/events/location-event"
-ORGANIZATION_ID = "ORG-001"  # SET THIS TO YOUR ORGANIZATION ID
+ORGANIZATION_ID = "ORG-002"  # SET THIS TO YOUR ORGANIZATION ID
  
 _messages = []            # shared list of incoming records
 _lock = threading.Lock()  # protects _messages

@@ -11,8 +11,11 @@ class BuildingBase(BaseModel):
 
 
 class BuildingCreate(BuildingBase):
-    """Schema for creating a new building."""
-    organization_id: int
+    """Schema for creating a new building.
+
+    Note: organization_id is automatically assigned from the X-Organization-ID header.
+    """
+    pass
 
 
 class BuildingUpdate(BaseModel):

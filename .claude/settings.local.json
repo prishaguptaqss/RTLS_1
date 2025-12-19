@@ -30,7 +30,13 @@
       "Bash(PGPASSWORD=password psql:*)",
       "Bash(pkill:*)",
       "Bash(python -c:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(alembic stamp:*)",
+      "Bash(pip install:*)",
+      "Bash(sudo pkill:*)",
+      "Bash(mkdir:*)",
+      "Bash(python:*)",
+      "Bash(tee:*)"
     ]
   }
 }

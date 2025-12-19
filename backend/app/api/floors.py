@@ -41,18 +41,33 @@ async def create_floor(floor: FloorCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{floor_id}", response_model=Floor)
-async def get_floor(floor_id: int, db: Session = Depends(get_db)):
+async def get_floor(
+    floor_id: int,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
     """Get floor by ID."""
-    floor = db.query(FloorModel).filter(FloorModel.id == floor_id).first()
+    floor = db.query(FloorModel).join(BuildingModel).filter(
+        FloorModel.id == floor_id,
+        BuildingModel.organization_id == organization.id
+    ).first()
     if not floor:
         raise HTTPException(status_code=404, detail="Floor not found")
     return floor
 
 
 @router.put("/{floor_id}", response_model=Floor)
-async def update_floor(floor_id: int, floor_update: FloorUpdate, db: Session = Depends(get_db)):
+async def update_floor(
+    floor_id: int,
+    floor_update: FloorUpdate,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
     """Update floor."""
-    floor = db.query(FloorModel).filter(FloorModel.id == floor_id).first()
+    floor = db.query(FloorModel).join(BuildingModel).filter(
+        FloorModel.id == floor_id,
+        BuildingModel.organization_id == organization.id
+    ).first()
     if not floor:
         raise HTTPException(status_code=404, detail="Floor not found")
 
@@ -66,9 +81,16 @@ async def update_floor(floor_id: int, floor_update: FloorUpdate, db: Session = D
 
 
 @router.delete("/{floor_id}", status_code=204)
-async def delete_floor(floor_id: int, db: Session = Depends(get_db)):
+async def delete_floor(
+    floor_id: int,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
     """Delete floor."""
-    floor = db.query(FloorModel).filter(FloorModel.id == floor_id).first()
+    floor = db.query(FloorModel).join(BuildingModel).filter(
+        FloorModel.id == floor_id,
+        BuildingModel.organization_id == organization.id
+    ).first()
     if not floor:
         raise HTTPException(status_code=404, detail="Floor not found")
 

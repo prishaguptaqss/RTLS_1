@@ -38,22 +38,40 @@ async def create_building(
 
 
 @router.get("/{building_id}", response_model=Building)
-async def get_building(building_id: int, db: Session = Depends(get_db)):
+async def get_building(
+    building_id: int,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
     """Get building by ID."""
-    building = db.query(BuildingModel).filter(BuildingModel.id == building_id).first()
+    building = db.query(BuildingModel).filter(
+        BuildingModel.id == building_id,
+        BuildingModel.organization_id == organization.id
+    ).first()
     if not building:
         raise HTTPException(status_code=404, detail="Building not found")
     return building
 
 
 @router.put("/{building_id}", response_model=Building)
-async def update_building(building_id: int, building_update: BuildingUpdate, db: Session = Depends(get_db)):
+async def update_building(
+    building_id: int,
+    building_update: BuildingUpdate,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
     """Update building."""
-    building = db.query(BuildingModel).filter(BuildingModel.id == building_id).first()
+    building = db.query(BuildingModel).filter(
+        BuildingModel.id == building_id,
+        BuildingModel.organization_id == organization.id
+    ).first()
     if not building:
         raise HTTPException(status_code=404, detail="Building not found")
 
     update_data = building_update.model_dump(exclude_unset=True)
+    # Prevent changing organization_id
+    update_data.pop('organization_id', None)
+
     for key, value in update_data.items():
         setattr(building, key, value)
 
@@ -63,9 +81,16 @@ async def update_building(building_id: int, building_update: BuildingUpdate, db:
 
 
 @router.delete("/{building_id}", status_code=204)
-async def delete_building(building_id: int, db: Session = Depends(get_db)):
+async def delete_building(
+    building_id: int,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
     """Delete building."""
-    building = db.query(BuildingModel).filter(BuildingModel.id == building_id).first()
+    building = db.query(BuildingModel).filter(
+        BuildingModel.id == building_id,
+        BuildingModel.organization_id == organization.id
+    ).first()
     if not building:
         raise HTTPException(status_code=404, detail="Building not found")
 

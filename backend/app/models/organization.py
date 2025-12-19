@@ -21,3 +21,4 @@ class Organization(Base):
     entities = relationship("Entity", back_populates="organization", cascade="all, delete-orphan")
     tags = relationship("Tag", back_populates="organization", cascade="all, delete-orphan")
     anchors = relationship("Anchor", back_populates="organization", cascade="all, delete-orphan")
+    settings = relationship("OrganizationSettings", back_populates="organization", uselist=False, cascade="all, delete-orphan")
