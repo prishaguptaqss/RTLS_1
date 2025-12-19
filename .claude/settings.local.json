@@ -23,7 +23,10 @@
       "Bash(source:*)",
       "Bash(alembic upgrade:*)",
       "Bash(alembic current:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(python -m alembic:*)",
+      "Bash(python3.12 -m alembic:*)",
+      "Bash(http://localhost:3000/api/entities/)"
     ]
   }
 }

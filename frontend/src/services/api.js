@@ -12,13 +12,20 @@ const api = axios.create({
   },
 });
 
-// Request interceptor for adding auth tokens
+// Request interceptor for adding auth tokens and organization ID
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Add organization ID header for multi-tenant support
+    const orgId = localStorage.getItem('currentOrganizationId');
+    if (orgId) {
+      config.headers['X-Organization-ID'] = orgId;
+    }
+
     return config;
   },
   (error) => {

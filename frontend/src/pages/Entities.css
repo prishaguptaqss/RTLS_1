@@ -111,14 +111,67 @@
   align-items: center;
 }
 
-.btn-info {
-  color: #17a2b8;
-  transition: all 0.2s;
+/* Base icon button styles - simple icons without boxes */
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.btn-info:hover {
+.btn-icon:hover {
+  transform: scale(1.15);
+}
+
+.btn-icon.btn-info {
+  color: #17a2b8;
+}
+
+.btn-icon.btn-info:hover {
   color: #138496;
-  background-color: #e3f2fd;
+}
+
+.btn-icon.btn-warning {
+  color: #ff9800;
+}
+
+.btn-icon.btn-warning:hover {
+  color: #e68900;
+}
+
+.btn-icon.btn-edit {
+  color: #6c5ce7;
+}
+
+.btn-icon.btn-edit:hover {
+  color: #5849c7;
+}
+
+.btn-icon.btn-delete {
+  color: #d63031;
+}
+
+.btn-icon.btn-delete:hover {
+  color: #a52021;
+}
+
+.btn.btn-warning {
+  background-color: #ff9800;
+  color: white;
+  border: none;
+}
+
+.btn.btn-warning:hover:not(:disabled) {
+  background-color: #e68900;
+}
+
+.btn.btn-warning:disabled {
+  background-color: #ffb74d;
+  cursor: not-allowed;
 }
 
 /* Filter select */

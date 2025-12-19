@@ -158,27 +158,6 @@ const Settings = () => {
         </Card.Content>
       </Card>
 
-      <Card>
-        <Card.Content>
-          <div className="settings-info">
-            <h3 className="info-title">System Information</h3>
-            <div className="info-grid">
-              <div className="info-item">
-                <span className="info-label">Backend API:</span>
-                <span className="info-value">Running</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Python Service:</span>
-                <span className="info-value">Port 5001</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">Configuration Method:</span>
-                <span className="info-value">HTTP API</span>
-              </div>
-            </div>
-          </div>
-        </Card.Content>
-      </Card>
     </div>
   );
 };

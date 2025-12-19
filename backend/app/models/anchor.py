@@ -21,6 +21,12 @@ class Anchor(Base):
         primary_key=True,
         comment="Unique anchor identifier (e.g., 'Room 101', 'Gateway-A')"
     )
+    organization_id = Column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="Organization this anchor belongs to"
+    )
     room_id = Column(
         Integer,
         ForeignKey("rooms.id", ondelete="SET NULL"),
@@ -41,6 +47,7 @@ class Anchor(Base):
 
     # Relationships
     # SET NULL: if room is deleted, anchor becomes unassigned (not deleted)
+    organization = relationship("Organization", back_populates="anchors")
     room = relationship("Room", back_populates="anchors")
 
     def __repr__(self):

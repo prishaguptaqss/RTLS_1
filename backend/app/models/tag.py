@@ -21,11 +21,16 @@ class Tag(Base):
         primary_key=True,
         comment="BLE MAC address (e.g., 'E0:C0:74:C6:AD:C8')"
     )
+    organization_id = Column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="Organization this tag belongs to"
+    )
     name = Column(
         String,
         nullable=True,
-        unique=True,
-        comment="Optional unique name for the tag (e.g., 'Tag A', 'Entity Tag 1')"
+        comment="Optional name for the tag (e.g., 'Tag A', 'Entity Tag 1')"
     )
     assigned_user_id = Column(
         String,
@@ -61,6 +66,7 @@ class Tag(Base):
 
     # Relationships
     # SET NULL: if user/entity is deleted, tag becomes unassigned (not deleted)
+    organization = relationship("Organization", back_populates="tags")
     assigned_user = relationship("User", back_populates="tags")
     assigned_entity = relationship("Entity", back_populates="tags")
     live_location = relationship("LiveLocation", back_populates="tag", uselist=False, cascade="all, delete-orphan")

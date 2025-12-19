@@ -15,7 +15,8 @@ from app.models.room import Room as RoomModel
 from app.models.floor import Floor as FloorModel
 from app.models.building import Building as BuildingModel
 from app.utils.enums import TagStatus
-from app.api.deps import get_db
+from app.api.deps import get_db, get_current_organization
+from app.models.organization import Organization
 
 router = APIRouter()
 
@@ -23,10 +24,11 @@ router = APIRouter()
 @router.get("/", response_model=List[Entity])
 async def list_entities(
     type: Optional[str] = Query(None, description="Filter by type: person or material"),
+    organization: Organization = Depends(get_current_organization),
     db: Session = Depends(get_db)
 ):
-    """List all entities with optional type filter."""
-    query = db.query(EntityModel)
+    """List all entities within the organization with optional type filter."""
+    query = db.query(EntityModel).filter(EntityModel.organization_id == organization.id)
 
     if type:
         query = query.filter(EntityModel.type == type)
@@ -66,24 +68,34 @@ async def list_entities(
 
 
 @router.post("/", response_model=Entity, status_code=201)
-async def create_entity(entity: EntityCreate, db: Session = Depends(get_db)):
+async def create_entity(
+    entity: EntityCreate,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
     """Create a new entity with optional tag assignment."""
-    # Check if entity_id already exists
-    existing_entity = db.query(EntityModel).filter(EntityModel.entity_id == entity.entity_id).first()
+    # Check if entity_id already exists within this organization
+    existing_entity = db.query(EntityModel).filter(
+        EntityModel.entity_id == entity.entity_id,
+        EntityModel.organization_id == organization.id
+    ).first()
     if existing_entity:
-        raise HTTPException(status_code=400, detail=f"Entity with entity_id '{entity.entity_id}' already exists")
+        raise HTTPException(status_code=400, detail=f"Entity with entity_id '{entity.entity_id}' already exists in this organization")
 
-    # If tag is being assigned, verify it exists and is available
+    # If tag is being assigned, verify it exists within the organization and is available
     if entity.assigned_tag_id:
-        tag = db.query(TagModel).filter(TagModel.tag_id == entity.assigned_tag_id).first()
+        tag = db.query(TagModel).filter(
+            TagModel.tag_id == entity.assigned_tag_id,
+            TagModel.organization_id == organization.id
+        ).first()
         if not tag:
-            raise HTTPException(status_code=404, detail=f"Tag '{entity.assigned_tag_id}' not found")
+            raise HTTPException(status_code=404, detail=f"Tag '{entity.assigned_tag_id}' not found in this organization")
         if tag.assigned_user_id or tag.assigned_entity_id:
             raise HTTPException(status_code=400, detail=f"Tag '{entity.assigned_tag_id}' is already assigned")
 
     # Create entity (exclude assigned_tag_id from model creation)
     entity_data = entity.model_dump(exclude={'assigned_tag_id'})
-    db_entity = EntityModel(**entity_data)
+    db_entity = EntityModel(**entity_data, organization_id=organization.id)
     db.add(db_entity)
     db.commit()
     db.refresh(db_entity)
@@ -101,11 +113,18 @@ async def create_entity(entity: EntityCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/{entity_id}", response_model=Entity)
-async def get_entity(entity_id: str, db: Session = Depends(get_db)):
-    """Get entity by ID."""
-    entity = db.query(EntityModel).filter(EntityModel.entity_id == entity_id).first()
+async def get_entity(
+    entity_id: str,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
+    """Get entity by ID within the organization."""
+    entity = db.query(EntityModel).filter(
+        EntityModel.entity_id == entity_id,
+        EntityModel.organization_id == organization.id
+    ).first()
     if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found")
+        raise HTTPException(status_code=404, detail="Entity not found in this organization")
 
     # Add assigned tag info
     tag = db.query(TagModel).filter(TagModel.assigned_entity_id == entity.id).first()
@@ -115,11 +134,19 @@ async def get_entity(entity_id: str, db: Session = Depends(get_db)):
 
 
 @router.put("/{entity_id}", response_model=Entity)
-async def update_entity(entity_id: str, entity_update: EntityUpdate, db: Session = Depends(get_db)):
+async def update_entity(
+    entity_id: str,
+    entity_update: EntityUpdate,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
     """Update entity information and tag assignment."""
-    entity = db.query(EntityModel).filter(EntityModel.entity_id == entity_id).first()
+    entity = db.query(EntityModel).filter(
+        EntityModel.entity_id == entity_id,
+        EntityModel.organization_id == organization.id
+    ).first()
     if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found")
+        raise HTTPException(status_code=404, detail="Entity not found in this organization")
 
     # Handle tag assignment changes
     if 'assigned_tag_id' in entity_update.model_dump(exclude_unset=True):
@@ -130,10 +157,13 @@ async def update_entity(entity_id: str, entity_update: EntityUpdate, db: Session
 
         # If changing to a different tag (or assigning for first time)
         if new_tag_id:
-            # Verify new tag exists and is available
-            new_tag = db.query(TagModel).filter(TagModel.tag_id == new_tag_id).first()
+            # Verify new tag exists within the organization and is available
+            new_tag = db.query(TagModel).filter(
+                TagModel.tag_id == new_tag_id,
+                TagModel.organization_id == organization.id
+            ).first()
             if not new_tag:
-                raise HTTPException(status_code=404, detail=f"Tag '{new_tag_id}' not found")
+                raise HTTPException(status_code=404, detail=f"Tag '{new_tag_id}' not found in this organization")
 
             # Check if tag is available (unless it's the current tag)
             if current_tag and current_tag.tag_id == new_tag_id:
@@ -167,11 +197,18 @@ async def update_entity(entity_id: str, entity_update: EntityUpdate, db: Session
 
 
 @router.delete("/{entity_id}", status_code=204)
-async def delete_entity(entity_id: str, db: Session = Depends(get_db)):
-    """Delete entity."""
-    entity = db.query(EntityModel).filter(EntityModel.entity_id == entity_id).first()
+async def delete_entity(
+    entity_id: str,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
+    """Delete entity within the organization."""
+    entity = db.query(EntityModel).filter(
+        EntityModel.entity_id == entity_id,
+        EntityModel.organization_id == organization.id
+    ).first()
     if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found")
+        raise HTTPException(status_code=404, detail="Entity not found in this organization")
 
     db.delete(entity)
     db.commit()

@@ -12,9 +12,12 @@ import {
   Settings,
   Building
 } from 'lucide-react';
+import { useOrganization } from '../../contexts/OrganizationContext';
 import './Sidebar.css';
 
 const Sidebar = () => {
+  const { currentOrganization, organizations, switchOrganization, loading } = useOrganization();
+
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Building, label: 'Organizations', path: '/organizations' },
@@ -28,6 +31,24 @@ const Sidebar = () => {
     <aside className="sidebar">
       <div className="sidebar-header">
         <h2 className="sidebar-title">Entity Tracking</h2>
+
+        {/* Organization Selector */}
+        {!loading && organizations.length > 0 && (
+          <div className="org-selector">
+            <label className="org-label">Organization:</label>
+            <select
+              value={currentOrganization?.id || ''}
+              onChange={(e) => switchOrganization(e.target.value)}
+              className="org-select"
+            >
+              {organizations.map(org => (
+                <option key={org.id} value={org.id}>
+                  {org.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
       <nav className="sidebar-nav">
         {menuItems.map((item) => (

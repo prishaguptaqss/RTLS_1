@@ -7,25 +7,33 @@ from typing import List
 
 from app.schemas.tag import Tag, TagCreate, TagUpdate
 from app.models.tag import Tag as TagModel
-from app.api.deps import get_db
+from app.api.deps import get_db, get_current_organization
+from app.models.organization import Organization
 
 router = APIRouter()
 
 
 @router.get("/", response_model=List[Tag])
-async def list_tags(db: Session = Depends(get_db)):
-    """List all tags."""
-    return db.query(TagModel).all()
+async def list_tags(
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
+    """List all tags within the organization."""
+    return db.query(TagModel).filter(TagModel.organization_id == organization.id).all()
 
 
 @router.get("/available", response_model=List[Tag])
-async def list_available_tags(db: Session = Depends(get_db)):
-    """List all available (unassigned) tags.
+async def list_available_tags(
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
+    """List all available (unassigned) tags within the organization.
 
     Returns tags where both assigned_user_id and assigned_entity_id are NULL
     and status is 'active'.
     """
     return db.query(TagModel).filter(
+        TagModel.organization_id == organization.id,
         TagModel.assigned_user_id == None,
         TagModel.assigned_entity_id == None,
         TagModel.status == "active"
@@ -33,20 +41,24 @@ async def list_available_tags(db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=Tag, status_code=201)
-async def create_tag(tag: TagCreate, db: Session = Depends(get_db)):
-    """Create a new tag."""
-    # Check if tag_id already exists
-    existing_tag = db.query(TagModel).filter(TagModel.tag_id == tag.tag_id).first()
+async def create_tag(
+    tag: TagCreate,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
+    """Create a new tag within the organization."""
+    # Check if tag_id already exists in this organization
+    existing_tag = db.query(TagModel).filter(
+        TagModel.tag_id == tag.tag_id,
+        TagModel.organization_id == organization.id
+    ).first()
     if existing_tag:
-        raise HTTPException(status_code=400, detail=f"Tag with tag_id '{tag.tag_id}' already exists")
+        raise HTTPException(status_code=400, detail=f"Tag with tag_id '{tag.tag_id}' already exists in this organization")
 
-    # Check if name already exists (if name is provided)
-    if tag.name:
-        existing_name = db.query(TagModel).filter(TagModel.name == tag.name).first()
-        if existing_name:
-            raise HTTPException(status_code=400, detail=f"Tag with name '{tag.name}' already exists")
+    # Note: Removed unique name constraint for organization scoping
+    # Names can be duplicate across organizations, unique within org if needed
 
-    db_tag = TagModel(**tag.model_dump())
+    db_tag = TagModel(**tag.model_dump(), organization_id=organization.id)
     db.add(db_tag)
     db.commit()
     db.refresh(db_tag)

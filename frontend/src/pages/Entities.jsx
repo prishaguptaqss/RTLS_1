@@ -11,7 +11,7 @@ import {
   fetchAvailableTags
 } from '../services/api';
 import './Entities.css';
-import { FiEdit2, FiTrash2, FiClock } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiClock, FiUserX } from "react-icons/fi";
 
 const Entities = () => {
   const [entities, setEntities] = useState([]);
@@ -23,6 +23,7 @@ const Entities = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isUntrackModalOpen, setIsUntrackModalOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [locationHistory, setLocationHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -195,6 +196,32 @@ const Entities = () => {
     }
   };
 
+  const openUntrackModal = (entity) => {
+    setSelectedEntity(entity);
+    setIsUntrackModalOpen(true);
+  };
+
+  const handleUntrackEntity = async () => {
+    try {
+      setSubmitting(true);
+      // Update entity with assigned_tag_id set to null to unassign the tag
+      const entityData = {
+        name: selectedEntity.name,
+        type: selectedEntity.type,
+        assigned_tag_id: null
+      };
+      await updateEntity(selectedEntity.entity_id, entityData);
+      await loadEntities();
+      setIsUntrackModalOpen(false);
+      setSelectedEntity(null);
+    } catch (err) {
+      console.error('Error untracking entity:', err);
+      alert('Failed to untrack entity');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       entity_id: '',
@@ -360,6 +387,15 @@ const Entities = () => {
                         >
                           <FiClock size={16} />
                         </button>
+                        {entity.assigned_tag_id && (
+                          <button
+                            onClick={() => openUntrackModal(entity)}
+                            className="btn-icon btn-warning"
+                            title="Untrack entity (unassign tag)"
+                          >
+                            <FiUserX size={16} />
+                          </button>
+                        )}
                         <button
                           onClick={() => openEditModal(entity)}
                           className="btn-icon btn-edit"
@@ -690,6 +726,45 @@ const Entities = () => {
             className="btn btn-secondary"
           >
             Close
+          </button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Untrack Entity Modal */}
+      <Modal isOpen={isUntrackModalOpen} onClose={() => setIsUntrackModalOpen(false)}>
+        <Modal.Header onClose={() => setIsUntrackModalOpen(false)}>
+          Untrack Entity
+        </Modal.Header>
+        <Modal.Body>
+          <p>Are you sure you want to stop tracking this entity?</p>
+          {selectedEntity && (
+            <div className="delete-entity-info">
+              <strong>{selectedEntity.name || selectedEntity.entity_id}</strong> ({selectedEntity.entity_id})
+              {selectedEntity.tag_name && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  Currently tracked with tag: <code>{selectedEntity.tag_name || selectedEntity.assigned_tag_id}</code>
+                </div>
+              )}
+            </div>
+          )}
+          <p className="warning-text" style={{ marginTop: '1rem' }}>
+            This will unassign the tag from this entity. The tag will become available for assignment to other entities.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            onClick={() => setIsUntrackModalOpen(false)}
+            className="btn btn-secondary"
+            disabled={submitting}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleUntrackEntity}
+            className="btn btn-warning"
+            disabled={submitting}
+          >
+            {submitting ? 'Untracking...' : 'Untrack Entity'}
           </button>
         </Modal.Footer>
       </Modal>
