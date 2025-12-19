@@ -8,24 +8,26 @@ import {
   Wifi,
   TestTube,
   MapPin,
-  Search
+  Search,
+  Settings,
+  Building
 } from 'lucide-react';
 import './Sidebar.css';
 
 const Sidebar = () => {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: Building2, label: 'Buildings', path: '/buildings' },
-    // { icon: Users, label: 'Users', path: '/users' },
-    { icon: UserPlus, label: 'Patients', path: '/patients' },
+    { icon: Building, label: 'Organizations', path: '/organizations' },
+    { icon: Users, label: 'Entities', path: '/entities' },
     { icon: Wifi, label: 'Devices', path: '/devices' },
     { icon: MapPin, label: 'Live Positions', path: '/live-positions' },
+    { icon: Settings, label: 'Settings', path: '/settings' },
   ];
 
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <h2 className="sidebar-title">User Tracking</h2>
+        <h2 className="sidebar-title">Entity Tracking</h2>
       </div>
       <nav className="sidebar-nav">
         {menuItems.map((item) => (

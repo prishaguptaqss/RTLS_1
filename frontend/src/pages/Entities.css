@@ -1,0 +1,144 @@
+/* Entities page specific styles */
+
+/* Form error messages */
+.error-text {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  display: block;
+  font-weight: 500;
+}
+
+.error-message {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background-color: #f8d7da;
+  border: 1px solid #f5c2c7;
+  border-radius: 4px;
+  color: #842029;
+  font-size: 0.9rem;
+}
+
+/* Input field with error */
+.form-group input.input-error,
+.form-group select.input-error {
+  border-color: #dc3545;
+  background-color: #fff5f5;
+}
+
+.form-group input.input-error:focus,
+.form-group select.input-error:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.delete-entity-info {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border-left: 4px solid var(--primary);
+}
+
+.delete-entity-info strong {
+  font-size: 1.1rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.delete-entity-info div {
+  margin-top: 0.25rem;
+  color: var(--text-secondary);
+}
+
+.text-muted {
+  color: var(--text-light);
+  font-style: italic;
+}
+
+/* Entity type badges */
+.entity-type-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.badge-blue {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #90caf9;
+}
+
+.badge-green {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #81c784;
+}
+
+.badge-gray {
+  background-color: #e2e3e5;
+  color: #6c757d;
+  border: 1px solid #d6d8db;
+}
+
+/* Tracking status badges */
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.status-badge.status-tracked {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-badge.status-untracked {
+  background-color: #e2e3e5;
+  color: #6c757d;
+  border: 1px solid #d6d8db;
+}
+
+/* Action buttons */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn-info {
+  color: #17a2b8;
+  transition: all 0.2s;
+}
+
+.btn-info:hover {
+  color: #138496;
+  background-color: #e3f2fd;
+}
+
+/* Filter select */
+.filter-select {
+  padding: 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.location-text {
+  font-size: 0.9rem;
+  color: #495057;
+}

@@ -22,7 +22,7 @@ import {
 } from '../services/api';
 import './Buildings.css';
 
-const Buildings = () => {
+const Buildings = ({ organizationId }) => {
   const [buildings, setBuildings] = useState([]);
   const [floors, setFloors] = useState([]);
   const [allFloors, setAllFloors] = useState([]); // All floors from all buildings
@@ -60,9 +60,11 @@ const Buildings = () => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    loadBuildings();
-    loadUnassignedAnchors();
-  }, []);
+    if (organizationId) {
+      loadBuildings();
+      loadUnassignedAnchors();
+    }
+  }, [organizationId]);
 
   useEffect(() => {
     if (selectedBuilding) {
@@ -84,7 +86,7 @@ const Buildings = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchBuildings();
+      const data = await fetchBuildings(organizationId);
       setBuildings(data);
 
       // Load all floors for all buildings (needed for room creation modal)
@@ -151,7 +153,10 @@ const Buildings = () => {
 
     try {
       setSubmitting(true);
-      await createBuilding({ name: buildingFormData.name.trim() });
+      await createBuilding({
+        name: buildingFormData.name.trim(),
+        organization_id: organizationId
+      });
       await loadBuildings();
       setIsBuildingCreateModalOpen(false);
       resetBuildingForm();
@@ -169,7 +174,10 @@ const Buildings = () => {
 
     try {
       setSubmitting(true);
-      await updateBuilding(selectedBuildingForEdit.id, { name: buildingFormData.name.trim() });
+      await updateBuilding(selectedBuildingForEdit.id, {
+        name: buildingFormData.name.trim(),
+        organization_id: organizationId
+      });
       await loadBuildings();
       setIsBuildingEditModalOpen(false);
       resetBuildingForm();

@@ -97,34 +97,56 @@ export const fetchUserLocationHistory = async (userId) => {
   return api.get(`/users/${userId}/location-history`);
 };
 
-// Patients
-export const fetchPatients = async (status = null) => {
-  const params = status ? `?status=${status}` : '';
-  return api.get(`/patients${params}`);
+// Organizations
+export const fetchOrganizations = async () => {
+  return api.get('/organizations');
 };
 
-export const createPatient = async (patientData) => {
-  return api.post('/patients', patientData);
+export const createOrganization = async (organizationData) => {
+  return api.post('/organizations', organizationData);
 };
 
-export const updatePatient = async (patientId, patientData) => {
-  return api.put(`/patients/${patientId}`, patientData);
+export const updateOrganization = async (id, organizationData) => {
+  return api.put(`/organizations/${id}`, organizationData);
 };
 
-export const deletePatient = async (patientId) => {
-  return api.delete(`/patients/${patientId}`);
+export const deleteOrganization = async (id) => {
+  return api.delete(`/organizations/${id}`);
 };
 
-export const dischargePatient = async (patientId) => {
-  return api.post(`/patients/${patientId}/discharge`);
+// Entities (replaces Patients)
+export const fetchEntities = async (type = null) => {
+  const params = type ? `?type=${type}` : '';
+  return api.get(`/entities${params}`);
 };
 
-export const fetchPatientLocationHistory = async (patientId) => {
-  return api.get(`/patients/${patientId}/location-history`);
+export const createEntity = async (entityData) => {
+  return api.post('/entities', entityData);
+};
+
+export const updateEntity = async (entityId, entityData) => {
+  return api.put(`/entities/${entityId}`, entityData);
+};
+
+export const deleteEntity = async (entityId) => {
+  return api.delete(`/entities/${entityId}`);
+};
+
+export const fetchEntityLocationHistory = async (entityId) => {
+  return api.get(`/entities/${entityId}/location-history`);
 };
 
 export const fetchAvailableTags = async () => {
   return api.get('/tags/available');
+};
+
+// Settings
+export const fetchSettings = async () => {
+  return api.get('/settings');
+};
+
+export const updateSettings = async (settingsData) => {
+  return api.put('/settings', settingsData);
 };
 
 // Rooms
@@ -146,8 +168,9 @@ export const deleteRoom = async (id) => {
 };
 
 // Buildings
-export const fetchBuildings = async () => {
-  return api.get('/buildings');
+export const fetchBuildings = async (organizationId = null) => {
+  const params = organizationId ? `?organization_id=${organizationId}` : '';
+  return api.get(`/buildings${params}`);
 };
 
 export const createBuilding = async (buildingData) => {

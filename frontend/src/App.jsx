@@ -1,11 +1,11 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
-import Buildings from './pages/Buildings';
-import Users from './pages/Users';
-import Patients from './pages/Patients';
+import Organizations from './pages/Organizations';
+import Entities from './pages/Entities';
 import Devices from './pages/Devices';
 import LivePositions from './pages/LivePositions';
+import Settings from './pages/Settings';
 import './App.css';
 
 function App() {
@@ -14,11 +14,11 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
-          <Route path="buildings" element={<Buildings />} />
-          <Route path="users" element={<Users />} />
-          <Route path="patients" element={<Patients />} />
+          <Route path="organizations" element={<Organizations />} />
+          <Route path="entities" element={<Entities />} />
           <Route path="devices" element={<Devices />} />
           <Route path="live-positions" element={<LivePositions />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </BrowserRouter>

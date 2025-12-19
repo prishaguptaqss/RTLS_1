@@ -3,11 +3,11 @@ import { Users, DoorOpen, Clock, Search, AlertTriangle } from 'lucide-react';
 import Card from '../components/ui/Card';
 import StatCard from '../components/ui/StatCard';
 import Table from '../components/ui/Table';
-import { fetchPatients } from '../services/api';
+import { fetchEntities } from '../services/api';
 import './LivePositions.css';
 
 const LivePositions = () => {
-  const [patients, setPatients] = useState([]);
+  const [entities, setEntities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('tracked'); // 'tracked' or 'untracked'
@@ -18,21 +18,21 @@ const LivePositions = () => {
   });
 
   useEffect(() => {
-    loadPatients();
+    loadEntities();
     // Auto-refresh every 5 seconds
-    const interval = setInterval(loadPatients, 5000);
+    const interval = setInterval(loadEntities, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  const loadPatients = async () => {
+  const loadEntities = async () => {
     try {
-      const data = await fetchPatients();
-      // Only get admitted patients with assigned tags
-      const patientsWithTags = (data || []).filter(p => p.status === 'admitted' && p.assigned_tag_id);
-      setPatients(patientsWithTags);
+      const data = await fetchEntities();
+      // Only get entities with assigned tags
+      const entitiesWithTags = (data || []).filter(e => e.assigned_tag_id);
+      setEntities(entitiesWithTags);
 
-      const tracked = patientsWithTags.filter(p => p.tracking_status === 'tracked').length;
-      const untracked = patientsWithTags.filter(p => p.tracking_status === 'untracked').length;
+      const tracked = entitiesWithTags.filter(e => e.tracking_status === 'tracked').length;
+      const untracked = entitiesWithTags.filter(e => e.tracking_status === 'untracked').length;
 
       setStats({
         trackedCount: tracked,
@@ -40,22 +40,22 @@ const LivePositions = () => {
         lastUpdate: new Date()
       });
     } catch (error) {
-      console.error('Failed to fetch patients:', error);
+      console.error('Failed to fetch entities:', error);
     } finally {
       setLoading(false);
     }
   };
 
   // Filter by active tab
-  const tabFilteredPatients = patients.filter(p => p.tracking_status === activeTab);
+  const tabFilteredEntities = entities.filter(e => e.tracking_status === activeTab);
 
   // Then filter by search
-  const filteredPatients = tabFilteredPatients.filter(patient =>
-    patient.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.patient_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.assigned_tag_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.tag_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.current_location?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredEntities = tabFilteredEntities.filter(entity =>
+    entity.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    entity.entity_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    entity.assigned_tag_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    entity.tag_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    entity.current_location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const formatTimeAgo = (dateString) => {
@@ -87,19 +87,19 @@ const LivePositions = () => {
     <div className="live-positions">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Patient Tracking</h1>
+          <h1 className="page-title">Entity Tracking</h1>
         </div>
       </div>
 
       <div className="stats-grid">
         <StatCard
-          title="Tracked Patients"
+          title="Tracked Entities"
           value={stats.trackedCount}
           subtitle="Currently being tracked"
           icon={Users}
         />
         <StatCard
-          title="Untracked Patients"
+          title="Untracked Entities"
           value={stats.untrackedCount}
           subtitle="Lost signal"
           icon={AlertTriangle}
@@ -116,14 +116,14 @@ const LivePositions = () => {
         <Card.Header>
           <div className="card-header-content">
             <div>
-              <Card.Title>Patient Positions</Card.Title>
-              <p className="table-subtitle">Showing {filteredPatients.length} of {tabFilteredPatients.length} patients</p>
+              <Card.Title>Entity Positions</Card.Title>
+              <p className="table-subtitle">Showing {filteredEntities.length} of {tabFilteredEntities.length} entities</p>
             </div>
             <div className="search-box">
               <Search size={18} />
               <input
                 type="text"
-                placeholder="Search patient, tag, or location..."
+                placeholder="Search entity, tag, or location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-box-input"
@@ -152,16 +152,16 @@ const LivePositions = () => {
 
         <Card.Content className="table-content">
           {loading ? (
-            <div className="loading-state">Loading patients...</div>
-          ) : filteredPatients.length === 0 ? (
+            <div className="loading-state">Loading entities...</div>
+          ) : filteredEntities.length === 0 ? (
             <div className="empty-state">
-              {searchTerm ? 'No matching patients found' : `No ${activeTab} patients`}
+              {searchTerm ? 'No matching entities found' : `No ${activeTab} entities`}
             </div>
           ) : (
             <Table>
               <Table.Header>
                 <Table.Row>
-                  <Table.Head>Patient ID</Table.Head>
+                  <Table.Head>Entity ID</Table.Head>
                   <Table.Head>Name</Table.Head>
                   <Table.Head>Tag</Table.Head>
                   <Table.Head>{activeTab === 'tracked' ? 'Current Location' : 'Last Location'}</Table.Head>
@@ -169,37 +169,37 @@ const LivePositions = () => {
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {filteredPatients.map((patient) => (
-                  <Table.Row key={patient.patient_id}>
+                {filteredEntities.map((entity) => (
+                  <Table.Row key={entity.entity_id}>
                     <Table.Cell>
-                      <strong>{patient.patient_id}</strong>
+                      <strong>{entity.entity_id}</strong>
                     </Table.Cell>
                     <Table.Cell>
                       <div className="user-cell">
                         <div className="user-avatar">
-                          {patient.name?.charAt(0).toUpperCase() || 'P'}
+                          {entity.name?.charAt(0).toUpperCase() || 'E'}
                         </div>
-                        <span>{patient.name || 'Unknown'}</span>
+                        <span>{entity.name || 'Unknown'}</span>
                       </div>
                     </Table.Cell>
                     <Table.Cell>
-                      {patient.tag_name ? (
+                      {entity.tag_name ? (
                         <div>
-                          <div>{patient.tag_name}</div>
+                          <div>{entity.tag_name}</div>
                           <code className="serial-code" style={{ fontSize: '0.75rem', color: '#6c757d' }}>
-                            {patient.assigned_tag_id}
+                            {entity.assigned_tag_id}
                           </code>
                         </div>
                       ) : (
-                        <code className="serial-code">{patient.assigned_tag_id}</code>
+                        <code className="serial-code">{entity.assigned_tag_id}</code>
                       )}
                     </Table.Cell>
                     <Table.Cell>
-                      {patient.current_location || <span className="text-muted">Unknown</span>}
+                      {entity.current_location || <span className="text-muted">Unknown</span>}
                     </Table.Cell>
                     {/* {activeTab === 'untracked' && (
                       <Table.Cell>
-                        <span className="warning-text">{formatTimeAgo(patient.last_seen)}</span>
+                        <span className="warning-text">{formatTimeAgo(entity.last_seen)}</span>
                       </Table.Cell>
                     )} */}
                   </Table.Row>

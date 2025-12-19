@@ -19,7 +19,11 @@
       "Bash(find:*)",
       "Bash(alembic revision:*)",
       "Bash(python -m alembic revision:*)",
-      "Bash(sudo docker ps:*)"
+      "Bash(sudo docker ps:*)",
+      "Bash(source:*)",
+      "Bash(alembic upgrade:*)",
+      "Bash(alembic current:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }

@@ -4,7 +4,7 @@ import StatCard from '../components/ui/StatCard';
 import Card from '../components/ui/Card';
 import {
   fetchUsers,
-  fetchPatients,
+  fetchEntities,
   fetchBuildings,
   fetchRooms,
   fetchTags,
@@ -15,7 +15,9 @@ import './Dashboard.css';
 const Dashboard = () => {
   const [stats, setStats] = useState({
     activeUsers: 0,
-    activePatients: 0,
+    totalEntities: 0,
+    personEntities: 0,
+    materialEntities: 0,
     totalBuildings: 0,
     totalRooms: 0,
     activeTags: 0,
@@ -40,9 +42,9 @@ const Dashboard = () => {
       let backendConnected = false;
       let databaseConnected = false;
 
-      const [usersResult, patientsResult, buildingsResult, roomsResult, tagsResult, anchorsResult] = await Promise.all([
+      const [usersResult, entitiesResult, buildingsResult, roomsResult, tagsResult, anchorsResult] = await Promise.all([
         fetchUsers().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
-        fetchPatients().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
+        fetchEntities().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
         fetchBuildings().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
         fetchRooms().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
         fetchTags().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
@@ -50,14 +52,14 @@ const Dashboard = () => {
       ]);
 
       // Check if backend is connected (at least one API call succeeded)
-      backendConnected = usersResult.success || patientsResult.success || buildingsResult.success ||
+      backendConnected = usersResult.success || entitiesResult.success || buildingsResult.success ||
                         roomsResult.success || tagsResult.success || anchorsResult.success;
 
       // Database is connected if backend is connected (same connection)
       databaseConnected = backendConnected;
 
       const users = usersResult.data;
-      const patients = patientsResult.data;
+      const entities = entitiesResult.data;
       const buildings = buildingsResult.data;
       const rooms = roomsResult.data;
       const tags = tagsResult.data;
@@ -68,9 +70,13 @@ const Dashboard = () => {
         ? users.filter(user => user.status === 'active').length
         : 0;
 
-      // Count active (admitted) patients
-      const activePatients = Array.isArray(patients)
-        ? patients.filter(patient => patient.status === 'admitted').length
+      // Count entities by type
+      const totalEntities = Array.isArray(entities) ? entities.length : 0;
+      const personEntities = Array.isArray(entities)
+        ? entities.filter(entity => entity.type === 'person').length
+        : 0;
+      const materialEntities = Array.isArray(entities)
+        ? entities.filter(entity => entity.type === 'material').length
         : 0;
 
       // Count active tags (tags that have status 'active')
@@ -85,7 +91,9 @@ const Dashboard = () => {
 
       setStats({
         activeUsers,
-        activePatients,
+        totalEntities,
+        personEntities,
+        materialEntities,
         totalBuildings: Array.isArray(buildings) ? buildings.length : 0,
         totalRooms: Array.isArray(rooms) ? rooms.length : 0,
         activeTags,
@@ -110,7 +118,7 @@ const Dashboard = () => {
     }
   };
 
-  const totalActiveTracked = stats.activeUsers + stats.activePatients;
+  const totalActiveTracked = stats.activeUsers + stats.totalEntities;
 
   return (
     <div className="dashboard">
@@ -121,9 +129,9 @@ const Dashboard = () => {
 
       <div className="stats-grid">
         <StatCard
-          title="Active Users & Patients"
+          title="Users & Entities"
           value={loading ? '...' : totalActiveTracked.toString()}
-          subtitle={`${stats.activeUsers} users, ${stats.activePatients} patients`}
+          subtitle={`${stats.activeUsers} users, ${stats.totalEntities} entities`}
           icon={Users}
         />
         <StatCard
@@ -185,8 +193,16 @@ const Dashboard = () => {
                   <span className="stat-value">{stats.activeUsers}</span>
                 </div>
                 <div className="stat-row">
-                  <span className="stat-label">Active Patients:</span>
-                  <span className="stat-value">{stats.activePatients}</span>
+                  <span className="stat-label">Total Entities:</span>
+                  <span className="stat-value">{stats.totalEntities}</span>
+                </div>
+                <div className="stat-row">
+                  <span className="stat-label">Person Entities:</span>
+                  <span className="stat-value">{stats.personEntities}</span>
+                </div>
+                <div className="stat-row">
+                  <span className="stat-label">Material Entities:</span>
+                  <span className="stat-value">{stats.materialEntities}</span>
                 </div>
                 <div className="stat-row">
                   <span className="stat-label">Active Tags:</span>

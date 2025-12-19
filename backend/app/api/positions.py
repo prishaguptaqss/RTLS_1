@@ -24,23 +24,23 @@ async def get_live_positions(db: Session = Depends(get_db)):
     Get live positions for all active tags.
 
     Returns:
-    - positions: List of users and patients with current locations
+    - positions: List of users and entities with current locations
     - stats: trackedUsers, roomsDetected
 
-    Note: Includes tags with assigned users OR patients and status='active'.
+    Note: Includes tags with assigned users OR entities and status='active'.
     """
-    # Import Patient model
-    from app.models.patient import Patient
+    # Import Entity model
+    from app.models.entity import Entity
 
-    # Query active tags with live locations, users, patients, and room hierarchy
+    # Query active tags with live locations, users, entities, and room hierarchy
     query = db.query(
-        Tag, LiveLocation, User, Patient, Room, Floor, Building
+        Tag, LiveLocation, User, Entity, Room, Floor, Building
     ).join(
         LiveLocation, Tag.tag_id == LiveLocation.tag_id
     ).outerjoin(
         User, Tag.assigned_user_id == User.user_id
     ).outerjoin(
-        Patient, Tag.assigned_patient_id == Patient.id
+        Entity, Tag.assigned_entity_id == Entity.id
     ).outerjoin(
         Room, LiveLocation.room_id == Room.id
     ).outerjoin(
@@ -54,17 +54,17 @@ async def get_live_positions(db: Session = Depends(get_db)):
     positions = []
     unique_rooms = set()
 
-    for tag, live_loc, user, patient, room, floor, building in query:
-        # Include tags assigned to either user OR patient
+    for tag, live_loc, user, entity, room, floor, building in query:
+        # Include tags assigned to either user OR entity
         person_id = None
         person_name = None
 
         if user:
             person_id = user.user_id
             person_name = user.name
-        elif patient:
-            person_id = patient.patient_id
-            person_name = patient.name
+        elif entity:
+            person_id = entity.entity_id
+            person_name = entity.name
         else:
             # Skip unassigned tags
             continue

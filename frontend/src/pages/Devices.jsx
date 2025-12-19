@@ -11,7 +11,7 @@ import {
   createTag,
   updateTag,
   deleteTag,
-  fetchPatients,
+  fetchEntities,
   fetchBuildings,
   fetchFloors,
   fetchRooms
@@ -38,10 +38,10 @@ const Devices = () => {
   const [isTagEditModalOpen, setIsTagEditModalOpen] = useState(false);
   const [isTagDeleteModalOpen, setIsTagDeleteModalOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState(null);
-  const [tagFormData, setTagFormData] = useState({ tag_id: '', name: '', assigned_patient_id: '' });
+  const [tagFormData, setTagFormData] = useState({ tag_id: '', name: '', assigned_entity_id: '' });
 
   // Shared state
-  const [patients, setPatients] = useState([]);
+  const [entities, setEntities] = useState([]);
   const [buildings, setBuildings] = useState([]);
   const [allFloors, setAllFloors] = useState([]);
   const [allRooms, setAllRooms] = useState([]);
@@ -59,7 +59,7 @@ const Devices = () => {
       await Promise.all([
         loadAnchors(),
         loadTags(),
-        loadPatients(),
+        loadEntities(),
         loadBuildingsFloorsRooms()
       ]);
     } catch (err) {
@@ -92,12 +92,12 @@ const Devices = () => {
     }
   };
 
-  const loadPatients = async () => {
+  const loadEntities = async () => {
     try {
-      const data = await fetchPatients();
-      setPatients(data);
+      const data = await fetchEntities();
+      setEntities(data);
     } catch (err) {
-      console.error('Error loading patients:', err);
+      console.error('Error loading entities:', err);
     }
   };
 
@@ -248,12 +248,12 @@ const Devices = () => {
         tag_id: tagFormData.tag_id.trim(),
         name: tagFormData.name.trim() || null,
         assigned_user_id: null,
-        assigned_patient_id: tagFormData.assigned_patient_id ? parseInt(tagFormData.assigned_patient_id) : null,
+        assigned_entity_id: tagFormData.assigned_entity_id ? parseInt(tagFormData.assigned_entity_id) : null,
         status: 'active'
       };
       await createTag(tagData);
       await loadTags();
-      await loadPatients(); // Reload patients to update assignment status
+      await loadEntities(); // Reload entities to update assignment status
       setIsTagCreateModalOpen(false);
       resetTagForm();
     } catch (err) {
@@ -302,7 +302,7 @@ const Devices = () => {
         tag_id: tagFormData.tag_id.trim(),
         name: tagFormData.name.trim() || null,
         assigned_user_id: selectedTag.assigned_user_id,
-        assigned_patient_id: selectedTag.assigned_patient_id,
+        assigned_entity_id: selectedTag.assigned_entity_id,
         status: selectedTag.status
       };
       await updateTag(selectedTag.tag_id, tagData);
@@ -345,22 +345,22 @@ const Devices = () => {
   };
 
   const resetTagForm = () => {
-    setTagFormData({ tag_id: '', name: '', assigned_patient_id: '' });
+    setTagFormData({ tag_id: '', name: '', assigned_entity_id: '' });
     setFormErrors({});
   };
 
   const getAssignmentStatus = (tag) => {
-    if (tag.assigned_patient_id) {
-      const patient = patients.find(p => p.id === tag.assigned_patient_id);
-      if (patient) {
+    if (tag.assigned_entity_id) {
+      const entity = entities.find(e => e.id === tag.assigned_entity_id);
+      if (entity) {
         return {
           status: 'assigned',
-          details: `${patient.name} (ID: ${patient.patient_id})`
+          details: `${entity.name} (ID: ${entity.entity_id})`
         };
       }
       return {
         status: 'assigned',
-        details: `Patient ID: ${tag.assigned_patient_id}`
+        details: `Entity ID: ${tag.assigned_entity_id}`
       };
     }
     return {
@@ -392,9 +392,9 @@ const Devices = () => {
     return allRooms.filter(room => !assignedRoomIds.includes(room.id));
   };
 
-  // Get unassigned patients (no tag assigned)
-  const getUnassignedPatients = () => {
-    return patients.filter(patient => !patient.assigned_tag_id && patient.status === 'admitted');
+  // Get unassigned entities (no tag assigned)
+  const getUnassignedEntities = () => {
+    return entities.filter(entity => !entity.assigned_tag_id);
   };
 
   if (error) {
@@ -726,21 +726,21 @@ const Devices = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="assigned_patient_id">Assign to Entity (Optional)</label>
+              <label htmlFor="assigned_entity_id">Assign to Entity (Optional)</label>
               <select
-                id="assigned_patient_id"
-                name="assigned_patient_id"
-                value={tagFormData.assigned_patient_id}
-                onChange={(e) => setTagFormData({ ...tagFormData, assigned_patient_id: e.target.value })}
+                id="assigned_entity_id"
+                name="assigned_entity_id"
+                value={tagFormData.assigned_entity_id}
+                onChange={(e) => setTagFormData({ ...tagFormData, assigned_entity_id: e.target.value })}
               >
                 <option value="">No entity assigned</option>
-                {getUnassignedPatients().map((patient) => (
-                  <option key={patient.id} value={patient.id}>
-                    {patient.name} (ID: {patient.patient_id})
+                {getUnassignedEntities().map((entity) => (
+                  <option key={entity.id} value={entity.id}>
+                    {entity.name} (ID: {entity.entity_id})
                   </option>
                 ))}
               </select>
-              <small>Select which patient this tag will be assigned to. Only unassigned admitted patients are shown.</small>
+              <small>Select which entity this tag will be assigned to. Only unassigned active entities are shown.</small>
             </div>
           </Modal.Body>
           <Modal.Footer>

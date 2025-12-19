@@ -12,7 +12,7 @@ class TagBase(BaseModel):
     tag_id: str
     name: Optional[str] = None
     assigned_user_id: Optional[str] = None
-    assigned_patient_id: Optional[int] = None
+    assigned_entity_id: Optional[int] = None
     status: Optional[TagStatus] = TagStatus.active
 
 
@@ -25,7 +25,7 @@ class TagUpdate(BaseModel):
     """Schema for updating a tag (all fields optional except tag_id)."""
     name: Optional[str] = None
     assigned_user_id: Optional[str] = None
-    assigned_patient_id: Optional[int] = None
+    assigned_entity_id: Optional[int] = None
     status: Optional[TagStatus] = None
     last_seen: Optional[datetime] = None
 

@@ -22,12 +22,12 @@ async def list_tags(db: Session = Depends(get_db)):
 async def list_available_tags(db: Session = Depends(get_db)):
     """List all available (unassigned) tags.
 
-    Returns tags where both assigned_user_id and assigned_patient_id are NULL
+    Returns tags where both assigned_user_id and assigned_entity_id are NULL
     and status is 'active'.
     """
     return db.query(TagModel).filter(
         TagModel.assigned_user_id == None,
-        TagModel.assigned_patient_id == None,
+        TagModel.assigned_entity_id == None,
         TagModel.status == "active"
     ).all()
 

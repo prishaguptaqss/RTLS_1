@@ -12,7 +12,8 @@ from app.config import settings
 from app.database import engine, Base, SessionLocal
 from app.api import (
     users,
-    patients,
+    organizations,
+    entities,
     buildings,
     floors,
     rooms,
@@ -21,7 +22,8 @@ from app.api import (
     positions,
     dashboard,
     events,
-    websocket
+    websocket,
+    settings as settings_api
 )
 from app.services.missing_person_detector import missing_person_detector
 from app.services.websocket_manager import websocket_manager
@@ -73,9 +75,9 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="RTLS Hospital Tracking API",
-    description="Real-Time Location System backend for hospital tracking",
-    version="1.0.0",
+    title="RTLS Entity Tracking API",
+    description="Real-Time Location System for tracking persons and materials across organizations",
+    version="2.0.0",
     lifespan=lifespan
 )
 
@@ -90,7 +92,8 @@ app.add_middleware(
 
 # Include routers
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
-app.include_router(patients.router, prefix="/api/patients", tags=["Patients"])
+app.include_router(organizations.router, prefix="/api/organizations", tags=["Organizations"])
+app.include_router(entities.router, prefix="/api/entities", tags=["Entities"])
 app.include_router(buildings.router, prefix="/api/buildings", tags=["Buildings"])
 app.include_router(floors.router, prefix="/api/floors", tags=["Floors"])
 app.include_router(rooms.router, prefix="/api/rooms", tags=["Rooms"])
@@ -100,6 +103,7 @@ app.include_router(positions.router, prefix="/api/positions", tags=["Live Positi
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
 app.include_router(events.router, prefix="/api/events", tags=["Events"])
 app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
+app.include_router(settings_api.router, prefix="/api/settings", tags=["Settings"])
 
 
 # Health check endpoint
@@ -118,8 +122,8 @@ async def health_check():
 async def root():
     """Root endpoint with API information."""
     return {
-        "name": "RTLS Hospital Tracking API",
-        "version": "1.0.0",
+        "name": "RTLS Entity Tracking API",
+        "version": "2.0.0",
         "docs_url": "/docs",
         "health_url": "/health"
     }

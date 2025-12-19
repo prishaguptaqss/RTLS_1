@@ -29,7 +29,7 @@ class EventType(str, enum.Enum):
     TAG_LOST = "TAG_LOST"
 
 
-class PatientStatus(str, enum.Enum):
-    """Patient status enumeration."""
-    admitted = "admitted"
-    discharged = "discharged"
+class EntityType(str, enum.Enum):
+    """Entity type enumeration."""
+    person = "person"
+    material = "material"
