@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Table from '../components/ui/Table';
 import Modal from '../components/ui/Modal';
+import PermissionGate from '../components/PermissionGate';
 import { FiEdit2 } from "react-icons/fi";
 import { FiTrash2 } from "react-icons/fi";
 
@@ -562,9 +563,11 @@ const Buildings = ({ organizationId }) => {
           <h1 className="page-title">Buildings</h1>
           <p className="page-subtitle">Manage your buildings and floors</p>
         </div>
-        <button onClick={openBuildingCreateModal} className="btn btn-primary">
-          + Add Building
-        </button>
+        <PermissionGate permission="BUILDING_CREATE">
+          <button onClick={openBuildingCreateModal} className="btn btn-primary">
+            + Add Building
+          </button>
+        </PermissionGate>
       </div>
 
       {/* Buildings Section */}
@@ -575,10 +578,12 @@ const Buildings = ({ organizationId }) => {
           </div>
           {buildings.length === 0 ? (
             <div className="empty-state">
-              <p>No buildings found. Create your first building to get started.</p>
-              <button onClick={openBuildingCreateModal} className="btn btn-primary">
-                + Add Building
-              </button>
+              <p style={{marginBottom:"20px"}}>No buildings found. Create your first building to get started.</p>
+              <PermissionGate permission="BUILDING_CREATE">
+                <button onClick={openBuildingCreateModal} className="btn btn-primary">
+                  + Add Building
+                </button>
+              </PermissionGate>
             </div>
           ) : (
             <Table>
@@ -604,20 +609,24 @@ const Buildings = ({ organizationId }) => {
                     </Table.Cell>
                     <Table.Cell>
                       <div className="action-buttons">
-                        <button
-                          onClick={() => openBuildingEditModal(building)}
-                          className="btn-icon btn-edit"
-                          title="Edit building"
-                        >
-                           <FiEdit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => openBuildingDeleteModal(building)}
-                          className="btn-icon btn-delete"
-                          title="Delete building"
-                        >
-                          <FiTrash2 size={16} />
-                        </button>
+                        <PermissionGate permission="BUILDING_EDIT">
+                          <button
+                            onClick={() => openBuildingEditModal(building)}
+                            className="btn-icon btn-edit"
+                            title="Edit building"
+                          >
+                             <FiEdit2 size={16} />
+                          </button>
+                        </PermissionGate>
+                        <PermissionGate permission="BUILDING_DELETE">
+                          <button
+                            onClick={() => openBuildingDeleteModal(building)}
+                            className="btn-icon btn-delete"
+                            title="Delete building"
+                          >
+                            <FiTrash2 size={16} />
+                          </button>
+                        </PermissionGate>
                       </div>
                     </Table.Cell>
                   </Table.Row>
@@ -635,10 +644,11 @@ const Buildings = ({ organizationId }) => {
             <div className="section-header">
               <h2>Floors in {selectedBuilding.name}</h2>
               <div className="header-actions">
-                <button onClick={openFloorCreateModal} className="btn btn-secondary">
-                  + Add Floor
-                </button>
-                
+                <PermissionGate permission="FLOOR_CREATE">
+                  <button onClick={openFloorCreateModal} className="btn btn-secondary">
+                    + Add Floor
+                  </button>
+                </PermissionGate>
               </div>
             </div>
             {floorsLoading ? (
@@ -647,9 +657,11 @@ const Buildings = ({ organizationId }) => {
               <div className="empty-state">
                 <p>No floors found in this building. Add a floor to get started.</p>
                 <div className="header-actions">
-                  <button onClick={openFloorCreateModal} className="btn btn-secondary">
-                    + Add Floor
-                  </button>
+                  <PermissionGate permission="FLOOR_CREATE">
+                    <button onClick={openFloorCreateModal} className="btn btn-secondary">
+                      + Add Floor
+                    </button>
+                  </PermissionGate>
                 </div>
               </div>
             ) : (
@@ -686,20 +698,24 @@ const Buildings = ({ organizationId }) => {
                       </Table.Cell>
                       <Table.Cell>
                         <div className="action-buttons">
-                          <button
-                            onClick={() => openFloorEditModal(floor)}
-                            className="btn-icon btn-edit"
-                            title="Edit floor"
-                          >
-                             <FiEdit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => openFloorDeleteModal(floor)}
-                            className="btn-icon btn-delete"
-                            title="Delete floor"
-                          >
-                            <FiTrash2 size={16} />
-                          </button>
+                          <PermissionGate permission="FLOOR_EDIT">
+                            <button
+                              onClick={() => openFloorEditModal(floor)}
+                              className="btn-icon btn-edit"
+                              title="Edit floor"
+                            >
+                               <FiEdit2 size={16} />
+                            </button>
+                          </PermissionGate>
+                          <PermissionGate permission="FLOOR_DELETE">
+                            <button
+                              onClick={() => openFloorDeleteModal(floor)}
+                              className="btn-icon btn-delete"
+                              title="Delete floor"
+                            >
+                              <FiTrash2 size={16} />
+                            </button>
+                          </PermissionGate>
                         </div>
                       </Table.Cell>
                     </Table.Row>
@@ -717,18 +733,22 @@ const Buildings = ({ organizationId }) => {
           <Card.Content>
             <div className="section-header">
               <h2>Rooms on Floor {selectedFloor.floor_number} - {selectedBuilding?.name}</h2>
-              <button onClick={openRoomCreateModal} className="btn btn-secondary">
-                + Add Room
-              </button>
+              <PermissionGate permission="ROOM_CREATE">
+                <button onClick={openRoomCreateModal} className="btn btn-secondary">
+                  + Add Room
+                </button>
+              </PermissionGate>
             </div>
             {roomsLoading ? (
               <div className="loading-state">Loading rooms...</div>
             ) : rooms.length === 0 ? (
               <div className="empty-state">
-                <p>No rooms found on this floor. Add a room to get started.</p>
-                <button onClick={openRoomCreateModal} className="btn btn-secondary">
-                  + Add Room
-                </button>
+                <p style={{marginBottom:"20px"}}>No rooms found on this floor. Add a room to get started.</p>
+                <PermissionGate permission="ROOM_CREATE">
+                  <button onClick={openRoomCreateModal} className="btn btn-secondary">
+                    + Add Room
+                  </button>
+                </PermissionGate>
               </div>
             ) : (
               <Table>
@@ -746,20 +766,24 @@ const Buildings = ({ organizationId }) => {
                       <Table.Cell>{room.room_type || '-'}</Table.Cell>
                       <Table.Cell>
                         <div className="action-buttons">
-                          <button
-                            onClick={() => openRoomEditModal(room)}
-                            className="btn-icon btn-edit"
-                            title="Edit room"
-                          >
-                             <FiEdit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => openRoomDeleteModal(room)}
-                            className="btn-icon btn-delete"
-                            title="Delete room"
-                          >
-                            <FiTrash2 size={16} />
-                          </button>
+                          <PermissionGate permission="ROOM_EDIT">
+                            <button
+                              onClick={() => openRoomEditModal(room)}
+                              className="btn-icon btn-edit"
+                              title="Edit room"
+                            >
+                               <FiEdit2 size={16} />
+                            </button>
+                          </PermissionGate>
+                          <PermissionGate permission="ROOM_DELETE">
+                            <button
+                              onClick={() => openRoomDeleteModal(room)}
+                              className="btn-icon btn-delete"
+                              title="Delete room"
+                            >
+                              <FiTrash2 size={16} />
+                            </button>
+                          </PermissionGate>
                         </div>
                       </Table.Cell>
                     </Table.Row>

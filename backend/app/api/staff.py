@@ -41,13 +41,22 @@ def list_staff(
     """
     List all staff members.
 
-    Admins see all staff. Regular staff see staff in their organization.
+    Admins see all staff. Regular staff see staff in their organization + global admins.
     """
     query = db.query(Staff)
 
     # Filter by organization for non-admin users
-    if not current_staff.is_admin and current_staff.organization_id:
-        query = query.filter(Staff.organization_id == current_staff.organization_id)
+    # Non-admins see: staff in their organization + global admins (organization_id is NULL)
+    if not current_staff.is_admin:
+        if current_staff.organization_id:
+            # Show staff in same organization OR global admins (org_id = NULL)
+            query = query.filter(
+                (Staff.organization_id == current_staff.organization_id) |
+                (Staff.organization_id.is_(None))
+            )
+        else:
+            # If user has no organization, only show global staff (org_id = NULL)
+            query = query.filter(Staff.organization_id.is_(None))
 
     total = query.count()
     staff = query.offset(skip).limit(limit).all()
@@ -77,7 +86,8 @@ def get_staff_member(
 
     # Check access
     if not current_staff.is_admin:
-        if staff.organization_id != current_staff.organization_id:
+        # Allow access if same organization OR if viewing global admin (org_id = NULL)
+        if staff.organization_id is not None and staff.organization_id != current_staff.organization_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied to this staff member"
@@ -182,7 +192,8 @@ def update_staff(
 
     # Check access
     if not current_staff.is_admin:
-        if staff.organization_id != current_staff.organization_id:
+        # Allow update if same organization, but NOT global admins (can't edit admins)
+        if staff.organization_id is None or staff.organization_id != current_staff.organization_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied to update this staff member"
@@ -258,7 +269,8 @@ def delete_staff(
 
     # Check access
     if not current_staff.is_admin:
-        if staff.organization_id != current_staff.organization_id:
+        # Allow delete if same organization, but NOT global admins (can't delete admins)
+        if staff.organization_id is None or staff.organization_id != current_staff.organization_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied to delete this staff member"

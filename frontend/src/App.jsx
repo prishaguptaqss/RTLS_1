@@ -32,11 +32,46 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Dashboard />} />
-              <Route path="organizations" element={<Organizations />} />
-              <Route path="entities" element={<Entities />} />
-              <Route path="devices" element={<Devices />} />
-              <Route path="live-positions" element={<LivePositions />} />
+              <Route
+                index
+                element={
+                  <ProtectedRoute requiredPermission="DASHBOARD_VIEW">
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="organizations"
+                element={
+                  <ProtectedRoute requiredPermission="ORGANIZATION_VIEW">
+                    <Organizations />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="entities"
+                element={
+                  <ProtectedRoute requiredPermission="ENTITY_VIEW">
+                    <Entities />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="devices"
+                element={
+                  <ProtectedRoute requiredPermission="DEVICE_VIEW">
+                    <Devices />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="live-positions"
+                element={
+                  <ProtectedRoute requiredPermission="LIVE_POSITION_VIEW">
+                    <LivePositions />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Admin-only routes */}
               <Route

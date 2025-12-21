@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
 import Buildings from './Buildings'; // Reuse existing Buildings component
+import PermissionGate from '../components/PermissionGate';
 import {
   fetchOrganizations,
   createOrganization,
@@ -210,9 +211,11 @@ const Organizations = () => {
           <h1 className="page-title">Organizations</h1>
           <p className="page-subtitle">Manage organizations and their buildings</p>
         </div>
-        <button onClick={openCreateModal} className="btn btn-primary">
-          + Create Organization
-        </button>
+        <PermissionGate permission="ORGANIZATION_CREATE">
+          <button onClick={openCreateModal} className="btn btn-primary">
+            + Create Organization
+          </button>
+        </PermissionGate>
       </div>
 
       {organizations.length === 0 ? (
@@ -220,9 +223,11 @@ const Organizations = () => {
           <Card.Content>
             <div className="empty-state">
               <p>No organizations found. Create your first organization to get started.</p>
-              <button onClick={openCreateModal} className="btn btn-primary" style={{marginTop:"20px"}}>
-                + Create Organization
-              </button>
+              <PermissionGate permission="ORGANIZATION_CREATE">
+                <button onClick={openCreateModal} className="btn btn-primary" style={{marginTop:"20px"}}>
+                  + Create Organization
+                </button>
+              </PermissionGate>
             </div>
           </Card.Content>
         </Card>
@@ -245,20 +250,24 @@ const Organizations = () => {
                   )}
                 </div>
                 <div className="org-card-actions" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={() => openEditModal(org)}
-                    className="btn-icon btn-edit"
-                    title="Edit organization"
-                  >
-                    <FiEdit2 size={16} />
-                  </button>
-                  <button
-                    onClick={() => openDeleteModal(org)}
-                    className="btn-icon btn-delete"
-                    title="Delete organization"
-                  >
-                    <FiTrash2 size={16} />
-                  </button>
+                  <PermissionGate permission="ORGANIZATION_EDIT">
+                    <button
+                      onClick={() => openEditModal(org)}
+                      className="btn-icon btn-edit"
+                      title="Edit organization"
+                    >
+                      <FiEdit2 size={16} />
+                    </button>
+                  </PermissionGate>
+                  <PermissionGate permission="ORGANIZATION_DELETE">
+                    <button
+                      onClick={() => openDeleteModal(org)}
+                      className="btn-icon btn-delete"
+                      title="Delete organization"
+                    >
+                      <FiTrash2 size={16} />
+                    </button>
+                  </PermissionGate>
                 </div>
               </div>
             ))}

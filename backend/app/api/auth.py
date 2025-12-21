@@ -22,7 +22,9 @@ def login(
     """
     Login endpoint - authenticates staff and returns JWT token.
 
-    Args:
+    Args:INSERT INTO users (name, email, role,)
+VALUES (value1, value2, value3);
+
         login_data: Email and password
         db: Database session
 
@@ -31,13 +33,13 @@ def login(
     """
     # Find staff by email
     staff = db.query(Staff).filter(Staff.email == login_data.email).first()
-
+    print(f"Staff found: {staff}")
     if not staff:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password"
         )
-
+    print(f"Verifying password for staff ID {staff.staff_id}")
     # Verify password
     if not verify_password(login_data.password, staff.password_hash):
         raise HTTPException(

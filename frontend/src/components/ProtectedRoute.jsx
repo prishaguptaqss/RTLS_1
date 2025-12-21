@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import AccessDenied from '../pages/AccessDenied';
 
 const ProtectedRoute = ({ children, requiredPermission = null, requireAdmin = false }) => {
   const { isAuthenticated, loading, hasPermission, isAdmin } = useAuth();
@@ -28,41 +29,12 @@ const ProtectedRoute = ({ children, requiredPermission = null, requireAdmin = fa
 
   // Check admin requirement
   if (requireAdmin && !isAdmin) {
-    return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        padding: '20px',
-        textAlign: 'center'
-      }}>
-        <h2>Access Denied</h2>
-        <p>You need admin privileges to access this page.</p>
-      </div>
-    );
+    return <AccessDenied page="this page (Admin access required)" />;
   }
 
   // Check specific permission requirement
   if (requiredPermission && !hasPermission(requiredPermission)) {
-    return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        padding: '20px',
-        textAlign: 'center'
-      }}>
-        <h2>Access Denied</h2>
-        <p>You don't have permission to access this page.</p>
-        <p style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>
-          Required permission: {requiredPermission}
-        </p>
-      </div>
-    );
+    return <AccessDenied page="this page" />;
   }
 
   return children;

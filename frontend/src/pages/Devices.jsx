@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Table from '../components/ui/Table';
 import Modal from '../components/ui/Modal';
+import PermissionGate from '../components/PermissionGate';
 import {
   fetchDevices,
   createDevice,
@@ -457,9 +458,11 @@ const Devices = () => {
                 </div>
                 <p className="section-subtitle">{anchors.length} anchors configured</p>
               </div>
-              <button onClick={openAnchorCreateModal} className="btn btn-primary">
-                + Add Anchor
-              </button>
+              <PermissionGate permission="DEVICE_CREATE">
+                <button onClick={openAnchorCreateModal} className="btn btn-primary">
+                  + Add Anchor
+                </button>
+              </PermissionGate>
             </div>
           </Card.Header>
           <Card.Content>
@@ -467,10 +470,12 @@ const Devices = () => {
               <div className="loading-state">Loading anchors...</div>
             ) : anchors.length === 0 ? (
               <div className="empty-state">
-                <p>No anchors found. Add your first anchor to get started.</p>
-                <button onClick={openAnchorCreateModal} className="btn btn-primary">
-                  + Add Anchor
-                </button>
+                <p style={{marginBottom:"20px"}}>No anchors found. Add your first anchor to get started.</p>
+                <PermissionGate permission="DEVICE_CREATE">
+                  <button onClick={openAnchorCreateModal} className="btn btn-primary">
+                    + Add Anchor
+                  </button>
+                </PermissionGate>
               </div>
             ) : (
               <Table>
@@ -499,20 +504,24 @@ const Devices = () => {
                         </Table.Cell>
                         <Table.Cell>
                           <div className="action-buttons">
-                            <button
-                              onClick={() => openAnchorEditModal(anchor)}
-                              className="btn-icon btn-edit"
-                              title="Edit anchor"
-                            >
-                              <FiEdit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => openAnchorDeleteModal(anchor)}
-                              className="btn-icon btn-delete"
-                              title="Delete anchor"
-                            >
-                              <FiTrash2 size={16} />
-                            </button>
+                            <PermissionGate permission="DEVICE_EDIT">
+                              <button
+                                onClick={() => openAnchorEditModal(anchor)}
+                                className="btn-icon btn-edit"
+                                title="Edit anchor"
+                              >
+                                <FiEdit2 size={16} />
+                              </button>
+                            </PermissionGate>
+                            <PermissionGate permission="DEVICE_DELETE">
+                              <button
+                                onClick={() => openAnchorDeleteModal(anchor)}
+                                className="btn-icon btn-delete"
+                                title="Delete anchor"
+                              >
+                                <FiTrash2 size={16} />
+                              </button>
+                            </PermissionGate>
                           </div>
                         </Table.Cell>
                       </Table.Row>
@@ -537,9 +546,11 @@ const Devices = () => {
                 </div>
                 <p className="section-subtitle">{tags.length} tags configured</p>
               </div>
-              <button onClick={openTagCreateModal} className="btn btn-primary">
-                + Add Tag
-              </button>
+              <PermissionGate permission="DEVICE_CREATE">
+                <button onClick={openTagCreateModal} className="btn btn-primary">
+                  + Add Tag
+                </button>
+              </PermissionGate>
             </div>
           </Card.Header>
           <Card.Content>
@@ -547,10 +558,12 @@ const Devices = () => {
               <div className="loading-state">Loading tags...</div>
             ) : tags.length === 0 ? (
               <div className="empty-state">
-                <p>No tags found. Add your first tag to get started.</p>
-                <button onClick={openTagCreateModal} className="btn btn-primary">
-                  + Add Tag
-                </button>
+                <p style={{marginBottom:"20px"}}>No tags found. Add your first tag to get started.</p>
+                <PermissionGate permission="DEVICE_CREATE">
+                  <button onClick={openTagCreateModal} className="btn btn-primary">
+                    + Add Tag
+                  </button>
+                </PermissionGate>
               </div>
             ) : (
               <Table>
@@ -578,20 +591,24 @@ const Devices = () => {
                         <Table.Cell>{assignment.details}</Table.Cell>
                         <Table.Cell>
                           <div className="action-buttons">
-                            <button
-                              onClick={() => openTagEditModal(tag)}
-                              className="btn-icon btn-edit"
-                              title="Edit tag"
-                            >
-                              <FiEdit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => openTagDeleteModal(tag)}
-                              className="btn-icon btn-delete"
-                              title="Delete tag"
-                            >
-                              <FiTrash2 size={16} />
-                            </button>
+                            <PermissionGate permission="DEVICE_EDIT">
+                              <button
+                                onClick={() => openTagEditModal(tag)}
+                                className="btn-icon btn-edit"
+                                title="Edit tag"
+                              >
+                                <FiEdit2 size={16} />
+                              </button>
+                            </PermissionGate>
+                            <PermissionGate permission="DEVICE_DELETE">
+                              <button
+                                onClick={() => openTagDeleteModal(tag)}
+                                className="btn-icon btn-delete"
+                                title="Delete tag"
+                              >
+                                <FiTrash2 size={16} />
+                              </button>
+                            </PermissionGate>
                           </div>
                         </Table.Cell>
                       </Table.Row>

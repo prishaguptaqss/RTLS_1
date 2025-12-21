@@ -10,6 +10,7 @@ import logging
 
 from app.config import settings
 from app.database import engine, Base, SessionLocal
+from app.db_init import initialize_database
 from app.api import (
     users,
     organizations,
@@ -57,9 +58,8 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting RTLS Backend...")
 
-    # Create tables (Note: In production, use Alembic migrations instead)
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database tables verified")
+    # Initialize database (run migrations, seed data, create admin)
+    initialize_database()
 
     # Start background tasks
     db = SessionLocal()

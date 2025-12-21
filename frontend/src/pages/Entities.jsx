@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Table from '../components/ui/Table';
 import Modal from '../components/ui/Modal';
+import PermissionGate from '../components/PermissionGate';
 import {
   fetchEntities,
   createEntity,
@@ -333,9 +334,11 @@ const Entities = () => {
               <option value="material">Material</option>
             </select>
           </div>
-          <button onClick={openCreateModal} className="btn btn-primary">
-            + Add Entity
-          </button>
+          <PermissionGate permission="ENTITY_ADMIT">
+            <button onClick={openCreateModal} className="btn btn-primary">
+              + Add Entity
+            </button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -343,10 +346,12 @@ const Entities = () => {
         <Card.Content>
           {entities.length === 0 ? (
             <div className="empty-state">
-              <p>No entities found. Add your first entity to get started.</p>
-              <button onClick={openCreateModal} className="btn btn-primary">
-                + Add Entity
-              </button>
+              <p style={{marginBottom:"20px"}}>No entities found. Add your first entity to get started.</p>
+              <PermissionGate permission="ENTITY_ADMIT">
+                <button onClick={openCreateModal} className="btn btn-primary">
+                  + Add Entity
+                </button>
+              </PermissionGate>
             </div>
           ) : (
             <Table>
@@ -388,28 +393,34 @@ const Entities = () => {
                           <FiClock size={16} />
                         </button>
                         {entity.assigned_tag_id && (
-                          <button
-                            onClick={() => openUntrackModal(entity)}
-                            className="btn-icon btn-warning"
-                            title="Untrack entity (unassign tag)"
-                          >
-                            <FiUserX size={16} />
-                          </button>
+                          <PermissionGate permission="ENTITY_DISCHARGE">
+                            <button
+                              onClick={() => openUntrackModal(entity)}
+                              className="btn-icon btn-warning"
+                              title="Untrack entity (unassign tag)"
+                            >
+                              <FiUserX size={16} />
+                            </button>
+                          </PermissionGate>
                         )}
-                        <button
-                          onClick={() => openEditModal(entity)}
-                          className="btn-icon btn-edit"
-                          title="Edit entity"
-                        >
-                          <FiEdit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => openDeleteModal(entity)}
-                          className="btn-icon btn-delete"
-                          title="Delete entity"
-                        >
-                          <FiTrash2 size={16} />
-                        </button>
+                        <PermissionGate permission="ENTITY_EDIT">
+                          <button
+                            onClick={() => openEditModal(entity)}
+                            className="btn-icon btn-edit"
+                            title="Edit entity"
+                          >
+                            <FiEdit2 size={16} />
+                          </button>
+                        </PermissionGate>
+                        <PermissionGate permission="ENTITY_DELETE">
+                          <button
+                            onClick={() => openDeleteModal(entity)}
+                            className="btn-icon btn-delete"
+                            title="Delete entity"
+                          >
+                            <FiTrash2 size={16} />
+                          </button>
+                        </PermissionGate>
                       </div>
                     </Table.Cell>
                   </Table.Row>

@@ -285,6 +285,98 @@ td {
   cursor: pointer;
 }
 
+.checkbox-label input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.readonly-badge {
+  margin-left: 8px;
+  background: #e2e8f0;
+  color: #4a5568;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.role-multiselect {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.role-selected-tags {
+  min-height: 42px;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f7fafc;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.role-placeholder {
+  color: #a0aec0;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.role-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #667eea;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.role-tag-remove {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+
+.role-tag-remove:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.role-dropdown {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  color: #4a5568;
+}
+
+.role-dropdown:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.role-dropdown option {
+  padding: 8px;
+}
+
 .password-alert {
   background: #fef5e7;
   border: 1px solid #f9e79f;
@@ -293,16 +385,48 @@ td {
   margin-bottom: 16px;
 }
 
-.password-alert code {
-  display: block;
+.password-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.password-code {
+  flex: 1;
   background: white;
-  padding: 8px 12px;
+  padding: 10px 12px;
   border-radius: 4px;
   font-family: monospace;
-  margin: 8px 0;
   font-size: 16px;
   font-weight: 600;
   color: #d69e2e;
+  border: 1px solid #f9e79f;
+  min-width: 150px;
+  display: inline-block;
+}
+
+.password-action-btn {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 8px;
+  cursor: pointer;
+  color: #4a5568;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.password-action-btn:hover {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+  color: #667eea;
+}
+
+.password-action-btn:active {
+  transform: scale(0.95);
 }
 
 .modal-actions {

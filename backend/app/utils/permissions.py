@@ -157,9 +157,9 @@ PERMISSION_DEFINITIONS: List[Dict[str, str]] = [
     },
     {
         "code": Permission.ENTITY_ADMIT,
-        "name": "Admit Entity",
+        "name": "Add Entity",
         "module": PermissionModule.ENTITY,
-        "description": "Admit new entities"
+        "description": "Add new entities to the system"
     },
     {
         "code": Permission.ENTITY_EDIT,
@@ -169,9 +169,9 @@ PERMISSION_DEFINITIONS: List[Dict[str, str]] = [
     },
     {
         "code": Permission.ENTITY_DISCHARGE,
-        "name": "Discharge Entity",
+        "name": "Remove Entity",
         "module": PermissionModule.ENTITY,
-        "description": "Discharge entities"
+        "description": "Remove or deactivate entities from tracking"
     },
     {
         "code": Permission.ENTITY_DELETE,

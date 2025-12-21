@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # Database Configuration
-    DATABASE_URL: str = "postgresql://qss_user:admin@localhost:5432/rtls_db"
+    DATABASE_URL: str = "postgresql://qss_user:admin@localhost:5432/rtls_db2"
 
 
     # Server Configuration
