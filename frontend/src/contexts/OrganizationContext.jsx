@@ -54,11 +54,16 @@ export const OrganizationProvider = ({ children }) => {
     }
   };
 
+  const reloadOrganizations = async () => {
+    await loadOrganizations();
+  };
+
   return (
     <OrganizationContext.Provider value={{
       currentOrganization,
       organizations,
       switchOrganization,
+      reloadOrganizations,
       loading
     }}>
       {children}

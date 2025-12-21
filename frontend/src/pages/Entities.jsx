@@ -11,10 +11,12 @@ import {
   fetchEntityLocationHistory,
   fetchAvailableTags
 } from '../services/api';
+import { useOrganization } from '../contexts/OrganizationContext';
 import './Entities.css';
 import { FiEdit2, FiTrash2, FiClock, FiUserX } from "react-icons/fi";
 
 const Entities = () => {
+  const { currentOrganization, loading: orgLoading } = useOrganization();
   const [entities, setEntities] = useState([]);
   const [availableTags, setAvailableTags] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,8 +40,11 @@ const Entities = () => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    loadEntities();
-  }, [typeFilter]);
+    // Only load entities when organization is loaded
+    if (!orgLoading && currentOrganization) {
+      loadEntities();
+    }
+  }, [typeFilter, orgLoading, currentOrganization]);
 
   const loadEntities = async () => {
     try {
@@ -49,7 +54,8 @@ const Entities = () => {
       setEntities(data);
     } catch (err) {
       console.error('Error loading entities:', err);
-      setError('Failed to load entities. Please check if the backend is running.');
+      const errorMsg = err.response?.data?.detail || err.message || 'Failed to load entities';
+      setError(`Failed to load entities: ${errorMsg}`);
     } finally {
       setLoading(false);
     }
@@ -90,8 +96,15 @@ const Entities = () => {
     e.preventDefault();
     if (!validateForm(true)) return;
 
+    // Ensure organization is loaded
+    if (!currentOrganization) {
+      setFormErrors({ submit: 'Please wait for organization to load...' });
+      return;
+    }
+
     try {
       setSubmitting(true);
+      setFormErrors({}); // Clear previous errors
       const entityData = {
         entity_id: formData.entity_id.trim(),
         type: formData.type,
@@ -104,11 +117,13 @@ const Entities = () => {
       resetForm();
     } catch (err) {
       console.error('Error creating entity:', err);
-      const errorDetail = err.response?.data?.detail || 'Failed to create entity';
+      const errorDetail = err.response?.data?.detail || err.message || 'Failed to create entity';
 
       // Handle specific uniqueness errors
       if (errorDetail.toLowerCase().includes('entity_id') && errorDetail.toLowerCase().includes('already exists')) {
-        setFormErrors({ entity_id: 'Entity ID already exists. Please use a different ID.' });
+        setFormErrors({ entity_id: 'Entity ID already exists in this organization.' });
+      } else if (errorDetail.toLowerCase().includes('organization')) {
+        setFormErrors({ submit: 'Organization error: ' + errorDetail });
       } else {
         setFormErrors({ submit: errorDetail });
       }
@@ -273,12 +288,13 @@ const Entities = () => {
   const getTrackingStatusBadge = (trackingStatus) => {
     return (
       <span className={`status-badge status-${trackingStatus === 'tracked' ? 'tracked' : 'untracked'}`}>
-        {trackingStatus || 'Unknown'}
+        {trackingStatus || 'not tracking'}
       </span>
     );
   };
 
-  if (loading) {
+  // Show loading state while organization or entities are loading
+  if (orgLoading || (loading && !currentOrganization)) {
     return (
       <div className="page-container">
         <div className="page-header">
@@ -287,7 +303,28 @@ const Entities = () => {
         </div>
         <Card>
           <Card.Content>
-            <div className="loading-state">Loading entities...</div>
+            <div className="loading-state">
+              {orgLoading ? 'Loading organization...' : 'Loading entities...'}
+            </div>
+          </Card.Content>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show message if no organization selected
+  if (!currentOrganization) {
+    return (
+      <div className="page-container">
+        <div className="page-header">
+          <h1 className="page-title">Entities</h1>
+          <p className="page-subtitle">Track persons and materials</p>
+        </div>
+        <Card>
+          <Card.Content>
+            <div className="error-state">
+              <p>No organization selected. Please select an organization from the sidebar.</p>
+            </div>
           </Card.Content>
         </Card>
       </div>
@@ -385,13 +422,14 @@ const Entities = () => {
                     </Table.Cell>
                     <Table.Cell>
                       <div className="action-buttons">
-                        <button
+                        {entity.assigned_tag_id && 
+                        (<button
                           onClick={() => openHistoryModal(entity)}
                           className="btn-icon btn-info"
                           title="View location history"
                         >
                           <FiClock size={16} />
-                        </button>
+                        </button>)}
                         {entity.assigned_tag_id && (
                           <PermissionGate permission="ENTITY_DISCHARGE">
                             <button
@@ -744,7 +782,7 @@ const Entities = () => {
       {/* Untrack Entity Modal */}
       <Modal isOpen={isUntrackModalOpen} onClose={() => setIsUntrackModalOpen(false)}>
         <Modal.Header onClose={() => setIsUntrackModalOpen(false)}>
-          Untrack Entity
+          Unassign tag from Entity
         </Modal.Header>
         <Modal.Body>
           <p>Are you sure you want to stop tracking this entity?</p>
@@ -775,7 +813,7 @@ const Entities = () => {
             className="btn btn-warning"
             disabled={submitting}
           >
-            {submitting ? 'Untracking...' : 'Untrack Entity'}
+            {submitting ? 'Unassigning...' : 'Unassign tag'}
           </button>
         </Modal.Footer>
       </Modal>

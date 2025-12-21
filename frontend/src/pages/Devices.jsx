@@ -17,10 +17,12 @@ import {
   fetchFloors,
   fetchRooms
 } from '../services/api';
+import { useOrganization } from '../contexts/OrganizationContext';
 import './Devices.css';
 import { FiWifi, FiBluetooth, FiEdit2, FiTrash2 } from "react-icons/fi";
 
 const Devices = () => {
+  const { currentOrganization, loading: orgLoading } = useOrganization();
   const [activeTab, setActiveTab] = useState('anchors');
 
   // Anchors state
@@ -51,8 +53,10 @@ const Devices = () => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    loadAllData();
-  }, []);
+    if (!orgLoading && currentOrganization) {
+      loadAllData();
+    }
+  }, [orgLoading, currentOrganization]);
 
   const loadAllData = async () => {
     try {
@@ -398,12 +402,48 @@ const Devices = () => {
     return entities.filter(entity => !entity.assigned_tag_id);
   };
 
+  if (orgLoading || (loadingAnchors && loadingTags && !currentOrganization)) {
+    return (
+      <div className="page-container">
+        <div className="page-header">
+          <h1 className="page-title">Devices</h1>
+          <p className="page-subtitle">Manage anchors and BLE tags</p>
+        </div>
+        <Card>
+          <Card.Content>
+            <div className="loading-state">
+              {orgLoading ? 'Loading organization...' : 'Loading devices...'}
+            </div>
+          </Card.Content>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!currentOrganization) {
+    return (
+      <div className="page-container">
+        <div className="page-header">
+          <h1 className="page-title">Devices</h1>
+          <p className="page-subtitle">Manage anchors and BLE tags</p>
+        </div>
+        <Card>
+          <Card.Content>
+            <div className="error-state">
+              <p>No organization selected. Please select an organization from the sidebar.</p>
+            </div>
+          </Card.Content>
+        </Card>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="page-container">
         <div className="page-header">
           <h1 className="page-title">Devices</h1>
-          <p className="page-subtitle">View anchors and tags</p>
+          <p className="page-subtitle">Manage anchors and BLE tags</p>
         </div>
         <Card>
           <Card.Content>

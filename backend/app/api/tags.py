@@ -66,30 +66,46 @@ async def create_tag(
 
 
 @router.get("/{tag_id}", response_model=Tag)
-async def get_tag(tag_id: str, db: Session = Depends(get_db)):
-    """Get tag by ID."""
-    tag = db.query(TagModel).filter(TagModel.tag_id == tag_id).first()
+async def get_tag(
+    tag_id: str,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
+    """Get tag by ID within the organization."""
+    tag = db.query(TagModel).filter(
+        TagModel.tag_id == tag_id,
+        TagModel.organization_id == organization.id
+    ).first()
     if not tag:
-        raise HTTPException(status_code=404, detail="Tag not found")
+        raise HTTPException(status_code=404, detail="Tag not found in this organization")
     return tag
 
 
 @router.put("/{tag_id}", response_model=Tag)
-async def update_tag(tag_id: str, tag_update: TagUpdate, db: Session = Depends(get_db)):
-    """Update tag."""
-    tag = db.query(TagModel).filter(TagModel.tag_id == tag_id).first()
+async def update_tag(
+    tag_id: str,
+    tag_update: TagUpdate,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
+    """Update tag within the organization."""
+    tag = db.query(TagModel).filter(
+        TagModel.tag_id == tag_id,
+        TagModel.organization_id == organization.id
+    ).first()
     if not tag:
-        raise HTTPException(status_code=404, detail="Tag not found")
+        raise HTTPException(status_code=404, detail="Tag not found in this organization")
 
-    # Check if name already exists (if name is being updated)
+    # Check if name already exists within this organization (if name is being updated)
     update_data = tag_update.model_dump(exclude_unset=True)
     if 'name' in update_data and update_data['name']:
         existing_name = db.query(TagModel).filter(
             TagModel.name == update_data['name'],
-            TagModel.tag_id != tag_id  # Exclude current tag
+            TagModel.tag_id != tag_id,  # Exclude current tag
+            TagModel.organization_id == organization.id
         ).first()
         if existing_name:
-            raise HTTPException(status_code=400, detail=f"Tag with name '{update_data['name']}' already exists")
+            raise HTTPException(status_code=400, detail=f"Tag with name '{update_data['name']}' already exists in this organization")
 
     for key, value in update_data.items():
         setattr(tag, key, value)
@@ -100,11 +116,18 @@ async def update_tag(tag_id: str, tag_update: TagUpdate, db: Session = Depends(g
 
 
 @router.delete("/{tag_id}", status_code=204)
-async def delete_tag(tag_id: str, db: Session = Depends(get_db)):
-    """Delete tag."""
-    tag = db.query(TagModel).filter(TagModel.tag_id == tag_id).first()
+async def delete_tag(
+    tag_id: str,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
+    """Delete tag within the organization."""
+    tag = db.query(TagModel).filter(
+        TagModel.tag_id == tag_id,
+        TagModel.organization_id == organization.id
+    ).first()
     if not tag:
-        raise HTTPException(status_code=404, detail="Tag not found")
+        raise HTTPException(status_code=404, detail="Tag not found in this organization")
 
     db.delete(tag)
     db.commit()

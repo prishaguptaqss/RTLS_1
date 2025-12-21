@@ -1,0 +1,231 @@
+.locations-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.locations-tree {
+  padding: 0.5rem 0;
+}
+
+.location-item {
+  margin-bottom: 0.75rem;
+}
+
+.location-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.building-item > .location-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.building-item > .location-header:hover {
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transform: translateY(-2px);
+}
+
+.floor-item > .location-header {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+  box-shadow: 0 2px 6px rgba(79, 172, 254, 0.3);
+}
+
+.floor-item > .location-header:hover {
+  box-shadow: 0 3px 10px rgba(79, 172, 254, 0.4);
+  transform: translateY(-1px);
+}
+
+.room-item > .location-header {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  color: #333;
+  box-shadow: 0 1px 4px rgba(168, 237, 234, 0.3);
+}
+
+.room-item > .location-header:hover {
+  box-shadow: 0 2px 8px rgba(168, 237, 234, 0.4);
+  transform: translateY(-1px);
+}
+
+.location-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.location-icon {
+  opacity: 0.9;
+}
+
+.location-name {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.location-count {
+  display: block;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.room-type-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+  font-weight: 500;
+}
+
+.location-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.expand-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.expand-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.expand-btn.expanded {
+  transform: rotate(90deg);
+}
+
+.expand-btn:hover:not(:disabled) {
+  transform: scale(1.2);
+}
+
+.expand-btn.expanded:hover {
+  transform: rotate(90deg) scale(1.2);
+}
+
+.location-children {
+  margin-left: 2rem;
+  margin-top: 0.75rem;
+  padding-left: 1rem;
+  border-left: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.btn-icon {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: inherit;
+}
+
+.btn-icon:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.btn-icon.btn-success {
+  background: rgba(76, 175, 80, 0.2);
+}
+
+.btn-icon.btn-success:hover {
+  background: rgba(76, 175, 80, 0.3);
+}
+
+.btn-icon.btn-edit {
+  background: rgba(33, 150, 243, 0.2);
+}
+
+.btn-icon.btn-edit:hover {
+  background: rgba(33, 150, 243, 0.3);
+}
+
+.btn-icon.btn-delete {
+  background: rgba(244, 67, 54, 0.2);
+}
+
+.btn-icon.btn-delete:hover {
+  background: rgba(244, 67, 54, 0.3);
+}
+
+/* For dark mode or light backgrounds */
+.building-item .btn-icon,
+.floor-item .btn-icon {
+  color: white;
+}
+
+.room-item .btn-icon {
+  color: #333;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  color: #666;
+}
+
+.empty-state p {
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+.delete-confirmation {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 6px;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.warning-text {
+  color: #d32f2f;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .location-header {
+    padding: 0.75rem;
+  }
+
+  .location-children {
+    margin-left: 1rem;
+    padding-left: 0.5rem;
+  }
+
+  .location-name {
+    font-size: 0.9rem;
+  }
+
+  .location-count {
+    font-size: 0.75rem;
+  }
+}

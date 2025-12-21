@@ -8,32 +8,49 @@ from typing import List
 
 from app.schemas.anchor import Anchor, AnchorCreate, AnchorUpdate
 from app.models.anchor import Anchor as AnchorModel
-from app.api.deps import get_db
+from app.api.deps import get_db, get_current_organization
+from app.models.organization import Organization
 
 router = APIRouter()
 
 
 @router.get("/", response_model=List[Anchor])
-async def list_devices(db: Session = Depends(get_db)):
-    """List all devices (anchors)."""
-    return db.query(AnchorModel).all()
+async def list_devices(
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
+    """List all devices (anchors) within the organization."""
+    return db.query(AnchorModel).filter(AnchorModel.organization_id == organization.id).all()
 
 
 @router.get("/unassigned", response_model=List[Anchor])
-async def list_unassigned_devices(db: Session = Depends(get_db)):
-    """List all unassigned devices (anchors without room assignment)."""
-    return db.query(AnchorModel).filter(AnchorModel.room_id == None).all()
+async def list_unassigned_devices(
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
+    """List all unassigned devices (anchors without room assignment) within the organization."""
+    return db.query(AnchorModel).filter(
+        AnchorModel.organization_id == organization.id,
+        AnchorModel.room_id == None
+    ).all()
 
 
 @router.post("/", response_model=Anchor, status_code=201)
-async def create_device(device: AnchorCreate, db: Session = Depends(get_db)):
-    """Create a new device (anchor)."""
-    # Check if anchor_id already exists
-    existing_device = db.query(AnchorModel).filter(AnchorModel.anchor_id == device.anchor_id).first()
+async def create_device(
+    device: AnchorCreate,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
+    """Create a new device (anchor) within the organization."""
+    # Check if anchor_id already exists in this organization
+    existing_device = db.query(AnchorModel).filter(
+        AnchorModel.anchor_id == device.anchor_id,
+        AnchorModel.organization_id == organization.id
+    ).first()
     if existing_device:
-        raise HTTPException(status_code=400, detail=f"Anchor with anchor_id '{device.anchor_id}' already exists")
+        raise HTTPException(status_code=400, detail=f"Anchor with anchor_id '{device.anchor_id}' already exists in this organization")
 
-    db_device = AnchorModel(**device.model_dump())
+    db_device = AnchorModel(**device.model_dump(), organization_id=organization.id)
     db.add(db_device)
     db.commit()
     db.refresh(db_device)

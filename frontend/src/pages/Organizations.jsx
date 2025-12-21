@@ -9,10 +9,12 @@ import {
   updateOrganization,
   deleteOrganization
 } from '../services/api';
+import { useOrganization } from '../contexts/OrganizationContext';
 import { FiEdit2, FiTrash2, FiCheckCircle } from 'react-icons/fi';
 import './Organizations.css';
 
 const Organizations = () => {
+  const { reloadOrganizations } = useOrganization();
   const [organizations, setOrganizations] = useState([]);
   const [selectedOrg, setSelectedOrg] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -73,6 +75,7 @@ const Organizations = () => {
         name: formData.name.trim()
       });
       await loadOrganizations();
+      await reloadOrganizations(); // Update the global organization context
       setIsCreateModalOpen(false);
       resetForm();
     } catch (err) {
@@ -98,6 +101,7 @@ const Organizations = () => {
         name: formData.name.trim()
       });
       await loadOrganizations();
+      await reloadOrganizations(); // Update the global organization context
       setIsEditModalOpen(false);
       resetForm();
       setSelectedOrg(null);
@@ -114,6 +118,7 @@ const Organizations = () => {
       setSubmitting(true);
       await deleteOrganization(selectedOrg.id);
       await loadOrganizations();
+      await reloadOrganizations(); // Update the global organization context
       setIsDeleteModalOpen(false);
       if (selectedOrg?.id === selectedOrg?.id) {
         setSelectedOrg(null); // Deselect if deleted

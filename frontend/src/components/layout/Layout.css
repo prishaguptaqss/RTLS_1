@@ -8,6 +8,11 @@
   margin-left: 240px;
   display: flex;
   flex-direction: column;
+  transition: margin-left 0.3s ease;
+}
+
+.layout-main.sidebar-collapsed {
+  margin-left: 70px;
 }
 
 .layout-content {

@@ -6,6 +6,7 @@ import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Organizations from './pages/Organizations';
 import Entities from './pages/Entities';
+import Locations from './pages/Locations';
 import Devices from './pages/Devices';
 import LivePositions from './pages/LivePositions';
 import Settings from './pages/Settings';

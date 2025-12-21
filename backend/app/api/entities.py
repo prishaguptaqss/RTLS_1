@@ -216,17 +216,24 @@ async def delete_entity(
 
 
 @router.get("/{entity_id}/location-history", response_model=LocationHistoryResponse)
-async def get_entity_location_history(entity_id: str, db: Session = Depends(get_db)):
+async def get_entity_location_history(
+    entity_id: str,
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
     """
-    Get location history for a specific entity.
+    Get location history for a specific entity within the organization.
 
     Returns all location history records for tags assigned to this entity,
     with full building hierarchy information (Building > Floor > Room).
     """
-    # First, verify entity exists
-    entity = db.query(EntityModel).filter(EntityModel.entity_id == entity_id).first()
+    # First, verify entity exists within this organization
+    entity = db.query(EntityModel).filter(
+        EntityModel.entity_id == entity_id,
+        EntityModel.organization_id == organization.id
+    ).first()
     if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found")
+        raise HTTPException(status_code=404, detail="Entity not found in this organization")
 
     # Query location history with joins to get full building hierarchy
     # Join: LocationHistory -> Tag -> Room -> Floor -> Building

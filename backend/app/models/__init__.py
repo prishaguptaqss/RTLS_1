@@ -5,6 +5,7 @@ from app.models.user import User
 # from app.models.patient import Patient  # Replaced by Entity
 from app.models.entity import Entity
 from app.models.organization import Organization
+from app.models.organization_settings import OrganizationSettings
 from app.models.building import Building
 from app.models.floor import Floor
 from app.models.room import Room
@@ -22,6 +23,7 @@ __all__ = [
     # "Patient",  # Replaced by Entity
     "Entity",
     "Organization",
+    "OrganizationSettings",
     "Building",
     "Floor",
     "Room",

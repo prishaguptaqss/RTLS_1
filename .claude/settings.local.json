@@ -26,7 +26,17 @@
       "Bash(npm run build:*)",
       "Bash(python -m alembic:*)",
       "Bash(python3.12 -m alembic:*)",
-      "Bash(http://localhost:3000/api/entities/)"
+      "Bash(http://localhost:3000/api/entities/)",
+      "Bash(PGPASSWORD=password psql:*)",
+      "Bash(pkill:*)",
+      "Bash(python -c:*)",
+      "Bash(cat:*)",
+      "Bash(alembic stamp:*)",
+      "Bash(pip install:*)",
+      "Bash(sudo pkill:*)",
+      "Bash(mkdir:*)",
+      "Bash(python:*)",
+      "Bash(tee:*)"
     ]
   }
 }
