@@ -18,7 +18,15 @@
       "Bash(python3:*)",
       "Bash(find:*)",
       "Bash(alembic revision:*)",
-      "Bash(python -m alembic revision:*)"
+      "Bash(python -m alembic revision:*)",
+      "Bash(sudo docker ps:*)",
+      "Bash(source:*)",
+      "Bash(alembic upgrade:*)",
+      "Bash(alembic current:*)",
+      "Bash(npm run build:*)",
+      "Bash(python -m alembic:*)",
+      "Bash(python3.12 -m alembic:*)",
+      "Bash(http://localhost:3000/api/entities/)"
     ]
   }
 }

@@ -12,16 +12,18 @@ class BuildingBase(BaseModel):
 
 class BuildingCreate(BuildingBase):
     """Schema for creating a new building."""
-    pass
+    organization_id: int
 
 
 class BuildingUpdate(BaseModel):
     """Schema for updating a building (all fields optional)."""
     name: Optional[str] = None
+    organization_id: Optional[int] = None
 
 
 class Building(BuildingBase):
     """Schema for reading a building (includes database fields)."""
     id: int
+    organization_id: int
 
     model_config = ConfigDict(from_attributes=True)

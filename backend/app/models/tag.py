@@ -1,7 +1,7 @@
 """
-Tag model - represents BLE beacons worn by tracked individuals.
+Tag model - represents BLE beacons worn by tracked individuals or attached to materials.
 """
-from sqlalchemy import Column, String, Integer, ForeignKey, Enum, DateTime
+from sqlalchemy import Column, String, Integer, ForeignKey, Enum, DateTime, CheckConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.utils.enums import TagStatus
@@ -11,7 +11,7 @@ class Tag(Base):
     """
     Tag table - stores BLE beacon information.
 
-    Each tag (BLE beacon) can be assigned to one user.
+    Each tag (BLE beacon) can be assigned to one user OR one entity (mutually exclusive).
     The tag_id is the BLE MAC address (e.g., "E0:C0:74:C6:AD:C8").
     """
     __tablename__ = "tags"
@@ -21,11 +21,28 @@ class Tag(Base):
         primary_key=True,
         comment="BLE MAC address (e.g., 'E0:C0:74:C6:AD:C8')"
     )
+    organization_id = Column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="Organization this tag belongs to"
+    )
+    name = Column(
+        String,
+        nullable=True,
+        comment="Optional name for the tag (e.g., 'Tag A', 'Entity Tag 1')"
+    )
     assigned_user_id = Column(
         String,
         ForeignKey("users.user_id", ondelete="SET NULL"),
         nullable=True,
         comment="Foreign key to users table (nullable for unassigned tags)"
+    )
+    assigned_entity_id = Column(
+        Integer,
+        ForeignKey("entities.id", ondelete="SET NULL"),
+        nullable=True,
+        comment="Foreign key to entities table (nullable for unassigned tags)"
     )
     status = Column(
         Enum(TagStatus),
@@ -39,12 +56,22 @@ class Tag(Base):
         comment="Last time tag was detected (updated on every event)"
     )
 
+    # Constraint to ensure tag can only be assigned to user OR entity, not both
+    __table_args__ = (
+        CheckConstraint(
+            '(assigned_user_id IS NULL OR assigned_entity_id IS NULL)',
+            name='check_single_assignment'
+        ),
+    )
+
     # Relationships
-    # SET NULL: if user is deleted, tag becomes unassigned (not deleted)
+    # SET NULL: if user/entity is deleted, tag becomes unassigned (not deleted)
+    organization = relationship("Organization", back_populates="tags")
     assigned_user = relationship("User", back_populates="tags")
+    assigned_entity = relationship("Entity", back_populates="tags")
     live_location = relationship("LiveLocation", back_populates="tag", uselist=False, cascade="all, delete-orphan")
     location_history = relationship("LocationHistory", back_populates="tag", cascade="all, delete-orphan")
     untracked_records = relationship("UntrackedTag", back_populates="tag", cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<Tag(tag_id='{self.tag_id}', status='{self.status}', assigned_user_id={self.assigned_user_id})>"
+        return f"<Tag(tag_id='{self.tag_id}', status='{self.status}', user={self.assigned_user_id}, entity={self.assigned_entity_id})>"

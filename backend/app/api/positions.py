@@ -27,19 +27,23 @@ async def get_live_positions(db: Session = Depends(get_db)):
     Get live positions for all active tags.
 
     Returns:
-    - positions: List of users with current locations
+    - positions: List of users and entities with current locations
     - stats: trackedUsers, roomsDetected
 
-    Note: Only includes tags with assigned users and status='active'.
+    Note: Includes tags with assigned users OR entities and status='active'.
     """
-    # Query active tags with assigned users and live locations
-    # Add joins to Floor and Building for full hierarchy
+    # Import Entity model
+    from app.models.entity import Entity
+
+    # Query active tags with live locations, users, entities, and room hierarchy
     query = db.query(
-        Tag, LiveLocation, User, Room, Floor, Building
+        Tag, LiveLocation, User, Entity, Room, Floor, Building
     ).join(
         LiveLocation, Tag.tag_id == LiveLocation.tag_id
     ).outerjoin(
         User, Tag.assigned_user_id == User.user_id
+    ).outerjoin(
+        Entity, Tag.assigned_entity_id == Entity.id
     ).outerjoin(
         Room, LiveLocation.room_id == Room.id
     ).outerjoin(
@@ -53,31 +57,44 @@ async def get_live_positions(db: Session = Depends(get_db)):
     positions = []
     unique_rooms = set()
 
-    for tag, live_loc, user, room, floor, building in query:
-        if user:  # Only include tags with assigned users
-            # Build fullLocation string: "Building > Floor N > Room"
-            full_location = None
-            building_name = None
-            floor_number = None
+    for tag, live_loc, user, entity, room, floor, building in query:
+        # Include tags assigned to either user OR entity
+        person_id = None
+        person_name = None
 
-            if room and floor and building:
-                full_location = f"{building.name} > Floor {floor.floor_number} > {room.room_name}"
-                building_name = building.name
-                floor_number = floor.floor_number
+        if user:
+            person_id = user.user_id
+            person_name = user.name
+        elif entity:
+            person_id = entity.entity_id
+            person_name = entity.name
+        else:
+            # Skip unassigned tags
+            continue
 
-            positions.append(LivePositionItem(
-                id=user.user_id,
-                userName=user.name,
-                handbandSerial=tag.tag_id,
-                lastSeenRoom=room.room_name if room else None,
-                building=building_name,
-                floor=floor_number,
-                fullLocation=full_location,
-                lastRSSI=None,  # Backend doesn't store RSSI
-                updatedAt=live_loc.updated_at.strftime("%b %d, %Y, %I:%M:%S %p")
-            ))
-            if room:
-                unique_rooms.add(room.room_name)
+        # Build fullLocation string: "Building > Floor N > Room"
+        full_location = None
+        building_name = None
+        floor_number = None
+
+        if room and floor and building:
+            full_location = f"{building.name} > Floor {floor.floor_number} > {room.room_name}"
+            building_name = building.name
+            floor_number = floor.floor_number
+
+        positions.append(LivePositionItem(
+            id=person_id,
+            userName=person_name,
+            handbandSerial=tag.tag_id,
+            lastSeenRoom=room.room_name if room else None,
+            building=building_name,
+            floor=floor_number,
+            fullLocation=full_location,
+            lastRSSI=None,  # Backend doesn't store RSSI
+            updatedAt=live_loc.updated_at.strftime("%b %d, %Y, %I:%M:%S %p")
+        ))
+        if room:
+            unique_rooms.add(room.room_name)
 
     stats = LivePositionStats(
         trackedUsers=len(positions),

@@ -27,3 +27,9 @@ class EventType(str, enum.Enum):
     LOCATION_CHANGE = "LOCATION_CHANGE"
     INITIAL_LOCATION = "INITIAL_LOCATION"
     TAG_LOST = "TAG_LOST"
+
+
+class EntityType(str, enum.Enum):
+    """Entity type enumeration."""
+    person = "person"
+    material = "material"

@@ -14,7 +14,7 @@ class RoomBase(BaseModel):
 
 class RoomCreate(RoomBase):
     """Schema for creating a new room."""
-    pass
+    anchor_id: Optional[str] = None  # Optional anchor to assign to this room
 
 
 class RoomUpdate(BaseModel):
@@ -22,6 +22,7 @@ class RoomUpdate(BaseModel):
     floor_id: Optional[int] = None
     room_name: Optional[str] = None
     room_type: Optional[str] = None
+    anchor_id: Optional[str] = None  # Update anchor assignment
 
 
 class Room(RoomBase):

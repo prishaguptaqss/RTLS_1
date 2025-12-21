@@ -1,20 +1,26 @@
 """
-Building model - represents physical buildings in the hospital complex.
+Building model - represents physical buildings in an organization.
 """
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database import Base
 
 
 class Building(Base):
     """
-    Building table - stores hospital buildings.
+    Building table - stores buildings within organizations.
 
-    A hospital can have multiple buildings (e.g., Main Hospital, Emergency Wing).
+    Each building belongs to one organization.
     """
     __tablename__ = "buildings"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    organization_id = Column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="Organization this building belongs to"
+    )
     name = Column(
         String,
         nullable=False,
@@ -24,6 +30,7 @@ class Building(Base):
     )
 
     # Relationships
+    organization = relationship("Organization", back_populates="buildings")
     # CASCADE delete: deleting a building deletes all its floors
     floors = relationship("Floor", back_populates="building", cascade="all, delete-orphan")
 

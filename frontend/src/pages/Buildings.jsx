@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Table from '../components/ui/Table';
 import Modal from '../components/ui/Modal';
+import PermissionGate from '../components/PermissionGate';
 import { FiEdit2 } from "react-icons/fi";
 import { FiTrash2 } from "react-icons/fi";
 
@@ -17,15 +18,17 @@ import {
   fetchRooms,
   createRoom,
   updateRoom,
-  deleteRoom
+  deleteRoom,
+  fetchUnassignedDevices
 } from '../services/api';
 import './Buildings.css';
 
-const Buildings = () => {
+const Buildings = ({ organizationId }) => {
   const [buildings, setBuildings] = useState([]);
   const [floors, setFloors] = useState([]);
   const [allFloors, setAllFloors] = useState([]); // All floors from all buildings
   const [rooms, setRooms] = useState([]);
+  const [unassignedAnchors, setUnassignedAnchors] = useState([]);
   const [selectedBuilding, setSelectedBuilding] = useState(null);
   const [selectedFloor, setSelectedFloor] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,13 +56,16 @@ const Buildings = () => {
 
   const [buildingFormData, setBuildingFormData] = useState({ name: '' });
   const [floorFormData, setFloorFormData] = useState({ floor_number: '', building_id: '' });
-  const [roomFormData, setRoomFormData] = useState({ room_name: '', room_type: '', floor_id: '', building_id: '' });
+  const [roomFormData, setRoomFormData] = useState({ room_name: '', room_type: '', floor_id: '', building_id: '', anchor_id: '' });
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    loadBuildings();
-  }, []);
+    if (organizationId) {
+      loadBuildings();
+      loadUnassignedAnchors();
+    }
+  }, [organizationId]);
 
   useEffect(() => {
     if (selectedBuilding) {
@@ -81,7 +87,7 @@ const Buildings = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchBuildings();
+      const data = await fetchBuildings(organizationId);
       setBuildings(data);
 
       // Load all floors for all buildings (needed for room creation modal)
@@ -123,6 +129,15 @@ const Buildings = () => {
     }
   };
 
+  const loadUnassignedAnchors = async () => {
+    try {
+      const data = await fetchUnassignedDevices();
+      setUnassignedAnchors(data);
+    } catch (err) {
+      console.error('Error loading unassigned anchors:', err);
+    }
+  };
+
   // Building CRUD handlers
   const validateBuildingForm = () => {
     const errors = {};
@@ -139,7 +154,10 @@ const Buildings = () => {
 
     try {
       setSubmitting(true);
-      await createBuilding({ name: buildingFormData.name.trim() });
+      await createBuilding({
+        name: buildingFormData.name.trim(),
+        organization_id: organizationId
+      });
       await loadBuildings();
       setIsBuildingCreateModalOpen(false);
       resetBuildingForm();
@@ -157,7 +175,10 @@ const Buildings = () => {
 
     try {
       setSubmitting(true);
-      await updateBuilding(selectedBuildingForEdit.id, { name: buildingFormData.name.trim() });
+      await updateBuilding(selectedBuildingForEdit.id, {
+        name: buildingFormData.name.trim(),
+        organization_id: organizationId
+      });
       await loadBuildings();
       setIsBuildingEditModalOpen(false);
       resetBuildingForm();
@@ -342,17 +363,29 @@ const Buildings = () => {
       await createRoom({
         floor_id: parseInt(roomFormData.floor_id),
         room_name: roomFormData.room_name.trim(),
-        room_type: roomFormData.room_type.trim() || null
+        room_type: roomFormData.room_type.trim() || null,
+        anchor_id: roomFormData.anchor_id || null
       });
       // Reload rooms for the currently selected floor
       if (selectedFloor) {
         await loadRooms(selectedFloor.id);
       }
+      // Reload unassigned anchors since one may have been assigned
+      await loadUnassignedAnchors();
       setIsRoomCreateModalOpen(false);
       resetRoomForm();
     } catch (err) {
       console.error('Error creating room:', err);
-      setFormErrors({ submit: err.response?.data?.detail || 'Failed to create room' });
+      const errorDetail = err.response?.data?.detail || 'Failed to create room';
+
+      // Handle specific uniqueness errors
+      if (errorDetail.toLowerCase().includes('room') && errorDetail.toLowerCase().includes('already exists')) {
+        setFormErrors({ room_name: 'Room name already exists on this floor. Please use a different name.' });
+      } else if (errorDetail.toLowerCase().includes('duplicate') || errorDetail.toLowerCase().includes('unique')) {
+        setFormErrors({ room_name: 'Room name already exists. Please use a different name.' });
+      } else {
+        setFormErrors({ submit: errorDetail });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -378,7 +411,16 @@ const Buildings = () => {
       setSelectedRoom(null);
     } catch (err) {
       console.error('Error updating room:', err);
-      setFormErrors({ submit: err.response?.data?.detail || 'Failed to update room' });
+      const errorDetail = err.response?.data?.detail || 'Failed to update room';
+
+      // Handle specific uniqueness errors
+      if (errorDetail.toLowerCase().includes('room') && errorDetail.toLowerCase().includes('already exists')) {
+        setFormErrors({ room_name: 'Room name already exists on this floor. Please use a different name.' });
+      } else if (errorDetail.toLowerCase().includes('duplicate') || errorDetail.toLowerCase().includes('unique')) {
+        setFormErrors({ room_name: 'Room name already exists. Please use a different name.' });
+      } else {
+        setFormErrors({ submit: errorDetail });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -421,7 +463,8 @@ const Buildings = () => {
       room_name: room.room_name,
       room_type: room.room_type || '',
       floor_id: room.floor_id.toString(),
-      building_id: room.building_id ? room.building_id.toString() : selectedBuilding?.id.toString() || ''
+      building_id: room.building_id ? room.building_id.toString() : selectedBuilding?.id.toString() || '',
+      anchor_id: room.anchor_id || ''
     });
     setFormErrors({});
     setIsRoomEditModalOpen(true);
@@ -443,7 +486,7 @@ const Buildings = () => {
   };
 
   const resetRoomForm = () => {
-    setRoomFormData({ room_name: '', room_type: '', floor_id: '', building_id: '' });
+    setRoomFormData({ room_name: '', room_type: '', floor_id: '', building_id: '', anchor_id: '' });
     setFormErrors({});
   };
 
@@ -520,9 +563,11 @@ const Buildings = () => {
           <h1 className="page-title">Buildings</h1>
           <p className="page-subtitle">Manage your buildings and floors</p>
         </div>
-        <button onClick={openBuildingCreateModal} className="btn btn-primary">
-          + Add Building
-        </button>
+        <PermissionGate permission="BUILDING_CREATE">
+          <button onClick={openBuildingCreateModal} className="btn btn-primary">
+            + Add Building
+          </button>
+        </PermissionGate>
       </div>
 
       {/* Buildings Section */}
@@ -533,10 +578,12 @@ const Buildings = () => {
           </div>
           {buildings.length === 0 ? (
             <div className="empty-state">
-              <p>No buildings found. Create your first building to get started.</p>
-              <button onClick={openBuildingCreateModal} className="btn btn-primary">
-                + Add Building
-              </button>
+              <p style={{marginBottom:"20px"}}>No buildings found. Create your first building to get started.</p>
+              <PermissionGate permission="BUILDING_CREATE">
+                <button onClick={openBuildingCreateModal} className="btn btn-primary">
+                  + Add Building
+                </button>
+              </PermissionGate>
             </div>
           ) : (
             <Table>
@@ -562,20 +609,24 @@ const Buildings = () => {
                     </Table.Cell>
                     <Table.Cell>
                       <div className="action-buttons">
-                        <button
-                          onClick={() => openBuildingEditModal(building)}
-                          className="btn-icon btn-edit"
-                          title="Edit building"
-                        >
-                           <FiEdit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => openBuildingDeleteModal(building)}
-                          className="btn-icon btn-delete"
-                          title="Delete building"
-                        >
-                          <FiTrash2 size={16} />
-                        </button>
+                        <PermissionGate permission="BUILDING_EDIT">
+                          <button
+                            onClick={() => openBuildingEditModal(building)}
+                            className="btn-icon btn-edit"
+                            title="Edit building"
+                          >
+                             <FiEdit2 size={16} />
+                          </button>
+                        </PermissionGate>
+                        <PermissionGate permission="BUILDING_DELETE">
+                          <button
+                            onClick={() => openBuildingDeleteModal(building)}
+                            className="btn-icon btn-delete"
+                            title="Delete building"
+                          >
+                            <FiTrash2 size={16} />
+                          </button>
+                        </PermissionGate>
                       </div>
                     </Table.Cell>
                   </Table.Row>
@@ -593,10 +644,11 @@ const Buildings = () => {
             <div className="section-header">
               <h2>Floors in {selectedBuilding.name}</h2>
               <div className="header-actions">
-                <button onClick={openFloorCreateModal} className="btn btn-secondary">
-                  + Add Floor
-                </button>
-                
+                <PermissionGate permission="FLOOR_CREATE">
+                  <button onClick={openFloorCreateModal} className="btn btn-secondary">
+                    + Add Floor
+                  </button>
+                </PermissionGate>
               </div>
             </div>
             {floorsLoading ? (
@@ -605,9 +657,11 @@ const Buildings = () => {
               <div className="empty-state">
                 <p>No floors found in this building. Add a floor to get started.</p>
                 <div className="header-actions">
-                  <button onClick={openFloorCreateModal} className="btn btn-secondary">
-                    + Add Floor
-                  </button>
+                  <PermissionGate permission="FLOOR_CREATE">
+                    <button onClick={openFloorCreateModal} className="btn btn-secondary">
+                      + Add Floor
+                    </button>
+                  </PermissionGate>
                 </div>
               </div>
             ) : (
@@ -644,20 +698,24 @@ const Buildings = () => {
                       </Table.Cell>
                       <Table.Cell>
                         <div className="action-buttons">
-                          <button
-                            onClick={() => openFloorEditModal(floor)}
-                            className="btn-icon btn-edit"
-                            title="Edit floor"
-                          >
-                             <FiEdit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => openFloorDeleteModal(floor)}
-                            className="btn-icon btn-delete"
-                            title="Delete floor"
-                          >
-                            <FiTrash2 size={16} />
-                          </button>
+                          <PermissionGate permission="FLOOR_EDIT">
+                            <button
+                              onClick={() => openFloorEditModal(floor)}
+                              className="btn-icon btn-edit"
+                              title="Edit floor"
+                            >
+                               <FiEdit2 size={16} />
+                            </button>
+                          </PermissionGate>
+                          <PermissionGate permission="FLOOR_DELETE">
+                            <button
+                              onClick={() => openFloorDeleteModal(floor)}
+                              className="btn-icon btn-delete"
+                              title="Delete floor"
+                            >
+                              <FiTrash2 size={16} />
+                            </button>
+                          </PermissionGate>
                         </div>
                       </Table.Cell>
                     </Table.Row>
@@ -675,18 +733,22 @@ const Buildings = () => {
           <Card.Content>
             <div className="section-header">
               <h2>Rooms on Floor {selectedFloor.floor_number} - {selectedBuilding?.name}</h2>
-              <button onClick={openRoomCreateModal} className="btn btn-secondary">
-                + Add Room
-              </button>
+              <PermissionGate permission="ROOM_CREATE">
+                <button onClick={openRoomCreateModal} className="btn btn-secondary">
+                  + Add Room
+                </button>
+              </PermissionGate>
             </div>
             {roomsLoading ? (
               <div className="loading-state">Loading rooms...</div>
             ) : rooms.length === 0 ? (
               <div className="empty-state">
-                <p>No rooms found on this floor. Add a room to get started.</p>
-                <button onClick={openRoomCreateModal} className="btn btn-secondary">
-                  + Add Room
-                </button>
+                <p style={{marginBottom:"20px"}}>No rooms found on this floor. Add a room to get started.</p>
+                <PermissionGate permission="ROOM_CREATE">
+                  <button onClick={openRoomCreateModal} className="btn btn-secondary">
+                    + Add Room
+                  </button>
+                </PermissionGate>
               </div>
             ) : (
               <Table>
@@ -704,20 +766,24 @@ const Buildings = () => {
                       <Table.Cell>{room.room_type || '-'}</Table.Cell>
                       <Table.Cell>
                         <div className="action-buttons">
-                          <button
-                            onClick={() => openRoomEditModal(room)}
-                            className="btn-icon btn-edit"
-                            title="Edit room"
-                          >
-                             <FiEdit2 size={16} />
-                          </button>
-                          <button
-                            onClick={() => openRoomDeleteModal(room)}
-                            className="btn-icon btn-delete"
-                            title="Delete room"
-                          >
-                            <FiTrash2 size={16} />
-                          </button>
+                          <PermissionGate permission="ROOM_EDIT">
+                            <button
+                              onClick={() => openRoomEditModal(room)}
+                              className="btn-icon btn-edit"
+                              title="Edit room"
+                            >
+                               <FiEdit2 size={16} />
+                            </button>
+                          </PermissionGate>
+                          <PermissionGate permission="ROOM_DELETE">
+                            <button
+                              onClick={() => openRoomDeleteModal(room)}
+                              className="btn-icon btn-delete"
+                              title="Delete room"
+                            >
+                              <FiTrash2 size={16} />
+                            </button>
+                          </PermissionGate>
                         </div>
                       </Table.Cell>
                     </Table.Row>
@@ -1120,6 +1186,25 @@ const Buildings = () => {
                 placeholder="e.g., ICU, Ward, ER, Operating Room"
               />
               <small>Optional: Specify the type of room</small>
+            </div>
+            <div className="form-group">
+              <label htmlFor="anchor_id">
+                Assign Anchor
+              </label>
+              <select
+                id="anchor_id"
+                name="anchor_id"
+                value={roomFormData.anchor_id}
+                onChange={handleRoomInputChange}
+              >
+                <option value="">No anchor (can assign later)</option>
+                {unassignedAnchors.map((anchor) => (
+                  <option key={anchor.anchor_id} value={anchor.anchor_id}>
+                    {anchor.anchor_id}
+                  </option>
+                ))}
+              </select>
+              <small>Optional: Assign an available anchor to this room</small>
             </div>
           </Modal.Body>
           <Modal.Footer>

@@ -86,19 +86,23 @@ import json
 import threading
 from collections import defaultdict
 import requests
- 
+
 import paho.mqtt.client as mqtt
- 
+from flask import Flask, request, jsonify
+
+# Configuration Flask app for runtime threshold updates
+config_app = Flask(__name__)
+
 BROKER = "192.168.1.232"
 PORT = 1883
 TOPIC = "Hospital"
 COLLECT_SECONDS = 2.0  # 3, Scan window duration in seconds
-LOSS_SECONDS = 30.0     # 20, mark tag as lost if not seen for this many seconds
+LOSS_SECONDS = 30.0     # 20, mark tag as lost if not seen for this many seconds (configurable via API)
 MIN_SAMPLES = 2        # 3, minimum packets per gateway per window *****************************
 HYSTERESIS_DB = 5.0 # 6 ********************************
 EMA_ALPHA = 0.5  # 0.4 ******************smoothing factor (0.2–0.4 is good)
- 
-BACKEND_URL = "http://192.168.1.125:3000/api/events/location-event"
+
+BACKEND_URL = "http://192.168.1.204:3000/api/events/location-event"
  
 _messages = []            # shared list of incoming records
 _lock = threading.Lock()  # protects _messages
@@ -110,7 +114,27 @@ last_seen = {}
  
 # NEW: exponential moving average RSSI
 ema_rssi = defaultdict(dict)  # mac -> gw -> ema_rssi
- 
+
+# ---------------- FLASK CONFIG API ----------------
+@config_app.route('/config/threshold', methods=['GET'])
+def get_threshold():
+    """Get current LOSS_SECONDS threshold."""
+    return jsonify({'threshold_seconds': LOSS_SECONDS})
+
+@config_app.route('/config/threshold', methods=['PUT'])
+def update_threshold():
+    """Update LOSS_SECONDS threshold at runtime."""
+    global LOSS_SECONDS
+    data = request.json
+    new_threshold = float(data.get('threshold_seconds', LOSS_SECONDS))
+
+    if new_threshold < 5 or new_threshold > 3600:
+        return jsonify({'error': 'Threshold must be between 5 and 3600 seconds'}), 400
+
+    LOSS_SECONDS = new_threshold
+    print(f"[CONFIG] Threshold updated to {LOSS_SECONDS} seconds")
+    return jsonify({'success': True, 'threshold_seconds': LOSS_SECONDS})
+
 # ---------------- BACKEND SENDER ----------------
 def send_location_event(event_type, tag_id, to_room=None, from_room=None, last_room=None):
     payload = {
@@ -118,11 +142,13 @@ def send_location_event(event_type, tag_id, to_room=None, from_room=None, last_r
         "tag_id": tag_id,
         "timestamp": int(time.time())
     }
- 
+
     if to_room:
         payload["to_room"] = to_room
     if from_room:
         payload["from_room"] = from_room
+    if last_room:
+        payload["last_room"] = last_room
  
     try:
         r = requests.post(BACKEND_URL, json=payload, timeout=3)
@@ -307,12 +333,22 @@ def batch_loop():
         process_batch(batch)
  
 def main():
+    # Start Flask configuration API server in background thread
+    print("Starting Flask configuration API on port 5001...")
+    flask_thread = threading.Thread(
+        target=lambda: config_app.run(host='0.0.0.0', port=5001, use_reloader=False),
+        daemon=True
+    )
+    flask_thread.start()
+    print("Configuration API started at http://localhost:5001")
+
+    # Start MQTT client
     client = mqtt.Client()
     client.on_message = on_message
     client.connect(BROKER, PORT)
     client.subscribe(TOPIC)
     client.loop_start()
- 
+
     try:
         batch_loop()
     except KeyboardInterrupt:    # Press Ctrl+C to stop the program

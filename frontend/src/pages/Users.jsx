@@ -393,14 +393,16 @@ const Users = () => {
 
             <div className="form-group">
               <label htmlFor="role">Role</label>
-              <input
-                type="text"
+              <select
                 id="role"
                 name="role"
                 value={formData.role}
                 onChange={handleInputChange}
-                placeholder="e.g., Doctor, Nurse, Patient"
-              />
+              >
+                <option value="">Select role (optional)</option>
+                <option value="admin">Admin</option>
+                <option value="staff">Staff</option>
+              </select>
               <small>Optional - User role in the system</small>
             </div>
 
@@ -499,14 +501,16 @@ const Users = () => {
 
             <div className="form-group">
               <label htmlFor="edit-role">Role</label>
-              <input
-                type="text"
+              <select
                 id="edit-role"
                 name="role"
                 value={formData.role}
                 onChange={handleInputChange}
-                placeholder="e.g., Doctor, Nurse, Patient"
-              />
+              >
+                <option value="">Select role (optional)</option>
+                <option value="admin">Admin</option>
+                <option value="staff">Staff</option>
+              </select>
             </div>
 
             <div className="form-group">

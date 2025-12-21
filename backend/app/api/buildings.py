@@ -1,26 +1,40 @@
 """
 Building CRUD endpoints.
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from app.schemas.building import Building, BuildingCreate, BuildingUpdate
 from app.models.building import Building as BuildingModel
+from app.models.organization import Organization as OrganizationModel
 from app.api.deps import get_db
 
 router = APIRouter()
 
 
 @router.get("/", response_model=List[Building])
-async def list_buildings(db: Session = Depends(get_db)):
-    """List all buildings."""
-    return db.query(BuildingModel).all()
+async def list_buildings(
+    organization_id: Optional[int] = Query(None, description="Filter by organization ID"),
+    db: Session = Depends(get_db)
+):
+    """List all buildings with optional organization filter."""
+    query = db.query(BuildingModel)
+
+    if organization_id:
+        query = query.filter(BuildingModel.organization_id == organization_id)
+
+    return query.all()
 
 
 @router.post("/", response_model=Building, status_code=201)
 async def create_building(building: BuildingCreate, db: Session = Depends(get_db)):
     """Create a new building."""
+    # Verify organization exists
+    organization = db.query(OrganizationModel).filter(OrganizationModel.id == building.organization_id).first()
+    if not organization:
+        raise HTTPException(status_code=404, detail=f"Organization with id {building.organization_id} not found")
+
     db_building = BuildingModel(**building.model_dump())
     db.add(db_building)
     db.commit()
