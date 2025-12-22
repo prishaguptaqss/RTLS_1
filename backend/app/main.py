@@ -34,12 +34,16 @@ from app.services.missing_person_detector import missing_person_detector
 from app.services.websocket_manager import websocket_manager
 
 # Configure logging
+import os
+log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
+os.makedirs(log_dir, exist_ok=True)
+
 log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(
     level=logging.INFO,
     format=log_format,
     handlers=[
-        logging.FileHandler('/home/qss/Desktop/RTLS/logs/server.log'),
+        logging.FileHandler(os.path.join(log_dir, 'server.log')),
         logging.StreamHandler()
     ]
 )
@@ -48,7 +52,7 @@ logger = logging.getLogger(__name__)
 # Also configure detailed logging for organization isolation
 org_logger = logging.getLogger('organization_isolation')
 org_logger.setLevel(logging.DEBUG)
-org_handler = logging.FileHandler('/home/qss/Desktop/RTLS/logs/organization_isolation.log')
+org_handler = logging.FileHandler(os.path.join(log_dir, 'organization_isolation.log'))
 org_handler.setFormatter(logging.Formatter(log_format))
 org_logger.addHandler(org_handler)
 
