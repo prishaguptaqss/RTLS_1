@@ -12,27 +12,33 @@ from app.models.user import User
 from app.models.room import Room
 from app.models.floor import Floor
 from app.models.building import Building
+from app.models.organization import Organization
 from app.utils.enums import TagStatus
-from app.api.deps import get_db
+from app.api.deps import get_db, get_current_organization
 
 router = APIRouter()
 
 
 @router.get("/live", response_model=LivePositionsResponse)
-async def get_live_positions(db: Session = Depends(get_db)):
+async def get_live_positions(
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
     """
-    Get live positions for all active tags.
+    Get live positions for all active tags within the current organization.
 
     Returns:
     - positions: List of users and entities with current locations
     - stats: trackedUsers, roomsDetected
 
     Note: Includes tags with assigned users OR entities and status='active'.
+    CRITICAL: Only returns data for the current organization.
     """
     # Import Entity model
     from app.models.entity import Entity
 
     # Query active tags with live locations, users, entities, and room hierarchy
+    # CRITICAL: Filter by organization_id to ensure data isolation
     query = db.query(
         Tag, LiveLocation, User, Entity, Room, Floor, Building
     ).join(
@@ -48,7 +54,8 @@ async def get_live_positions(db: Session = Depends(get_db)):
     ).outerjoin(
         Building, Floor.building_id == Building.id
     ).filter(
-        Tag.status == TagStatus.active
+        Tag.status == TagStatus.active,
+        Tag.organization_id == organization.id  # CRITICAL: Organization isolation
     ).all()
 
     positions = []

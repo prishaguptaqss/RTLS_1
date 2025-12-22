@@ -10,6 +10,7 @@ from app.utils.enums import AnchorStatus
 class AnchorBase(BaseModel):
     """Base schema with common anchor fields."""
     anchor_id: str
+    anchor_name: Optional[str] = None
     room_id: Optional[int] = None
     status: Optional[AnchorStatus] = AnchorStatus.active
 
@@ -21,6 +22,7 @@ class AnchorCreate(AnchorBase):
 
 class AnchorUpdate(BaseModel):
     """Schema for updating an anchor (all fields optional except anchor_id)."""
+    anchor_name: Optional[str] = None
     room_id: Optional[int] = None
     status: Optional[AnchorStatus] = None
     last_seen: Optional[datetime] = None

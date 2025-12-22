@@ -27,6 +27,13 @@ class LiveLocation(Base):
         primary_key=True,
         comment="Foreign key to tags table (primary key ensures one location per tag)"
     )
+    organization_id = Column(
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        comment="Organization this live location belongs to (for fast filtering)"
+    )
     room_id = Column(
         Integer,
         ForeignKey("rooms.id", ondelete="SET NULL"),
@@ -43,6 +50,7 @@ class LiveLocation(Base):
     # Relationships
     # CASCADE delete: if tag is deleted, its live location is deleted
     tag = relationship("Tag", back_populates="live_location")
+    organization = relationship("Organization")
     # SET NULL: if room is deleted, location becomes unknown (not deleted)
     room = relationship("Room", back_populates="live_locations")
 

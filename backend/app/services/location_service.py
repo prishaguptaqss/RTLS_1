@@ -95,6 +95,7 @@ class LocationService:
         else:
             live_loc = LiveLocation(
                 tag_id=event.tag_id,
+                organization_id=tag.organization_id,  # Set organization for isolation
                 room_id=to_room.id if to_room else None,
                 updated_at=timestamp
             )
@@ -164,6 +165,7 @@ class LocationService:
             # Create new
             live_loc = LiveLocation(
                 tag_id=event.tag_id,
+                organization_id=tag.organization_id,  # Set organization for isolation
                 room_id=to_room.id if to_room else None,
                 updated_at=timestamp
             )

@@ -31,7 +31,7 @@ const Devices = () => {
   const [isAnchorEditModalOpen, setIsAnchorEditModalOpen] = useState(false);
   const [isAnchorDeleteModalOpen, setIsAnchorDeleteModalOpen] = useState(false);
   const [selectedAnchor, setSelectedAnchor] = useState(null);
-  const [anchorFormData, setAnchorFormData] = useState({ anchor_id: '', room_id: '' });
+  const [anchorFormData, setAnchorFormData] = useState({ anchor_id: '', anchor_name: '', room_id: '' });
 
   // Tags state
   const [tags, setTags] = useState([]);
@@ -138,6 +138,7 @@ const Devices = () => {
       setSubmitting(true);
       const anchorData = {
         anchor_id: anchorFormData.anchor_id.trim(),
+        anchor_name: anchorFormData.anchor_name.trim() || null,
         room_id: anchorFormData.room_id ? parseInt(anchorFormData.room_id) : null,
         status: 'active'
       };
@@ -169,7 +170,7 @@ const Devices = () => {
 
   const openAnchorEditModal = (anchor) => {
     setSelectedAnchor(anchor);
-    setAnchorFormData({ anchor_id: anchor.anchor_id });
+    setAnchorFormData({ anchor_id: anchor.anchor_id, anchor_name: anchor.anchor_name || '' });
     setFormErrors({});
     setIsAnchorEditModalOpen(true);
   };
@@ -187,6 +188,7 @@ const Devices = () => {
       setSubmitting(true);
       const anchorData = {
         anchor_id: anchorFormData.anchor_id.trim(),
+        anchor_name: anchorFormData.anchor_name.trim() || null,
         room_id: selectedAnchor.room_id,
         status: selectedAnchor.status
       };
@@ -228,7 +230,7 @@ const Devices = () => {
   };
 
   const resetAnchorForm = () => {
-    setAnchorFormData({ anchor_id: '', room_id: '' });
+    setAnchorFormData({ anchor_id: '', anchor_name: '', room_id: '' });
     setFormErrors({});
   };
 
@@ -517,6 +519,7 @@ const Devices = () => {
                 <Table.Header>
                   <Table.Row>
                     <Table.Head>Anchor ID</Table.Head>
+                    <Table.Head>Name</Table.Head>
                     <Table.Head>Location</Table.Head>
                     <Table.Head>Status</Table.Head>
                     <Table.Head>Actions</Table.Head>
@@ -529,6 +532,7 @@ const Devices = () => {
                     return (
                       <Table.Row key={anchor.anchor_id}>
                         <Table.Cell><code>{anchor.anchor_id}</code></Table.Cell>
+                        <Table.Cell>{anchor.anchor_name || <span className="text-muted">-</span>}</Table.Cell>
                         <Table.Cell>
                           {isActive ? getRoomLocationText(anchor.room_id) : '-'}
                         </Table.Cell>
@@ -665,13 +669,26 @@ const Devices = () => {
                 name="anchor_id"
                 value={anchorFormData.anchor_id}
                 onChange={(e) => setAnchorFormData({ ...anchorFormData, anchor_id: e.target.value })}
-                placeholder="e.g. ANCHOR-A1, Room 101"
+                placeholder="e.g. ANCHOR-A1, ESP32-001"
                 required
               />
               {formErrors.anchor_id && (
                 <small className="error-text">{formErrors.anchor_id}</small>
               )}
-              <small>Unique identifier for this anchor device.</small>
+              <small>Unique identifier for this anchor device (unique across all organizations).</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="anchor_name">Anchor Name (Optional)</label>
+              <input
+                type="text"
+                id="anchor_name"
+                name="anchor_name"
+                value={anchorFormData.anchor_name}
+                onChange={(e) => setAnchorFormData({ ...anchorFormData, anchor_name: e.target.value })}
+                placeholder="e.g. Room 101, Main Entrance"
+              />
+              <small>Optional human-readable name (can be common across organizations).</small>
             </div>
 
             <div className="form-group">
@@ -923,14 +940,27 @@ const Devices = () => {
                 id="edit_anchor_id"
                 name="anchor_id"
                 value={anchorFormData.anchor_id}
-                onChange={(e) => setAnchorFormData({ anchor_id: e.target.value })}
-                placeholder="e.g. ANCHOR-A1"
+                onChange={(e) => setAnchorFormData({ ...anchorFormData, anchor_id: e.target.value })}
+                placeholder="e.g. ANCHOR-A1, ESP32-001"
                 required
               />
               {formErrors.anchor_id && (
                 <small className="error-text">{formErrors.anchor_id}</small>
               )}
-              <small>Unique identifier for this anchor device.</small>
+              <small>Unique identifier for this anchor device (unique across all organizations).</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit_anchor_name">Anchor Name (Optional)</label>
+              <input
+                type="text"
+                id="edit_anchor_name"
+                name="anchor_name"
+                value={anchorFormData.anchor_name}
+                onChange={(e) => setAnchorFormData({ ...anchorFormData, anchor_name: e.target.value })}
+                placeholder="e.g. Room 101, Main Entrance"
+              />
+              <small>Optional human-readable name (can be common across organizations).</small>
             </div>
           </Modal.Body>
           <Modal.Footer>

@@ -36,7 +36,8 @@
       "Bash(sudo pkill:*)",
       "Bash(mkdir:*)",
       "Bash(python:*)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(chmod:*)"
     ]
   }
 }

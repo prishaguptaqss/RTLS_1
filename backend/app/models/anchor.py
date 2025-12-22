@@ -21,6 +21,11 @@ class Anchor(Base):
         primary_key=True,
         comment="Unique anchor identifier (e.g., 'Room 101', 'Gateway-A')"
     )
+    anchor_name = Column(
+        String,
+        nullable=True,
+        comment="Optional human-readable name for the anchor (can be common across organizations)"
+    )
     organization_id = Column(
         Integer,
         ForeignKey("organizations.id", ondelete="CASCADE"),
