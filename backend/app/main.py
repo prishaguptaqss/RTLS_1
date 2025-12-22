@@ -12,6 +12,8 @@ from app.config import settings
 from app.database import engine, Base, SessionLocal
 from app.api import (
     users,
+    organizations,
+    entities,
     buildings,
     floors,
     rooms,
@@ -20,17 +22,34 @@ from app.api import (
     positions,
     dashboard,
     events,
-    websocket
+    websocket,
+    settings as settings_api,
+    auth,
+    staff,
+    roles,
+    permissions
 )
 from app.services.missing_person_detector import missing_person_detector
 from app.services.websocket_manager import websocket_manager
 
 # Configure logging
+log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format=log_format,
+    handlers=[
+        logging.FileHandler('/home/qss/Documents/common/RTLS_1/logs/server.log'),
+        logging.StreamHandler()
+    ]
 )
 logger = logging.getLogger(__name__)
+
+# Also configure detailed logging for organization isolation
+org_logger = logging.getLogger('organization_isolation')
+org_logger.setLevel(logging.DEBUG)
+org_handler = logging.FileHandler('/home/qss/Documents/common/RTLS_1/logs/organization_isolation.log')
+org_handler.setFormatter(logging.Formatter(log_format))
+org_logger.addHandler(org_handler)
 
 
 @asynccontextmanager
@@ -72,9 +91,9 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="RTLS Hospital Tracking API",
-    description="Real-Time Location System backend for hospital tracking",
-    version="1.0.0",
+    title="RTLS Entity Tracking API",
+    description="Real-Time Location System for tracking persons and materials across organizations",
+    version="2.0.0",
     lifespan=lifespan
 )
 
@@ -84,11 +103,14 @@ app.add_middleware(
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_headers=["Content-Type", "Authorization", "X-Organization-ID"],
 )
 
 # Include routers
+app.include_router(auth.router, prefix="/api", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
+app.include_router(organizations.router, prefix="/api/organizations", tags=["Organizations"])
+app.include_router(entities.router, prefix="/api/entities", tags=["Entities"])
 app.include_router(buildings.router, prefix="/api/buildings", tags=["Buildings"])
 app.include_router(floors.router, prefix="/api/floors", tags=["Floors"])
 app.include_router(rooms.router, prefix="/api/rooms", tags=["Rooms"])
@@ -98,6 +120,10 @@ app.include_router(positions.router, prefix="/api/positions", tags=["Live Positi
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
 app.include_router(events.router, prefix="/api/events", tags=["Events"])
 app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
+app.include_router(settings_api.router, prefix="/api/settings", tags=["Settings"])
+app.include_router(staff.router, prefix="/api", tags=["Staff Management"])
+app.include_router(roles.router, prefix="/api", tags=["Role Management"])
+app.include_router(permissions.router, prefix="/api", tags=["Permissions"])
 
 
 # Health check endpoint
@@ -116,8 +142,8 @@ async def health_check():
 async def root():
     """Root endpoint with API information."""
     return {
-        "name": "RTLS Hospital Tracking API",
-        "version": "1.0.0",
+        "name": "RTLS Entity Tracking API",
+        "version": "2.0.0",
         "docs_url": "/docs",
         "health_url": "/health"
     }

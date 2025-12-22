@@ -8,5 +8,8 @@ pydantic-settings==2.1.0
 python-dotenv==1.0.0
 websockets==12.0
 email-validator
-requests
-paho-mqtt
+requests==2.31.0
+paho-mqtt==1.6.1
+flask
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4

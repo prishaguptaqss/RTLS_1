@@ -1,0 +1,145 @@
+.role-management {
+  padding: 24px;
+}
+
+.permission-count {
+  background: #e6fffa;
+  color: #234e52;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.btn-view {
+  background: #48bb78;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.modal-content.large {
+  max-width: 800px;
+}
+
+.form-section {
+  padding: 24px;
+  padding-bottom: 0;
+}
+
+.form-group textarea {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.permissions-section {
+  padding: 0 24px 24px;
+}
+
+.permissions-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.section-description {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: #718096;
+}
+
+.permissions-matrix {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  max-height: 500px;
+  overflow-y: auto;
+  background: #f7fafc;
+}
+
+.permission-group {
+  margin-bottom: 20px;
+  background: white;
+  border-radius: 6px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.permission-group:last-child {
+  margin-bottom: 0;
+}
+
+.permission-parent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 8px;
+  background: #edf2f7;
+  border-radius: 6px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.permission-parent input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.permission-children {
+  margin-top: 12px;
+  margin-left: 28px;
+  padding-left: 16px;
+  border-left: 2px solid #e2e8f0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.permission-children.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.permission-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.permission-child:hover:not(:has(input:disabled)) {
+  background: #f7fafc;
+}
+
+.permission-child input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.permission-child input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+
+.permission-label {
+  font-size: 14px;
+  color: #4a5568;
+  user-select: none;
+}
+
+.permission-parent .permission-label {
+  font-size: 15px;
+  color: #2d3748;
+}

@@ -41,6 +41,66 @@ api.interceptors.response.use(
 
 // API Methods
 
+// Authentication
+export const login = async (credentials) => {
+  return api.post('/auth/login', credentials);
+};
+
+export const logout = async () => {
+  return api.post('/auth/logout');
+};
+
+export const getCurrentUser = async () => {
+  return api.get('/auth/me');
+};
+
+// Staff Management
+export const fetchStaff = async () => {
+  return api.get('/staff');
+};
+
+export const createStaff = async (staffData) => {
+  return api.post('/staff', staffData);
+};
+
+export const updateStaff = async (id, staffData) => {
+  return api.put(`/staff/${id}`, staffData);
+};
+
+export const deleteStaff = async (id) => {
+  return api.delete(`/staff/${id}`);
+};
+
+export const changePassword = async (passwordData) => {
+  return api.post('/staff/change-password', passwordData);
+};
+
+// Role Management
+export const fetchRoles = async () => {
+  return api.get('/roles');
+};
+
+export const createRole = async (roleData) => {
+  return api.post('/roles', roleData);
+};
+
+export const updateRole = async (id, roleData) => {
+  return api.put(`/roles/${id}`, roleData);
+};
+
+export const deleteRole = async (id) => {
+  return api.delete(`/roles/${id}`);
+};
+
+// Permissions
+export const fetchPermissions = async () => {
+  return api.get('/permissions');
+};
+
+export const fetchPermissionsGrouped = async () => {
+  return api.get('/permissions/grouped');
+};
+
 // Live Positions
 export const fetchLivePositions = async () => {
   try {
