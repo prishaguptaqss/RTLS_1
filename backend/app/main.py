@@ -23,10 +23,15 @@ from app.api import (
     dashboard,
     events,
     websocket,
-    settings as settings_api
+    settings as settings_api,
+    auth,
+    staff,
+    roles,
+    permissions
 )
 from app.services.missing_person_detector import missing_person_detector
 from app.services.websocket_manager import websocket_manager
+from app.db_init import initialize_database
 
 # Configure logging
 log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -34,7 +39,7 @@ logging.basicConfig(
     level=logging.INFO,
     format=log_format,
     handlers=[
-        logging.FileHandler('/home/qss/Desktop/RTLS/logs/server.log'),
+        logging.FileHandler('/home/qss/Documents/RTLS/logs/server.log'),
         logging.StreamHandler()
     ]
 )
@@ -43,7 +48,7 @@ logger = logging.getLogger(__name__)
 # Also configure detailed logging for organization isolation
 org_logger = logging.getLogger('organization_isolation')
 org_logger.setLevel(logging.DEBUG)
-org_handler = logging.FileHandler('/home/qss/Desktop/RTLS/logs/organization_isolation.log')
+org_handler = logging.FileHandler('/home/qss/Documents/RTLS/logs/organization_isolation.log')
 org_handler.setFormatter(logging.Formatter(log_format))
 org_logger.addHandler(org_handler)
 
@@ -65,9 +70,9 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting RTLS Backend...")
 
-    # Create tables (Note: In production, use Alembic migrations instead)
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database tables verified")
+    # Initialize database (create tables, seed data, create admin)
+    initialize_database()
+    logger.info("Database initialization complete")
 
     # Start background tasks
     db = SessionLocal()
@@ -103,6 +108,13 @@ app.add_middleware(
 )
 
 # Include routers
+# Authentication & Authorization
+app.include_router(auth.router, prefix="/api", tags=["Authentication"])
+app.include_router(staff.router, prefix="/api", tags=["Staff Management"])
+app.include_router(roles.router, prefix="/api", tags=["Role Management"])
+app.include_router(permissions.router, prefix="/api", tags=["Permissions"])
+
+# Core functionality
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(organizations.router, prefix="/api/organizations", tags=["Organizations"])
 app.include_router(entities.router, prefix="/api/entities", tags=["Entities"])

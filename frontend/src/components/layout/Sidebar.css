@@ -9,24 +9,11 @@
   display: flex;
   flex-direction: column;
   z-index: 100;
-  transition: width 0.3s ease;
-}
-
-.sidebar.collapsed {
-  width: 70px;
 }
 
 .sidebar-header {
   padding: 24px 20px;
   border-bottom: 1px solid var(--border-color);
-  position: relative;
-}
-
-.sidebar.collapsed .sidebar-header {
-  padding: 10px 10px 24px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .sidebar-title {
@@ -111,48 +98,72 @@
   flex-shrink: 0;
 }
 
-.sidebar.collapsed .sidebar-link {
-  padding: 12px;
-  justify-content: center;
-}
-
-.sidebar.collapsed .sidebar-link span {
-  display: none;
-}
-
-/* Toggle Button */
-.sidebar-toggle {
-  position: absolute;
-  right: 10px;
-  top: 24px;
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  width: 32px;
-  height: 32px;
+/* User Info */
+.user-info {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(108, 92, 231, 0.08);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-badge-small {
+  background: #9f7aea;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 500;
+  align-self: flex-start;
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.logout-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: var(--text-secondary);
 }
 
-.sidebar-toggle:hover {
-  background-color: var(--primary);
-  color: white;
-  border-color: var(--primary);
+.logout-button:hover {
+  background: #fed7d7;
+  border-color: #fc8181;
+  color: #c53030;
 }
 
-.sidebar.collapsed .sidebar-toggle {
-  position: relative;
-  right: auto;
-  top: auto;
-  transform: none;
-  margin: 0 auto;
-}
-
-/* Organization selector - hide in collapsed mode */
-.sidebar.collapsed .org-selector {
-  display: none;
+.logout-button svg {
+  flex-shrink: 0;
 }

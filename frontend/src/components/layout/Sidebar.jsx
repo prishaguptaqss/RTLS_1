@@ -1,42 +1,109 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Building2,
-  DoorOpen,
   Users,
   UserPlus,
   Wifi,
-  TestTube,
   MapPin,
-  Search,
   Settings,
   Building,
-  ChevronLeft,
-  ChevronRight
+  Shield,
+  LogOut,
+  User
 } from 'lucide-react';
 import { useOrganization } from '../../contexts/OrganizationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import './Sidebar.css';
 
-const Sidebar = ({ isCollapsed, onToggle }) => {
+const Sidebar = () => {
   const { currentOrganization, organizations, switchOrganization, loading } = useOrganization();
+  const { user, logout, hasPermission } = useAuth();
+  const navigate = useNavigate();
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  // Define all menu items with their required permissions
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: Building, label: 'Organizations', path: '/organizations' },
-    { icon: Users, label: 'Entities', path: '/entities' },
-    { icon: Building2, label: 'Locations', path: '/locations' },
-    { icon: Wifi, label: 'Devices', path: '/devices' },
-    { icon: MapPin, label: 'Live Positions', path: '/live-positions' },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    {
+      icon: LayoutDashboard,
+      label: 'Dashboard',
+      path: '/',
+      permission: 'DASHBOARD_VIEW'
+    },
+    {
+      icon: Building,
+      label: 'Organizations',
+      path: '/organizations',
+      permission: 'ORGANIZATION_VIEW'
+    },
+    {
+      icon: Users,
+      label: 'Entities',
+      path: '/entities',
+      permission: 'ENTITY_VIEW'
+    },
+    {
+      icon: Wifi,
+      label: 'Devices',
+      path: '/devices',
+      permission: 'DEVICE_VIEW'
+    },
+    {
+      icon: MapPin,
+      label: 'Live Positions',
+      path: '/live-positions',
+      permission: 'LIVE_POSITION_VIEW'
+    },
+    {
+      icon: UserPlus,
+      label: 'User',
+      path: '/staff',
+      permission: 'STAFF_VIEW',
+      adminOnly: false // Visible if user has STAFF_VIEW permission
+    },
+    {
+      icon: Shield,
+      label: 'Roles',
+      path: '/roles',
+      permission: 'ROLE_VIEW',
+      adminOnly: false // Visible if user has ROLE_VIEW permission
+    },
+    {
+      icon: Settings,
+      label: 'Settings',
+      path: '/settings',
+      permission: 'SETTINGS_VIEW'
+    },
   ];
 
+  // Filter menu items based on permissions
+  const visibleMenuItems = menuItems.filter(item => {
+    if (!item.permission) return true;
+    if (item.adminOnly && !user?.is_admin) return false;
+    return hasPermission(item.permission);
+  });
+
   return (
-    <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+    <aside className="sidebar">
       <div className="sidebar-header">
-        {!isCollapsed && <h2 className="sidebar-title">Entity Tracking</h2>}
+        <h2 className="sidebar-title">RTLS Dashboard</h2>
+
+        {/* User Info */}
+        {user && (
+          <div className="user-info">
+            <User size={16} />
+            <div className="user-details">
+              <span className="user-name">{user.name}</span>
+              {user.is_admin && <span className="admin-badge-small">Admin</span>}
+            </div>
+          </div>
+        )}
 
         {/* Organization Selector */}
-        {!isCollapsed && !loading && organizations.length > 0 && (
+        {!loading && organizations.length > 0 && (
           <div className="org-selector">
             <label className="org-label">Organization:</label>
             <select
@@ -52,31 +119,30 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
             </select>
           </div>
         )}
-
-        {/* Toggle Button */}
-        <button
-          className="sidebar-toggle"
-          onClick={onToggle}
-          title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-        </button>
       </div>
+
       <nav className="sidebar-nav">
-        {menuItems.map((item) => (
+        {visibleMenuItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
               `sidebar-link ${isActive ? 'active' : ''}`
             }
-            title={isCollapsed ? item.label : ''}
           >
             <item.icon size={20} />
-            {!isCollapsed && <span>{item.label}</span>}
+            <span>{item.label}</span>
           </NavLink>
         ))}
       </nav>
+
+      {/* Logout Button */}
+      <div className="sidebar-footer">
+        <button className="logout-button" onClick={handleLogout}>
+          <LogOut size={20} />
+          <span>Logout</span>
+        </button>
+      </div>
     </aside>
   );
 };

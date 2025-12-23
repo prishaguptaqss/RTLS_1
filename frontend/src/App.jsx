@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import { OrganizationProvider } from './contexts/OrganizationContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Organizations from './pages/Organizations';
@@ -8,25 +10,108 @@ import Locations from './pages/Locations';
 import Devices from './pages/Devices';
 import LivePositions from './pages/LivePositions';
 import Settings from './pages/Settings';
+import Login from './pages/Login';
+import StaffManagement from './pages/StaffManagement';
+import RoleManagement from './pages/RoleManagement';
 import './App.css';
 
 function App() {
   return (
-    <OrganizationProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="organizations" element={<Organizations />} />
-            <Route path="entities" element={<Entities />} />
-            <Route path="locations" element={<Locations />} />
-            <Route path="devices" element={<Devices />} />
-            <Route path="live-positions" element={<LivePositions />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </OrganizationProvider>
+    <AuthProvider>
+      <OrganizationProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+
+            {/* Protected routes */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route
+                index
+                element={
+                  <ProtectedRoute requiredPermission="DASHBOARD_VIEW">
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="organizations"
+                element={
+                  <ProtectedRoute requiredPermission="ORGANIZATION_VIEW">
+                    <Organizations />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="entities"
+                element={
+                  <ProtectedRoute requiredPermission="ENTITY_VIEW">
+                    <Entities />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="locations"
+                element={
+                  <ProtectedRoute requiredPermission="BUILDING_VIEW">
+                    <Locations />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="devices"
+                element={
+                  <ProtectedRoute requiredPermission="DEVICE_VIEW">
+                    <Devices />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="live-positions"
+                element={
+                  <ProtectedRoute requiredPermission="LIVE_POSITION_VIEW">
+                    <LivePositions />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Admin-only routes */}
+              <Route
+                path="staff"
+                element={
+                  <ProtectedRoute requiredPermission="STAFF_VIEW">
+                    <StaffManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="roles"
+                element={
+                  <ProtectedRoute requiredPermission="ROLE_VIEW">
+                    <RoleManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="settings"
+                element={
+                  <ProtectedRoute requiredPermission="SETTINGS_VIEW">
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </OrganizationProvider>
+    </AuthProvider>
   );
 }
 

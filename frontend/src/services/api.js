@@ -35,8 +35,19 @@ api.interceptors.request.use(
 
 // Response interceptor for error handling
 api.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    console.log('API Response:', response.config.url, response.status, response.data);
+    return response.data;
+  },
   (error) => {
+    console.error('API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
     if (error.response?.status === 401) {
       // Handle unauthorized access
       localStorage.removeItem('authToken');
@@ -251,6 +262,97 @@ export const deleteTag = async (id) => {
 // Dashboard Stats
 export const fetchDashboardStats = async () => {
   return api.get('/dashboard/stats');
+};
+
+// ==================== AUTHENTICATION ====================
+
+// Auth - Login
+export const login = async (email, password) => {
+  return api.post('/auth/login', { email, password });
+};
+
+// Auth - Get current user
+export const getCurrentUser = async () => {
+  return api.get('/auth/me');
+};
+
+// Auth - Logout
+export const logout = async () => {
+  return api.post('/auth/logout');
+};
+
+// ==================== STAFF MANAGEMENT ====================
+
+// Staff - List all
+export const fetchStaff = async (skip = 0, limit = 100) => {
+  return api.get(`/staff?skip=${skip}&limit=${limit}`);
+};
+
+// Staff - Get by ID
+export const fetchStaffById = async (id) => {
+  return api.get(`/staff/${id}`);
+};
+
+// Staff - Create
+export const createStaff = async (staffData) => {
+  return api.post('/staff', staffData);
+};
+
+// Staff - Update
+export const updateStaff = async (id, staffData) => {
+  return api.put(`/staff/${id}`, staffData);
+};
+
+// Staff - Delete
+export const deleteStaff = async (id) => {
+  return api.delete(`/staff/${id}`);
+};
+
+// Staff - Change password
+export const changePassword = async (currentPassword, newPassword) => {
+  return api.post('/staff/change-password', {
+    current_password: currentPassword,
+    new_password: newPassword
+  });
+};
+
+// ==================== ROLE MANAGEMENT ====================
+
+// Roles - List all
+export const fetchRoles = async (skip = 0, limit = 100) => {
+  return api.get(`/roles?skip=${skip}&limit=${limit}`);
+};
+
+// Roles - Get by ID
+export const fetchRoleById = async (id) => {
+  return api.get(`/roles/${id}`);
+};
+
+// Roles - Create
+export const createRole = async (roleData) => {
+  return api.post('/roles', roleData);
+};
+
+// Roles - Update
+export const updateRole = async (id, roleData) => {
+  return api.put(`/roles/${id}`, roleData);
+};
+
+// Roles - Delete
+export const deleteRole = async (id) => {
+  return api.delete(`/roles/${id}`);
+};
+
+// ==================== PERMISSIONS ====================
+
+// Permissions - List all
+export const fetchPermissions = async () => {
+  return api.get('/permissions');
+};
+
+// Permissions - List grouped by module
+export const fetchPermissionsGrouped = async () => {
+  return api.get('/permissions/grouped');
 };
 
 export default api;
