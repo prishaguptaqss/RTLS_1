@@ -10,12 +10,55 @@ import logging
 from app.models.tag import Tag
 from app.models.live_location import LiveLocation
 from app.models.location_history import LocationHistory
+from app.models.anchor import Anchor
+from app.models.room import Room
 from app.schemas.location import LocationEvent
 from app.utils.enums import EventType, TagStatus
 from app.services.room_cache import room_cache
 from app.services.websocket_manager import websocket_manager
 
 logger = logging.getLogger(__name__)
+
+
+async def get_room_from_anchor_or_name(db: Session, identifier: str) -> Room:
+    """
+    Lookup room by anchor_id first, fallback to room_name.
+
+    This function enables ESP32 devices to send their unique anchor IDs (e.g., MAC addresses)
+    instead of room names. The system will resolve the anchor to its assigned room.
+
+    Args:
+        db: Database session
+        identifier: Either an anchor_id (e.g., "E2:D5:A0:F5:79:99") or room_name (e.g., "Room 101")
+
+    Returns:
+        Room object or None if not found
+
+    Example:
+        ESP32 sends: {"Gtway": "E2:D5:A0:F5:79:99"}
+        Function looks up: anchors.anchor_id = "E2:D5:A0:F5:79:99"
+        Finds: room_id = 45
+        Returns: Room(id=45, room_name="Room 101")
+    """
+    # Try anchor lookup first (primary path for ESP32 device IDs)
+    # Use case-insensitive comparison (ILIKE) for anchor_id
+    from sqlalchemy import func
+    anchor = db.query(Anchor).filter(func.lower(Anchor.anchor_id) == func.lower(identifier)).first()
+
+    if anchor and anchor.room_id:
+        # Found anchor with valid room assignment, use its room relationship
+        logger.debug(f"Resolved anchor '{identifier}' to room_id={anchor.room_id}")
+        return anchor.room
+
+    # Fallback: Try direct room name lookup (backward compatibility)
+    # This handles cases where the MQTT message sends room names directly
+    room = await room_cache.get_room_by_name(db, identifier)
+    if room:
+        logger.debug(f"Resolved '{identifier}' as room name")
+    else:
+        logger.warning(f"Could not resolve '{identifier}' as anchor_id or room_name")
+
+    return room
 
 
 class LocationService:
@@ -40,6 +83,10 @@ class LocationService:
             Exception: If event processing fails (transaction will be rolled back)
         """
         try:
+            # Normalize tag_id to uppercase for consistency
+            # (BLE MAC addresses can come in various cases)
+            event.tag_id = event.tag_id.upper()
+
             if event.event_type == EventType.LOCATION_CHANGE:
                 return await self._handle_location_change(db, event)
             elif event.event_type == EventType.INITIAL_LOCATION:
@@ -69,9 +116,9 @@ class LocationService:
         """
         timestamp = datetime.fromtimestamp(event.timestamp)
 
-        # Lookup rooms (using cache)
-        from_room = await room_cache.get_room_by_name(db, event.from_room) if event.from_room else None
-        to_room = await room_cache.get_room_by_name(db, event.to_room) if event.to_room else None
+        # Lookup rooms (via anchor_id or room_name)
+        from_room = await get_room_from_anchor_or_name(db, event.from_room) if event.from_room else None
+        to_room = await get_room_from_anchor_or_name(db, event.to_room) if event.to_room else None
 
         if not to_room and event.to_room:
             logger.warning(f"Unknown room: {event.to_room} for tag {event.tag_id}")
@@ -80,8 +127,19 @@ class LocationService:
         # Get or create tag
         tag = db.query(Tag).filter(Tag.tag_id == event.tag_id).first()
         if not tag:
-            logger.info(f"Creating new tag: {event.tag_id}")
-            tag = Tag(tag_id=event.tag_id, status=TagStatus.active, last_seen=timestamp)
+            # NEW TAG: Must set organization_id (required field)
+            # Get organization_id from the room (rooms belong to organizations)
+            if not to_room:
+                logger.error(f"Cannot create tag {event.tag_id}: no room found to determine organization")
+                raise ValueError(f"Cannot create tag without knowing its organization. Room '{event.to_room}' not found.")
+
+            logger.info(f"Creating new tag: {event.tag_id} in organization {to_room.organization_id}")
+            tag = Tag(
+                tag_id=event.tag_id,
+                organization_id=to_room.organization_id,  # CRITICAL: Set from room's organization
+                status=TagStatus.active,
+                last_seen=timestamp
+            )
             db.add(tag)
         else:
             tag.last_seen = timestamp
@@ -140,7 +198,7 @@ class LocationService:
         5. Broadcast WebSocket event
         """
         timestamp = datetime.fromtimestamp(event.timestamp)
-        to_room = await room_cache.get_room_by_name(db, event.to_room) if event.to_room else None
+        to_room = await get_room_from_anchor_or_name(db, event.to_room) if event.to_room else None
 
         if not to_room and event.to_room:
             logger.warning(f"Unknown room: {event.to_room} for tag {event.tag_id}")
@@ -148,8 +206,19 @@ class LocationService:
         # Create or update tag
         tag = db.query(Tag).filter(Tag.tag_id == event.tag_id).first()
         if not tag:
-            logger.info(f"Creating new tag: {event.tag_id}")
-            tag = Tag(tag_id=event.tag_id, status=TagStatus.active, last_seen=timestamp)
+            # NEW TAG: Must set organization_id (required field)
+            # Get organization_id from the room (rooms belong to organizations)
+            if not to_room:
+                logger.error(f"Cannot create tag {event.tag_id}: no room found to determine organization")
+                raise ValueError(f"Cannot create tag without knowing its organization. Room '{event.to_room}' not found.")
+
+            logger.info(f"Creating new tag: {event.tag_id} in organization {to_room.organization_id}")
+            tag = Tag(
+                tag_id=event.tag_id,
+                organization_id=to_room.organization_id,  # CRITICAL: Set from room's organization
+                status=TagStatus.active,
+                last_seen=timestamp
+            )
             db.add(tag)
         else:
             tag.last_seen = timestamp
