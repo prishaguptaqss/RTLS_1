@@ -7,7 +7,8 @@ import {
   MapPin,
   Settings,
   Building,
-  Shield
+  Shield,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import './Sidebar.css';
@@ -34,6 +35,12 @@ const Sidebar = () => {
       label: 'Entities',
       path: '/entities',
       permission: 'ENTITY_VIEW'
+    },
+    {
+      icon: Building2,
+      label: 'Locations',
+      path: '/locations',
+      permission: 'BUILDING_VIEW'
     },
     {
       icon: Wifi,

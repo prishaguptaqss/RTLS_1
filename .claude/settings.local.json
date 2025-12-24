@@ -43,7 +43,11 @@
       "Bash(alembic history:*)",
       "Bash(./start.sh:*)",
       "Bash(sudo chown:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(ip addr:*)",
+      "Bash(ip route show:*)",
+      "Bash(sudo ufw status:*)",
+      "Bash(netstat:*)"
     ]
   }
 }
