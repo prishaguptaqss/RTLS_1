@@ -8,7 +8,9 @@ import {
   Settings,
   Building,
   Shield,
-  Building2
+  Building2,
+  Target,
+  Activity
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import './Sidebar.css';
@@ -55,6 +57,12 @@ const Sidebar = () => {
       permission: 'LIVE_POSITION_VIEW'
     },
     {
+      icon: Target,
+      label: 'Live Tracking',
+      path: '/live-tracking',
+      permission: 'LIVE_POSITION_VIEW'
+    },
+    {
       icon: UserPlus,
       label: 'User',
       path: '/staff',
@@ -86,7 +94,13 @@ const Sidebar = () => {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <h2 className="sidebar-title">RTLS Dashboard</h2>
+        <div className="sidebar-brand">
+          <Activity size={24} className="brand-icon" />
+          <div className="brand-text">
+            <h2 className="sidebar-title">RPM System</h2>
+            <p className="sidebar-subtitle">Doctor Portal</p>
+          </div>
+        </div>
       </div>
 
       <nav className="sidebar-nav">

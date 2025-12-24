@@ -81,8 +81,9 @@ const Header = () => {
           )}
         </div>
 
-        <button className="header-icon-btn" title="Notifications">
+        <button className="header-icon-btn notification-btn" title="Notifications">
           <Bell size={20} />
+          <span className="notification-badge">3</span>
         </button>
       </div>
     </header>

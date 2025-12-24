@@ -9,6 +9,7 @@ import Entities from './pages/Entities';
 import Locations from './pages/Locations';
 import Devices from './pages/Devices';
 import LivePositions from './pages/LivePositions';
+import LiveTracking from './pages/LiveTracking';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import StaffManagement from './pages/StaffManagement';
@@ -78,6 +79,14 @@ function App() {
                 element={
                   <ProtectedRoute requiredPermission="LIVE_POSITION_VIEW">
                     <LivePositions />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="live-tracking"
+                element={
+                  <ProtectedRoute requiredPermission="LIVE_POSITION_VIEW">
+                    <LiveTracking />
                   </ProtectedRoute>
                 }
               />

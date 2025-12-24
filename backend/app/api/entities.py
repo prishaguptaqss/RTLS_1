@@ -50,9 +50,17 @@ async def list_entities(
             if live_loc and live_loc.room_id:
                 room = db.query(RoomModel).filter(RoomModel.id == live_loc.room_id).first()
                 if room:
-                    floor = db.query(FloorModel).filter(FloorModel.id == room.floor_id).first()
-                    building = db.query(BuildingModel).filter(BuildingModel.id == floor.building_id).first()
-                    entity.current_location = f"{building.name} > Floor {floor.floor_number} > {room.room_name}"
+                    # Build location path safely with null checks
+                    floor = db.query(FloorModel).filter(FloorModel.id == room.floor_id).first() if room.floor_id else None
+                    building = db.query(BuildingModel).filter(BuildingModel.id == floor.building_id).first() if floor and floor.building_id else None
+
+                    # Construct location string based on available data
+                    if building and floor:
+                        entity.current_location = f"{building.name} > Floor {floor.floor_number} > {room.room_name}"
+                    elif floor:
+                        entity.current_location = f"Floor {floor.floor_number} > {room.room_name}"
+                    else:
+                        entity.current_location = room.room_name
                 else:
                     entity.current_location = None
             else:

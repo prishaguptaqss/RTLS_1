@@ -16,6 +16,23 @@
   border-bottom: 1px solid var(--sidebar-border);
 }
 
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .sidebar-title {
   font-size: 18px;
   font-weight: 700;
