@@ -85,6 +85,16 @@ const Login = () => {
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
+
+          <div className="forgot-password-link">
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => navigate('/forgot-password')}
+            >
+              Forgot Password?
+            </button>
+          </div>
         </form>
 
         <div className="login-footer">

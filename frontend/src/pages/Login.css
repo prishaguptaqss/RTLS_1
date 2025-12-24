@@ -141,6 +141,31 @@
   cursor: not-allowed;
 }
 
+.forgot-password-link {
+  text-align: center;
+  margin-top: -8px;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.link-button:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.link-button:focus {
+  outline: none;
+}
+
 .login-footer {
   margin-top: 20px;
   padding-top: 20px;

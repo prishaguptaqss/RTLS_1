@@ -42,6 +42,7 @@ class Staff(Base):
     # Relationships
     organization = relationship("Organization", back_populates="staff_members")
     roles = relationship("Role", secondary=staff_roles, back_populates="staff_members")
+    password_reset_tokens = relationship("PasswordResetToken", back_populates="staff", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Staff {self.staff_id} - {self.email}>"

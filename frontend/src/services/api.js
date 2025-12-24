@@ -281,6 +281,28 @@ export const logout = async () => {
   return api.post('/auth/logout');
 };
 
+// ==================== PASSWORD RESET ====================
+
+// Password Reset - Forgot Password (send OTP)
+export const forgotPassword = async (email) => {
+  return api.post('/password-reset/forgot-password', { email });
+};
+
+// Password Reset - Verify OTP
+export const verifyOTP = async (email, otp) => {
+  return api.post('/password-reset/verify-otp', { email, otp });
+};
+
+// Password Reset - Reset Password
+export const resetPassword = async (email, otp, new_password) => {
+  return api.post('/password-reset/reset-password', { email, otp, new_password });
+};
+
+// Password Reset - Resend OTP
+export const resendOTP = async (email) => {
+  return api.post('/password-reset/resend-otp', { email });
+};
+
 // ==================== STAFF MANAGEMENT ====================
 
 // Staff - List all

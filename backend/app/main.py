@@ -28,7 +28,8 @@ from app.api import (
     auth,
     staff,
     roles,
-    permissions
+    permissions,
+    password_reset
 )
 from app.services.missing_person_detector import missing_person_detector
 from app.services.websocket_manager import websocket_manager
@@ -126,6 +127,7 @@ app.add_middleware(
 # Include routers
 # Authentication & Authorization
 app.include_router(auth.router, prefix="/api", tags=["Authentication"])
+app.include_router(password_reset.router, tags=["Password Reset"])
 app.include_router(staff.router, prefix="/api", tags=["Staff Management"])
 app.include_router(roles.router, prefix="/api", tags=["Role Management"])
 app.include_router(permissions.router, prefix="/api", tags=["Permissions"])

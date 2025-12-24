@@ -12,6 +12,9 @@ import LivePositions from './pages/LivePositions';
 import LiveTracking from './pages/LiveTracking';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import VerifyOTP from './pages/VerifyOTP';
+import ResetPassword from './pages/ResetPassword';
 import StaffManagement from './pages/StaffManagement';
 import RoleManagement from './pages/RoleManagement';
 import './App.css';
@@ -24,6 +27,9 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/verify-otp" element={<VerifyOTP />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Protected routes */}
             <Route

@@ -45,6 +45,17 @@ class Settings(BaseSettings):
     DEFAULT_ADMIN_PASSWORD: str = "admin123"  # Change in production
     DEFAULT_ADMIN_NAME: str = "System Administrator"
 
+    # Email Configuration for Password Reset
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = "qsssudhanshu@gmail.com"
+    SMTP_PASSWORD: str = ""  # Set via environment variable
+    SMTP_FROM_EMAIL: str = "qsssudhanshu@gmail.com"
+    SMTP_FROM_NAME: str = "RTLS System"
+
+    # Password Reset Settings
+    RESET_TOKEN_EXPIRE_MINUTES: int = 1  # OTP expires in 1 minute
+
     @property
     def cors_origins_list(self) -> List[str]:
         """Parse CORS_ORIGINS from comma-separated string to list."""
