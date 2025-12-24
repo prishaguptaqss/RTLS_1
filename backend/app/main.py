@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import asyncio
 import logging
+from pathlib import Path
 
 from app.config import settings
 from app.database import engine, Base, SessionLocal
@@ -34,23 +35,38 @@ from app.services.websocket_manager import websocket_manager
 from app.db_init import initialize_database
 
 # Configure logging
+# Create logs directory if it doesn't exist
+log_dir = Path(__file__).parent.parent / 'logs'
+log_dir.mkdir(exist_ok=True)
+
 log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+# Setup handlers - only use file logging if we have write permissions
+handlers = [logging.StreamHandler()]
+try:
+    # Try to create file handler
+    handlers.append(logging.FileHandler(log_dir / 'server.log'))
+except PermissionError:
+    # If we don't have permission, just use console logging
+    print(f"Warning: Cannot write to {log_dir / 'server.log'}. Using console logging only.")
+
 logging.basicConfig(
     level=logging.INFO,
     format=log_format,
-    handlers=[
-        logging.FileHandler('/home/qss/Documents/RTLS/logs/server.log'),
-        logging.StreamHandler()
-    ]
+    handlers=handlers
 )
 logger = logging.getLogger(__name__)
 
 # Also configure detailed logging for organization isolation
 org_logger = logging.getLogger('organization_isolation')
 org_logger.setLevel(logging.DEBUG)
-org_handler = logging.FileHandler('/home/qss/Documents/RTLS/logs/organization_isolation.log')
-org_handler.setFormatter(logging.Formatter(log_format))
-org_logger.addHandler(org_handler)
+try:
+    org_handler = logging.FileHandler(log_dir / 'organization_isolation.log')
+    org_handler.setFormatter(logging.Formatter(log_format))
+    org_logger.addHandler(org_handler)
+except PermissionError:
+    # If we can't write to file, just log to console
+    pass
 
 
 @asynccontextmanager

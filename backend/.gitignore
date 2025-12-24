@@ -44,6 +44,7 @@ alembic/versions/*.pyc
 
 # Logs
 *.log
+logs/
 
 # OS
 .DS_Store

@@ -1,9 +1,10 @@
 .table-wrapper {
   width: 100%;
   overflow-x: auto;
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--bg-card);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .table {
@@ -12,45 +13,46 @@
 }
 
 .table-header {
-  background-color: #f8f9fa;
-  border-bottom: 2px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .table-head {
-  padding: 14px 16px;
+  padding: 14px 20px;
   text-align: left;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
 }
 
 .table-body .table-row {
-  border-bottom: 1px solid var(--border-color);
-  transition: background-color 0.2s ease;
+  border-bottom: none;
+  transition: background-color 0.15s ease;
 }
 
 .table-body .table-row:hover {
-  background-color: rgba(108, 92, 231, 0.04);
+  background-color: var(--bg-secondary);
 }
 
-.table-body .table-row:last-child {
-  border-bottom: none;
+.table-body .table-row:not(:last-child) {
+  border-bottom: 1px solid var(--border-light);
 }
 
 .table-cell {
-  padding: 16px;
+  padding: 18px 20px;
   font-size: 14px;
   color: var(--text-primary);
+  font-weight: 500;
 }
 
 .table-cell.negative {
   color: var(--danger);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .table-cell.positive {
   color: var(--success);
-  font-weight: 500;
+  font-weight: 600;
 }

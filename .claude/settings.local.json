@@ -37,7 +37,13 @@
       "Bash(mkdir:*)",
       "Bash(python:*)",
       "Bash(tee:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(sudo docker exec:*)",
+      "Bash(alembic heads:*)",
+      "Bash(alembic history:*)",
+      "Bash(./start.sh:*)",
+      "Bash(sudo chown:*)",
+      "Bash(echo:*)"
     ]
   }
 }

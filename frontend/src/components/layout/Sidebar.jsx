@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -7,23 +7,13 @@ import {
   MapPin,
   Settings,
   Building,
-  Shield,
-  LogOut,
-  User
+  Shield
 } from 'lucide-react';
-import { useOrganization } from '../../contexts/OrganizationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import './Sidebar.css';
 
 const Sidebar = () => {
-  const { currentOrganization, organizations, switchOrganization, loading } = useOrganization();
-  const { user, logout, hasPermission } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  const { user, hasPermission } = useAuth();
 
   // Define all menu items with their required permissions
   const menuItems = [
@@ -62,14 +52,14 @@ const Sidebar = () => {
       label: 'User',
       path: '/staff',
       permission: 'STAFF_VIEW',
-      adminOnly: false // Visible if user has STAFF_VIEW permission
+      adminOnly: false
     },
     {
       icon: Shield,
       label: 'Roles',
       path: '/roles',
       permission: 'ROLE_VIEW',
-      adminOnly: false // Visible if user has ROLE_VIEW permission
+      adminOnly: false
     },
     {
       icon: Settings,
@@ -90,35 +80,6 @@ const Sidebar = () => {
     <aside className="sidebar">
       <div className="sidebar-header">
         <h2 className="sidebar-title">RTLS Dashboard</h2>
-
-        {/* User Info */}
-        {user && (
-          <div className="user-info">
-            <User size={16} />
-            <div className="user-details">
-              <span className="user-name">{user.name}</span>
-              {user.is_admin && <span className="admin-badge-small">Admin</span>}
-            </div>
-          </div>
-        )}
-
-        {/* Organization Selector */}
-        {!loading && organizations.length > 0 && (
-          <div className="org-selector">
-            <label className="org-label">Organization:</label>
-            <select
-              value={currentOrganization?.id || ''}
-              onChange={(e) => switchOrganization(e.target.value)}
-              className="org-select"
-            >
-              {organizations.map(org => (
-                <option key={org.id} value={org.id}>
-                  {org.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
       </div>
 
       <nav className="sidebar-nav">
@@ -135,14 +96,6 @@ const Sidebar = () => {
           </NavLink>
         ))}
       </nav>
-
-      {/* Logout Button */}
-      <div className="sidebar-footer">
-        <button className="logout-button" onClick={handleLogout}>
-          <LogOut size={20} />
-          <span>Logout</span>
-        </button>
-      </div>
     </aside>
   );
 };

@@ -669,7 +669,7 @@ const Devices = () => {
                 name="anchor_id"
                 value={anchorFormData.anchor_id}
                 onChange={(e) => setAnchorFormData({ ...anchorFormData, anchor_id: e.target.value })}
-                placeholder="e.g. ANCHOR-A1, ESP32-001"
+                placeholder="e.g. ANCHOR-A1"
                 required
               />
               {formErrors.anchor_id && (

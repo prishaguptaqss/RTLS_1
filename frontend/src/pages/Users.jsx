@@ -4,7 +4,7 @@ import Table from '../components/ui/Table';
 import Modal from '../components/ui/Modal';
 import { fetchUsers, createUser, updateUser, deleteUser, fetchUserLocationHistory } from '../services/api';
 import './Users.css';
-import { FiEdit2, FiTrash2, FiClock } from "react-icons/fi";
+import { Edit2, Trash2, Clock } from 'lucide-react';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -301,21 +301,21 @@ const Users = () => {
                           className="btn-icon btn-info"
                           title="View location history"
                         >
-                          <FiClock size={16} />
+                          <Clock size={18} />
                         </button>
                         <button
                           onClick={() => openEditModal(user)}
                           className="btn-icon btn-edit"
                           title="Edit user"
                         >
-                           <FiEdit2 size={16} />
+                          <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => openDeleteModal(user)}
                           className="btn-icon btn-delete"
                           title="Delete user"
                         >
-                          <FiTrash2 size={16} />
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     </Table.Cell>

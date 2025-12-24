@@ -56,52 +56,58 @@
   font-style: italic;
 }
 
-/* Entity type badges */
+/* Entity type badges - Soft Pill Style */
 .entity-type-badge {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
   display: inline-block;
+  border: none;
+  text-transform: capitalize;
+  letter-spacing: 0.3px;
 }
 
 .badge-blue {
-  background-color: #e3f2fd;
-  color: #1565c0;
-  border: 1px solid #90caf9;
+  background-color: var(--badge-blue-bg);
+  color: var(--badge-blue-text);
 }
 
 .badge-green {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #81c784;
+  background-color: var(--badge-green-bg);
+  color: var(--badge-green-text);
 }
 
 .badge-gray {
-  background-color: #e2e3e5;
-  color: #6c757d;
-  border: 1px solid #d6d8db;
+  background-color: var(--badge-gray-bg);
+  color: var(--badge-gray-text);
 }
 
-/* Tracking status badges */
+/* Tracking status badges - Soft Pill Style */
 .status-badge {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
   display: inline-block;
+  border: none;
+  text-transform: capitalize;
+  letter-spacing: 0.3px;
 }
 
 .status-badge.status-tracked {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background-color: var(--success-bg);
+  color: var(--success-text);
 }
 
 .status-badge.status-untracked {
-  background-color: #e2e3e5;
-  color: #6c757d;
-  border: 1px solid #d6d8db;
+  background-color: var(--badge-gray-bg);
+  color: var(--badge-gray-text);
+}
+
+.status-badge.status-admitted {
+  background-color: var(--info-bg);
+  color: var(--info-text);
 }
 
 /* Action buttons */
@@ -111,12 +117,13 @@
   align-items: center;
 }
 
-/* Base icon button styles - simple icons without boxes */
+/* Icon button styles - Clean modern icons */
 .btn-icon {
-  background: none;
+  background: transparent;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 6px;
+  border-radius: 6px;
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
@@ -124,39 +131,44 @@
 }
 
 .btn-icon:hover {
-  transform: scale(1.15);
+  transform: translateY(-1px);
+  background: var(--bg-secondary);
 }
 
 .btn-icon.btn-info {
-  color: #17a2b8;
+  color: var(--info);
 }
 
 .btn-icon.btn-info:hover {
-  color: #138496;
+  color: var(--info);
+  background: var(--info-bg);
 }
 
 .btn-icon.btn-warning {
-  color: #ff9800;
+  color: var(--warning);
 }
 
 .btn-icon.btn-warning:hover {
-  color: #e68900;
+  color: var(--warning);
+  background: var(--warning-bg);
 }
 
 .btn-icon.btn-edit {
-  color: #6c5ce7;
+  color: var(--primary);
 }
 
 .btn-icon.btn-edit:hover {
-  color: #5849c7;
+  color: var(--primary);
+  background: var(--badge-blue-bg);
 }
 
 .btn-icon.btn-delete {
-  color: #d63031;
+  color: var(--danger);
 }
 
 .btn-icon.btn-delete:hover {
-  color: #a52021;
+  color: var(--danger);
+  background: var(--danger-bg);
 }
 
 .btn.btn-warning {

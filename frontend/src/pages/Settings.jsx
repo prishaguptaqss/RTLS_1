@@ -5,7 +5,7 @@ import { useOrganization } from '../contexts/OrganizationContext';
 import './Settings.css';
 
 const Settings = () => {
-  const { currentOrganization, loading: orgLoading } = useOrganization();
+  const { currentOrganization, organizations, switchOrganization, loading: orgLoading } = useOrganization();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -120,6 +120,32 @@ const Settings = () => {
       <Card>
         <Card.Content>
           <form onSubmit={handleSubmit} className="settings-form">
+            <div className="settings-section">
+              <h2 className="section-title">Organization</h2>
+              <p className="section-description">
+                Select the organization you want to manage.
+              </p>
+
+              <div className="form-group">
+                <label htmlFor="organization">Current Organization</label>
+                <select
+                  id="organization"
+                  value={currentOrganization?.id || ''}
+                  onChange={(e) => switchOrganization(e.target.value)}
+                  className="settings-input"
+                >
+                  {organizations.map(org => (
+                    <option key={org.id} value={org.id}>
+                      {org.name}
+                    </option>
+                  ))}
+                </select>
+                <small className="help-text">
+                  Switching organizations will reload the settings for the selected organization.
+                </small>
+              </div>
+            </div>
+
             <div className="settings-section">
               <h2 className="section-title">Tracking Configuration</h2>
               <p className="section-description">

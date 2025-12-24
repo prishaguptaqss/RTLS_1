@@ -1,6 +1,7 @@
 .layout {
   display: flex;
   min-height: 100vh;
+  background-color: var(--bg-main);
 }
 
 .layout-main {
@@ -12,8 +13,7 @@
 
 .layout-content {
   flex: 1;
-  margin-top: 64px;
-  padding: 32px;
-  background-color: #f5f6fa;
-  min-height: calc(100vh - 64px);
+  padding: 32px 40px;
+  background-color: var(--bg-main);
+  min-height: 100vh;
 }
