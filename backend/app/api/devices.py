@@ -8,13 +8,14 @@ from typing import List
 
 from app.schemas.anchor import Anchor, AnchorCreate, AnchorUpdate
 from app.models.anchor import Anchor as AnchorModel
-from app.api.deps import get_db, get_current_organization
+from app.api.deps import get_db, get_current_organization, require_permission
 from app.models.organization import Organization
+from app.utils.permissions import Permission
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[Anchor])
+@router.get("/", response_model=List[Anchor], dependencies=[Depends(require_permission(Permission.DEVICE_VIEW))])
 async def list_devices(
     organization: Organization = Depends(get_current_organization),
     db: Session = Depends(get_db)
@@ -23,7 +24,7 @@ async def list_devices(
     return db.query(AnchorModel).filter(AnchorModel.organization_id == organization.id).all()
 
 
-@router.get("/unassigned", response_model=List[Anchor])
+@router.get("/unassigned", response_model=List[Anchor], dependencies=[Depends(require_permission(Permission.DEVICE_VIEW))])
 async def list_unassigned_devices(
     organization: Organization = Depends(get_current_organization),
     db: Session = Depends(get_db)
@@ -35,7 +36,7 @@ async def list_unassigned_devices(
     ).all()
 
 
-@router.post("/", response_model=Anchor, status_code=201)
+@router.post("/", response_model=Anchor, status_code=201, dependencies=[Depends(require_permission(Permission.DEVICE_CREATE))])
 async def create_device(
     device: AnchorCreate,
     organization: Organization = Depends(get_current_organization),
@@ -57,7 +58,7 @@ async def create_device(
     return db_device
 
 
-@router.get("/{device_id}", response_model=Anchor)
+@router.get("/{device_id}", response_model=Anchor, dependencies=[Depends(require_permission(Permission.DEVICE_VIEW))])
 async def get_device(device_id: str, db: Session = Depends(get_db)):
     """Get device by ID."""
     device = db.query(AnchorModel).filter(AnchorModel.anchor_id == device_id).first()
@@ -66,7 +67,7 @@ async def get_device(device_id: str, db: Session = Depends(get_db)):
     return device
 
 
-@router.put("/{device_id}", response_model=Anchor)
+@router.put("/{device_id}", response_model=Anchor, dependencies=[Depends(require_permission(Permission.DEVICE_EDIT))])
 async def update_device(device_id: str, device_update: AnchorUpdate, db: Session = Depends(get_db)):
     """Update device."""
     device = db.query(AnchorModel).filter(AnchorModel.anchor_id == device_id).first()
@@ -82,7 +83,7 @@ async def update_device(device_id: str, device_update: AnchorUpdate, db: Session
     return device
 
 
-@router.delete("/{device_id}", status_code=204)
+@router.delete("/{device_id}", status_code=204, dependencies=[Depends(require_permission(Permission.DEVICE_DELETE))])
 async def delete_device(device_id: str, db: Session = Depends(get_db)):
     """Delete device."""
     device = db.query(AnchorModel).filter(AnchorModel.anchor_id == device_id).first()

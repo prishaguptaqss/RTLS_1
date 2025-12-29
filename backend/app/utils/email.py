@@ -4,7 +4,10 @@ import string
 import aiosmtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from sqlalchemy.orm import Session
+from typing import Optional
 from app.config import settings
+from app.utils.email_config import get_email_config
 
 
 def generate_otp() -> str:
@@ -12,7 +15,7 @@ def generate_otp() -> str:
     return ''.join(random.choices(string.digits, k=4))
 
 
-async def send_otp_email(to_email: str, otp: str, staff_name: str) -> bool:
+async def send_otp_email(to_email: str, otp: str, staff_name: str, db: Optional[Session] = None, organization_id: Optional[int] = None) -> bool:
     """
     Send OTP email to user for password reset.
 
@@ -20,12 +23,24 @@ async def send_otp_email(to_email: str, otp: str, staff_name: str) -> bool:
         to_email: Recipient email address
         otp: 4-digit OTP code
         staff_name: Name of the staff member
+        db: Database session (optional, for org-specific config)
+        organization_id: Organization ID (optional, for org-specific config)
 
     Returns:
         True if email sent successfully, False otherwise
     """
+    # Get email configuration (org-specific or global)
+    email_config = get_email_config(db, organization_id) if db else {
+        "smtp_host": settings.SMTP_HOST,
+        "smtp_port": settings.SMTP_PORT,
+        "smtp_username": settings.SMTP_USERNAME,
+        "smtp_password": settings.SMTP_PASSWORD,
+        "smtp_from_email": settings.SMTP_FROM_EMAIL,
+        "smtp_from_name": settings.SMTP_FROM_NAME,
+    }
+
     # DEVELOPMENT MODE: Log OTP instead of sending email if SMTP password is not set
-    if not settings.SMTP_PASSWORD:
+    if not email_config["smtp_password"]:
         print(f"\n{'='*60}")
         print(f"🔐 PASSWORD RESET OTP (DEVELOPMENT MODE)")
         print(f"{'='*60}")
@@ -40,7 +55,7 @@ async def send_otp_email(to_email: str, otp: str, staff_name: str) -> bool:
         # Create message
         message = MIMEMultipart("alternative")
         message["Subject"] = "Password Reset OTP - RTLS System"
-        message["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>"
+        message["From"] = f"{email_config['smtp_from_name']} <{email_config['smtp_from_email']}>"
         message["To"] = to_email
 
         # Create HTML content
@@ -79,10 +94,10 @@ async def send_otp_email(to_email: str, otp: str, staff_name: str) -> bool:
         # Send email using aiosmtplib
         await aiosmtplib.send(
             message,
-            hostname=settings.SMTP_HOST,
-            port=settings.SMTP_PORT,
-            username=settings.SMTP_USERNAME,
-            password=settings.SMTP_PASSWORD,
+            hostname=email_config["smtp_host"],
+            port=email_config["smtp_port"],
+            username=email_config["smtp_username"],
+            password=email_config["smtp_password"],
             start_tls=True,
         )
 
@@ -92,19 +107,31 @@ async def send_otp_email(to_email: str, otp: str, staff_name: str) -> bool:
         return False
 
 
-async def send_password_reset_success_email(to_email: str, staff_name: str) -> bool:
+async def send_password_reset_success_email(to_email: str, staff_name: str, db: Optional[Session] = None, organization_id: Optional[int] = None) -> bool:
     """
     Send confirmation email after successful password reset.
 
     Args:
         to_email: Recipient email address
         staff_name: Name of the staff member
+        db: Database session (optional, for org-specific config)
+        organization_id: Organization ID (optional, for org-specific config)
 
     Returns:
         True if email sent successfully, False otherwise
     """
+    # Get email configuration (org-specific or global)
+    email_config = get_email_config(db, organization_id) if db else {
+        "smtp_host": settings.SMTP_HOST,
+        "smtp_port": settings.SMTP_PORT,
+        "smtp_username": settings.SMTP_USERNAME,
+        "smtp_password": settings.SMTP_PASSWORD,
+        "smtp_from_email": settings.SMTP_FROM_EMAIL,
+        "smtp_from_name": settings.SMTP_FROM_NAME,
+    }
+
     # DEVELOPMENT MODE: Skip email if SMTP password is not set
-    if not settings.SMTP_PASSWORD:
+    if not email_config["smtp_password"]:
         print(f"\n✅ Password reset successful for {to_email} (email skipped in dev mode)\n")
         return True
 
@@ -112,7 +139,7 @@ async def send_password_reset_success_email(to_email: str, staff_name: str) -> b
         # Create message
         message = MIMEMultipart("alternative")
         message["Subject"] = "Password Reset Successful - RTLS System"
-        message["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>"
+        message["From"] = f"{email_config['smtp_from_name']} <{email_config['smtp_from_email']}>"
         message["To"] = to_email
 
         # Create HTML content
@@ -146,10 +173,10 @@ async def send_password_reset_success_email(to_email: str, staff_name: str) -> b
         # Send email using aiosmtplib
         await aiosmtplib.send(
             message,
-            hostname=settings.SMTP_HOST,
-            port=settings.SMTP_PORT,
-            username=settings.SMTP_USERNAME,
-            password=settings.SMTP_PASSWORD,
+            hostname=email_config["smtp_host"],
+            port=email_config["smtp_port"],
+            username=email_config["smtp_username"],
+            password=email_config["smtp_password"],
             start_tls=True,
         )
 

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { fetchStaff, createStaff, updateStaff, deleteStaff, fetchRoles } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useSearch } from '../contexts/SearchContext';
 import PermissionGate from '../components/PermissionGate';
 import { Eye, EyeOff, Copy } from 'lucide-react';
 import './StaffManagement.css';
 
 const StaffManagement = () => {
   const { user } = useAuth();
+  const { searchQuery } = useSearch();
   const [staff, setStaff] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -124,6 +126,18 @@ const StaffManagement = () => {
     return staffMember?.email === 'admin@rtls.com' && staffMember?.is_admin;
   };
 
+  // Filter staff based on global search
+  const filteredStaff = staff.filter(member => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      member.name?.toLowerCase().includes(query) ||
+      member.email?.toLowerCase().includes(query) ||
+      member.phone?.toLowerCase().includes(query) ||
+      member.staff_id?.toLowerCase().includes(query)
+    );
+  });
+
   if (loading) {
     return <div className="loading">Loading...</div>;
   }
@@ -170,7 +184,14 @@ const StaffManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {staff.map((member) => (
+            {filteredStaff.length === 0 ? (
+              <tr>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                  {searchQuery.trim() ? 'No matching staff found' : 'No staff available'}
+                </td>
+              </tr>
+            ) : (
+              filteredStaff.map((member) => (
               <tr key={member.id}>
                 <td>
                   <div className="staff-name">
@@ -214,7 +235,8 @@ const StaffManagement = () => {
                   </div>
                 </td>
               </tr>
-            ))}
+              ))
+            )}
           </tbody>
         </table>
       </div>

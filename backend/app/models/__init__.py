@@ -13,6 +13,7 @@ from app.models.tag import Tag
 from app.models.anchor import Anchor
 from app.models.live_location import LiveLocation
 from app.models.location_history import LocationHistory
+from app.models.password_reset import PasswordResetToken
 
 __all__ = [
     "User",
@@ -27,4 +28,5 @@ __all__ = [
     "Anchor",
     "LiveLocation",
     "LocationHistory",
+    "PasswordResetToken",
 ]

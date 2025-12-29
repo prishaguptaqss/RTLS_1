@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
-import StatCard from '../components/ui/StatCard';
+import Table from '../components/ui/Table';
 import Modal from '../components/ui/Modal';
 import {
   fetchBuildings,
@@ -17,12 +17,14 @@ import {
   deleteRoom
 } from '../services/api';
 import { useOrganization } from '../contexts/OrganizationContext';
-import { FiLayers, FiHome, FiEdit2, FiTrash2, FiPlus, FiUpload } from 'react-icons/fi';
+import { useSearch } from '../contexts/SearchContext';
+import { FiLayers, FiHome, FiEdit2, FiTrash2, FiPlus, FiChevronRight } from 'react-icons/fi';
 import { Building2 } from 'lucide-react';
 import './Locations.css';
 
 const Locations = () => {
   const { currentOrganization, loading: orgLoading } = useOrganization();
+  const { searchQuery } = useSearch();
   const [buildings, setBuildings] = useState([]);
   const [floors, setFloors] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -34,6 +36,7 @@ const Locations = () => {
   const [isFloorModalOpen, setIsFloorModalOpen] = useState(false);
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   // Selected items
   const [selectedBuilding, setSelectedBuilding] = useState(null);
@@ -50,7 +53,8 @@ const Locations = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // View state
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [expandedBuildings, setExpandedBuildings] = useState(new Set());
+  const [expandedFloors, setExpandedFloors] = useState(new Set());
 
   useEffect(() => {
     if (!orgLoading && currentOrganization) {
@@ -253,22 +257,70 @@ const Locations = () => {
     }
   };
 
-  // Upload floor plan handler
-  const openUploadModal = () => {
-    setIsUploadModalOpen(true);
-  };
-
+  // Floor plan upload handler (placeholder - feature not yet implemented)
   const handleUploadFloorPlan = async (e) => {
     e.preventDefault();
-    // TODO: Implement floor plan upload
-    alert('Floor plan upload functionality will be implemented');
+    // TODO: Implement floor plan upload functionality
+    console.log('Floor plan upload not yet implemented');
     setIsUploadModalOpen(false);
   };
 
-  // Get room count for a floor
-  const getRoomCount = (floorId) => {
-    return rooms.filter(r => r.floor_id === floorId).length;
+  // Toggle expand/collapse
+  const toggleBuilding = (buildingId) => {
+    const newExpanded = new Set(expandedBuildings);
+    if (newExpanded.has(buildingId)) {
+      newExpanded.delete(buildingId);
+    } else {
+      newExpanded.add(buildingId);
+    }
+    setExpandedBuildings(newExpanded);
   };
+
+  const toggleFloor = (floorId) => {
+    const newExpanded = new Set(expandedFloors);
+    if (newExpanded.has(floorId)) {
+      newExpanded.delete(floorId);
+    } else {
+      newExpanded.add(floorId);
+    }
+    setExpandedFloors(newExpanded);
+  };
+
+  // Get floors for a building
+  const getBuildingFloors = (buildingId) => {
+    return floors.filter(f => f.building_id === buildingId).sort((a, b) => a.floor_number - b.floor_number);
+  };
+
+  // Get rooms for a floor
+  const getFloorRooms = (floorId) => {
+    return rooms.filter(r => r.floor_id === floorId).sort((a, b) => a.room_name.localeCompare(b.room_name));
+  };
+
+  // Filter buildings/floors/rooms based on global search
+  const filteredBuildings = buildings.filter(building => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+
+    // Search in building name
+    if (building.name?.toLowerCase().includes(query)) return true;
+
+    // Search in floors
+    const buildingFloors = getBuildingFloors(building.id);
+    for (const floor of buildingFloors) {
+      if (`floor ${floor.floor_number}`.toLowerCase().includes(query)) return true;
+
+      // Search in rooms
+      const floorRooms = getFloorRooms(floor.id);
+      for (const room of floorRooms) {
+        if (room.room_name?.toLowerCase().includes(query) ||
+            room.room_type?.toLowerCase().includes(query)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  });
 
   if (orgLoading || loading) {
     return (
@@ -331,8 +383,8 @@ const Locations = () => {
     <div className="page-container locations-page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Buildings & Floor Plans</h1>
-          <p className="page-subtitle">Manage hospital buildings, floors, and rooms</p>
+          <h1 className="page-title">Location Management</h1>
+          <p className="page-subtitle">Manage buildings, floors, and rooms for {currentOrganization.name}</p>
         </div>
         <button onClick={() => openBuildingModal()} className="btn btn-primary">
           <Building2 size={16} />
@@ -340,152 +392,162 @@ const Locations = () => {
         </button>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="stats-grid">
-        <StatCard
-          title="Buildings"
-          value={buildings.length}
-          icon={Building2}
-        />
-        <StatCard
-          title="Total Floors"
-          value={floors.length}
-          icon={FiLayers}
-        />
-        <StatCard
-          title="Total Rooms"
-          value={rooms.length}
-          icon={FiHome}
-        />
-      </div>
-
-      {/* Buildings Table */}
-      {buildings.map(building => (
-        <Card key={building.id} className="building-card">
-          <Card.Header>
-            <div className="building-header-content">
-              <div className="building-title-section">
-                <Building2 size={24} className="building-icon" />
-                <h2 className="building-title">{building.name}</h2>
-              </div>
-              <div className="building-actions">
-                <button
-                  onClick={() => openFloorModal(null, building.id)}
-                  className="btn btn-secondary"
-                >
-                  <FiPlus size={16} />
-                  Add Floor
-                </button>
-                <button
-                  onClick={() => openUploadModal(null)}
-                  className="btn btn-secondary"
-                >
-                  <FiUpload size={16} />
-                  Upload Floor Plan
-                </button>
-                <button
-                  onClick={() => openBuildingModal(building)}
-                  className="btn-icon btn-edit"
-                  title="Edit building"
-                >
-                  <FiEdit2 size={16} />
-                </button>
-                <button
-                  onClick={() => openDeleteModal(building, 'building')}
-                  className="btn-icon btn-delete"
-                  title="Delete building"
-                >
-                  <FiTrash2 size={16} />
-                </button>
-              </div>
-            </div>
-          </Card.Header>
-          <Card.Content>
-            {floors.filter(f => f.building_id === building.id).length === 0 ? (
-              <div className="empty-state-small">
-                <p>No floors added yet. Click "Add Floor" to create the first floor.</p>
-              </div>
-            ) : (
-              <div className="table-container">
-                <table className="locations-table">
-                  <thead>
-                    <tr>
-                      <th>Floor</th>
-                      <th>Name</th>
-                      <th>Type</th>
-                      <th>Rooms</th>
-                      <th>Floor Plan</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {floors
-                      .filter(f => f.building_id === building.id)
-                      .sort((a, b) => a.floor_number - b.floor_number)
-                      .map(floor => (
-                        <tr key={floor.id}>
-                          <td className="floor-number-cell">{floor.floor_number}</td>
-                          <td className="floor-name-cell">
-                            {floor.floor_number === 0 ? 'Ground Floor' :
-                             floor.floor_number === 1 ? 'First Floor' :
-                             floor.floor_number === 2 ? 'Second Floor' :
-                             floor.floor_number === 'OT' ? 'Operation Theatre' :
-                             `Floor ${floor.floor_number}`}
-                          </td>
-                          <td>
-                            <span className="type-badge type-general">General</span>
-                          </td>
-                          <td className="rooms-count-cell">{getRoomCount(floor.id)}</td>
-                          <td className="floor-plan-cell">
-                            <span className="not-uploaded-badge">Not uploaded</span>
-                          </td>
-                          <td className="actions-cell">
-                            <button
-                              onClick={() => openRoomModal(null, floor.id)}
-                              className="btn-icon btn-success"
-                              title="Add room"
-                            >
-                              <FiPlus size={16} />
-                            </button>
-                            <button
-                              onClick={() => openFloorModal(floor)}
-                              className="btn-icon btn-edit"
-                              title="Edit floor"
-                            >
-                              <FiEdit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => openDeleteModal(floor, 'floor')}
-                              className="btn-icon btn-delete"
-                              title="Delete floor"
-                            >
-                              <FiTrash2 size={16} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card.Content>
-        </Card>
-      ))}
-
-      {buildings.length === 0 && (
-        <Card>
-          <Card.Content>
+      <Card>
+        <Card.Content>
+          {filteredBuildings.length === 0 ? (
             <div className="empty-state">
               <Building2 size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-              <p>No buildings found. Add your first building to get started.</p>
-              <button onClick={() => openBuildingModal()} className="btn btn-primary">
-                <Building2 size={16} />
-                Add Building
-              </button>
+              <p>{searchQuery.trim() ? 'No matching locations found.' : 'No buildings found. Add your first building to get started.'}</p>
+              {!searchQuery.trim() && (
+                <button onClick={() => openBuildingModal()} className="btn btn-primary">
+                  <Building2 size={16} />
+                  Add Building
+                </button>
+              )}
             </div>
-          </Card.Content>
-        </Card>
-      )}
+          ) : (
+            <div className="locations-tree">
+              {filteredBuildings.map(building => {
+                const buildingFloors = getBuildingFloors(building.id);
+                const isExpanded = expandedBuildings.has(building.id);
+
+                return (
+                  <div key={building.id} className="location-item building-item">
+                    <div className="location-header">
+                      <div className="location-info">
+                        <button
+                          className={`expand-btn ${isExpanded ? 'expanded' : ''}`}
+                          onClick={() => toggleBuilding(building.id)}
+                          disabled={buildingFloors.length === 0}
+                        >
+                          <FiChevronRight size={16} />
+                        </button>
+                        <Building2 className="location-icon" size={20} />
+                        <div>
+                          <strong className="location-name">{building.name}</strong>
+                          <span className="location-count">{buildingFloors.length} floors</span>
+                        </div>
+                      </div>
+                      <div className="location-actions">
+                        <button
+                          onClick={() => openFloorModal(null, building.id)}
+                          className="btn-icon btn-success"
+                          title="Add floor"
+                        >
+                          <FiPlus size={16} />
+                        </button>
+                        <button
+                          onClick={() => openBuildingModal(building)}
+                          className="btn-icon btn-edit"
+                          title="Edit building"
+                        >
+                          <FiEdit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => openDeleteModal(building, 'building')}
+                          className="btn-icon btn-delete"
+                          title="Delete building"
+                        >
+                          <FiTrash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {isExpanded && buildingFloors.length > 0 && (
+                      <div className="location-children">
+                        {buildingFloors.map(floor => {
+                          const floorRooms = getFloorRooms(floor.id);
+                          const isFloorExpanded = expandedFloors.has(floor.id);
+
+                          return (
+                            <div key={floor.id} className="location-item floor-item">
+                              <div className="location-header">
+                                <div className="location-info">
+                                  <button
+                                    className={`expand-btn ${isFloorExpanded ? 'expanded' : ''}`}
+                                    onClick={() => toggleFloor(floor.id)}
+                                    disabled={floorRooms.length === 0}
+                                  >
+                                    <FiChevronRight size={16} />
+                                  </button>
+                                  <FiLayers className="location-icon" size={18} />
+                                  <div>
+                                    <strong className="location-name">Floor {floor.floor_number}</strong>
+                                    <span className="location-count">{floorRooms.length} rooms</span>
+                                  </div>
+                                </div>
+                                <div className="location-actions">
+                                  <button
+                                    onClick={() => openRoomModal(null, floor.id)}
+                                    className="btn-icon btn-success"
+                                    title="Add room"
+                                  >
+                                    <FiPlus size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => openFloorModal(floor)}
+                                    className="btn-icon btn-edit"
+                                    title="Edit floor"
+                                  >
+                                    <FiEdit2 size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => openDeleteModal(floor, 'floor')}
+                                    className="btn-icon btn-delete"
+                                    title="Delete floor"
+                                  >
+                                    <FiTrash2 size={16} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {isFloorExpanded && floorRooms.length > 0 && (
+                                <div className="location-children">
+                                  {floorRooms.map(room => (
+                                    <div key={room.id} className="location-item room-item">
+                                      <div className="location-header">
+                                        <div className="location-info">
+                                          <FiHome className="location-icon" size={16} />
+                                          <div>
+                                            <strong className="location-name">{room.room_name}</strong>
+                                            {room.room_type && (
+                                              <span className="room-type-badge">{room.room_type}</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="location-actions">
+                                          <button
+                                            onClick={() => openRoomModal(room)}
+                                            className="btn-icon btn-edit"
+                                            title="Edit room"
+                                          >
+                                            <FiEdit2 size={16} />
+                                          </button>
+                                          <button
+                                            onClick={() => openDeleteModal(room, 'room')}
+                                            className="btn-icon btn-delete"
+                                            title="Delete room"
+                                          >
+                                            <FiTrash2 size={16} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card.Content>
+      </Card>
 
       {/* Building Modal */}
       <Modal isOpen={isBuildingModalOpen} onClose={() => setIsBuildingModalOpen(false)}>

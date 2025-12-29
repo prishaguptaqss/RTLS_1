@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
+import PermissionGate from '../components/PermissionGate';
 import Buildings from './Buildings'; // Reuse existing Buildings component
 import {
   fetchOrganizations,
@@ -9,11 +10,14 @@ import {
   deleteOrganization
 } from '../services/api';
 import { useOrganization } from '../contexts/OrganizationContext';
-import { FiEdit2, FiTrash2, FiCheckCircle } from 'react-icons/fi';
+import { useSearch } from '../contexts/SearchContext';
+import { FiEdit2, FiTrash2, FiCheckCircle, FiUpload } from 'react-icons/fi';
+import { COUNTRIES, getPincodeFormat } from '../utils/countries';
 import './Organizations.css';
 
 const Organizations = () => {
   const { reloadOrganizations } = useOrganization();
+  const { searchQuery } = useSearch();
   const [organizations, setOrganizations] = useState([]);
   const [selectedOrg, setSelectedOrg] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,8 +27,14 @@ const Organizations = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     org_id: '',
-    name: ''
+    name: '',
+    display_name: '',
+    address: '',
+    country: '',
+    pincode: ''
   });
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -59,26 +69,78 @@ const Organizations = () => {
       errors.name = 'Name is required';
     }
 
+    if (!formData.display_name.trim()) {
+      errors.display_name = 'Display name is required';
+    } else if (formData.display_name.length > 7) {
+      errors.display_name = 'Display name must be 7 characters or less';
+    }
+
+    if (!formData.address.trim()) {
+      errors.address = 'Address is required';
+    }
+
+    if (!formData.country) {
+      errors.country = 'Country is required';
+    }
+
+    if (!formData.pincode.trim()) {
+      errors.pincode = 'Pincode is required';
+    }
+
+    // Logo validation (only if a file is selected)
+    if (logoFile) {
+      const maxSize = 1 * 1024 * 1024; // 1 MB
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+
+      if (!allowedTypes.includes(logoFile.type)) {
+        errors.logo = 'Logo must be a PNG or JPEG image';
+      } else if (logoFile.size > maxSize) {
+        errors.logo = 'Logo file size must be less than 1 MB';
+      }
+    }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleCreateOrganization = async (e) => {
     e.preventDefault();
-    if (!validateForm(true)) return;
+    console.log('Form submitted, validating...');
+    console.log('Form data:', formData);
+
+    if (!validateForm(true)) {
+      console.log('Validation failed:', formErrors);
+      return;
+    }
 
     try {
       setSubmitting(true);
-      await createOrganization({
-        org_id: formData.org_id.trim(),
-        name: formData.name.trim()
-      });
+      console.log('Creating organization...');
+
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      formDataToSend.append('org_id', formData.org_id.trim());
+      formDataToSend.append('name', formData.name.trim());
+      formDataToSend.append('display_name', formData.display_name.trim());
+      formDataToSend.append('address', formData.address.trim());
+      formDataToSend.append('country', formData.country);
+      formDataToSend.append('pincode', formData.pincode.trim());
+
+      if (logoFile) {
+        formDataToSend.append('logo', logoFile);
+      }
+
+      console.log('Sending FormData to API...');
+      await createOrganization(formDataToSend);
+      console.log('Organization created successfully');
+
       await loadOrganizations();
       await reloadOrganizations(); // Update the global organization context
       setIsCreateModalOpen(false);
       resetForm();
     } catch (err) {
       console.error('Error creating organization:', err);
+      console.error('Error response:', err.response);
       const errorDetail = err.response?.data?.detail || 'Failed to create organization';
       if (errorDetail.toLowerCase().includes('already exists')) {
         setFormErrors({ org_id: 'Organization ID already exists. Please use a different ID.' });
@@ -96,9 +158,20 @@ const Organizations = () => {
 
     try {
       setSubmitting(true);
-      await updateOrganization(selectedOrg.id, {
-        name: formData.name.trim()
-      });
+
+      // Create FormData for file upload
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name.trim());
+      formDataToSend.append('display_name', formData.display_name.trim());
+      formDataToSend.append('address', formData.address.trim());
+      formDataToSend.append('country', formData.country);
+      formDataToSend.append('pincode', formData.pincode.trim());
+
+      if (logoFile) {
+        formDataToSend.append('logo', logoFile);
+      }
+
+      await updateOrganization(selectedOrg.id, formDataToSend);
       await loadOrganizations();
       await reloadOrganizations(); // Update the global organization context
       setIsEditModalOpen(false);
@@ -140,8 +213,14 @@ const Organizations = () => {
     setSelectedOrg(org);
     setFormData({
       org_id: org.org_id,
-      name: org.name
+      name: org.name,
+      display_name: org.display_name || '',
+      address: org.address || '',
+      country: org.country || '',
+      pincode: org.pincode || ''
     });
+    setLogoFile(null);
+    setLogoPreview(null);
     setFormErrors({});
     setIsEditModalOpen(true);
   };
@@ -154,8 +233,14 @@ const Organizations = () => {
   const resetForm = () => {
     setFormData({
       org_id: '',
-      name: ''
+      name: '',
+      display_name: '',
+      address: '',
+      country: '',
+      pincode: ''
     });
+    setLogoFile(null);
+    setLogoPreview(null);
     setFormErrors({});
   };
 
@@ -167,9 +252,48 @@ const Organizations = () => {
     }
   };
 
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setLogoFile(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+
+      // Clear logo error if exists
+      if (formErrors.logo) {
+        setFormErrors(prev => ({ ...prev, logo: '' }));
+      }
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setLogoFile(null);
+    setLogoPreview(null);
+    if (formErrors.logo) {
+      setFormErrors(prev => ({ ...prev, logo: '' }));
+    }
+  };
+
   const handleSelectOrganization = (org) => {
     setSelectedOrg(selectedOrg?.id === org.id ? null : org);
   };
+
+  // Filter organizations based on global search
+  const getFilteredOrganizations = () => {
+    if (!searchQuery.trim()) return organizations;
+    const query = searchQuery.toLowerCase();
+    return organizations.filter(org =>
+      org.name?.toLowerCase().includes(query) ||
+      org.org_id?.toLowerCase().includes(query)
+    );
+  };
+
+  const filteredOrganizations = getFilteredOrganizations();
 
   if (loading) {
     return (
@@ -215,26 +339,32 @@ const Organizations = () => {
           <h1 className="page-title">Organizations</h1>
           <p className="page-subtitle">Manage organizations and their buildings</p>
         </div>
-        <button onClick={openCreateModal} className="btn btn-primary">
-          + Create Organization
-        </button>
+        <PermissionGate permission="ORGANIZATION_CREATE">
+          <button onClick={openCreateModal} className="btn btn-primary">
+            + Create Organization
+          </button>
+        </PermissionGate>
       </div>
 
-      {organizations.length === 0 ? (
+      {filteredOrganizations.length === 0 ? (
         <Card>
           <Card.Content>
             <div className="empty-state">
-              <p>No organizations found. Create your first organization to get started.</p>
-              <button onClick={openCreateModal} className="btn btn-primary">
-                + Create Organization
-              </button>
+             <p>{searchQuery.trim() ? 'No matching organizations found.' : 'No organizations found. Create your first organization to get started.'}</p>
+              <PermissionGate permission="ORGANIZATION_CREATE">
+                {!searchQuery.trim() && (
+                  <button onClick={openCreateModal} className="btn btn-primary">
+                    + Create Organization
+                  </button>
+                )}
+              </PermissionGate>
             </div>
           </Card.Content>
         </Card>
       ) : (
         <>
           <div className="organizations-grid">
-            {organizations.map((org) => (
+            {filteredOrganizations.map((org) => (
               <div
                 key={org.id}
                 className={`organization-card ${selectedOrg?.id === org.id ? 'selected' : ''}`}
@@ -250,20 +380,24 @@ const Organizations = () => {
                   )}
                 </div>
                 <div className="org-card-actions" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={() => openEditModal(org)}
-                    className="btn-icon btn-edit"
-                    title="Edit organization"
-                  >
-                    <FiEdit2 size={16} />
-                  </button>
-                  <button
-                    onClick={() => openDeleteModal(org)}
-                    className="btn-icon btn-delete"
-                    title="Delete organization"
-                  >
-                    <FiTrash2 size={16} />
-                  </button>
+                  <PermissionGate permission="ORGANIZATION_EDIT">
+                    <button
+                      onClick={() => openEditModal(org)}
+                      className="btn-icon btn-edit"
+                      title="Edit organization"
+                    >
+                      <FiEdit2 size={16} />
+                    </button>
+                  </PermissionGate>
+                  <PermissionGate permission="ORGANIZATION_DELETE">
+                    <button
+                      onClick={() => openDeleteModal(org)}
+                      className="btn-icon btn-delete"
+                      title="Delete organization"
+                    >
+                      <FiTrash2 size={16} />
+                    </button>
+                  </PermissionGate>
                 </div>
               </div>
             ))}
@@ -327,6 +461,131 @@ const Organizations = () => {
                 <small className="error-text">{formErrors.name}</small>
               )}
             </div>
+
+            <div className="form-group">
+              <label htmlFor="display_name">
+                Display Name <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="display_name"
+                name="display_name"
+                value={formData.display_name}
+                onChange={handleInputChange}
+                placeholder="Max 7 characters"
+                maxLength={7}
+                className={formErrors.display_name ? 'input-error' : ''}
+                required
+              />
+              {formErrors.display_name && (
+                <small className="error-text">{formErrors.display_name}</small>
+              )}
+              <small>Short name for display (max 7 characters)</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="logo">
+                Logo (Optional)
+              </label>
+              <div className="logo-upload-container">
+                {logoPreview ? (
+                  <div className="logo-preview">
+                    <img src={logoPreview} alt="Logo preview" />
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="file-upload">
+                    <input
+                      type="file"
+                      id="logo"
+                      name="logo"
+                      accept="image/png,image/jpeg,image/jpg"
+                      onChange={handleLogoChange}
+                      style={{ display: 'none' }}
+                    />
+                    <label htmlFor="logo" className="file-upload-label">
+                      <FiUpload size={20} />
+                      <span>Choose logo file</span>
+                    </label>
+                  </div>
+                )}
+              </div>
+              {formErrors.logo && (
+                <small className="error-text">{formErrors.logo}</small>
+              )}
+              <small>PNG or JPEG, max 1 MB</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="address">
+                Address <span className="required">*</span>
+              </label>
+              <textarea
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                placeholder="Enter full address"
+                className={formErrors.address ? 'input-error' : ''}
+                rows={3}
+                required
+              />
+              {formErrors.address && (
+                <small className="error-text">{formErrors.address}</small>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="country">
+                Country <span className="required">*</span>
+              </label>
+              <select
+                id="country"
+                name="country"
+                value={formData.country}
+                onChange={handleInputChange}
+                className={formErrors.country ? 'input-error' : ''}
+                required
+              >
+                <option value="">Select country</option>
+                {COUNTRIES.map((country) => (
+                  <option key={country.name} value={country.name}>
+                    {country.name}
+                  </option>
+                ))}
+              </select>
+              {formErrors.country && (
+                <small className="error-text">{formErrors.country}</small>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="pincode">
+                Pincode <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="pincode"
+                name="pincode"
+                value={formData.pincode}
+                onChange={handleInputChange}
+                placeholder={formData.country ? getPincodeFormat(formData.country) : 'Select country first'}
+                className={formErrors.pincode ? 'input-error' : ''}
+                required
+              />
+              {formErrors.pincode && (
+                <small className="error-text">{formErrors.pincode}</small>
+              )}
+              {formData.country && (
+                <small>Format: {getPincodeFormat(formData.country)}</small>
+              )}
+            </div>
           </Modal.Body>
           <Modal.Footer>
             <button
@@ -388,6 +647,131 @@ const Organizations = () => {
               />
               {formErrors.name && (
                 <small className="error-text">{formErrors.name}</small>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit-display_name">
+                Display Name <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="edit-display_name"
+                name="display_name"
+                value={formData.display_name}
+                onChange={handleInputChange}
+                placeholder="Max 7 characters"
+                maxLength={7}
+                className={formErrors.display_name ? 'input-error' : ''}
+                required
+              />
+              {formErrors.display_name && (
+                <small className="error-text">{formErrors.display_name}</small>
+              )}
+              <small>Short name for display (max 7 characters)</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit-logo">
+                Logo (Optional)
+              </label>
+              <div className="logo-upload-container">
+                {logoPreview ? (
+                  <div className="logo-preview">
+                    <img src={logoPreview} alt="Logo preview" />
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="file-upload">
+                    <input
+                      type="file"
+                      id="edit-logo"
+                      name="logo"
+                      accept="image/png,image/jpeg,image/jpg"
+                      onChange={handleLogoChange}
+                      style={{ display: 'none' }}
+                    />
+                    <label htmlFor="edit-logo" className="file-upload-label">
+                      <FiUpload size={20} />
+                      <span>Choose logo file</span>
+                    </label>
+                  </div>
+                )}
+              </div>
+              {formErrors.logo && (
+                <small className="error-text">{formErrors.logo}</small>
+              )}
+              <small>PNG or JPEG, max 1 MB</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit-address">
+                Address <span className="required">*</span>
+              </label>
+              <textarea
+                id="edit-address"
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                placeholder="Enter full address"
+                className={formErrors.address ? 'input-error' : ''}
+                rows={3}
+                required
+              />
+              {formErrors.address && (
+                <small className="error-text">{formErrors.address}</small>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit-country">
+                Country <span className="required">*</span>
+              </label>
+              <select
+                id="edit-country"
+                name="country"
+                value={formData.country}
+                onChange={handleInputChange}
+                className={formErrors.country ? 'input-error' : ''}
+                required
+              >
+                <option value="">Select country</option>
+                {COUNTRIES.map((country) => (
+                  <option key={country.name} value={country.name}>
+                    {country.name}
+                  </option>
+                ))}
+              </select>
+              {formErrors.country && (
+                <small className="error-text">{formErrors.country}</small>
+              )}
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit-pincode">
+                Pincode <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="edit-pincode"
+                name="pincode"
+                value={formData.pincode}
+                onChange={handleInputChange}
+                placeholder={formData.country ? getPincodeFormat(formData.country) : 'Select country first'}
+                className={formErrors.pincode ? 'input-error' : ''}
+                required
+              />
+              {formErrors.pincode && (
+                <small className="error-text">{formErrors.pincode}</small>
+              )}
+              {formData.country && (
+                <small>Format: {getPincodeFormat(formData.country)}</small>
               )}
             </div>
           </Modal.Body>

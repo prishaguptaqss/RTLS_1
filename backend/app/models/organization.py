@@ -14,6 +14,11 @@ class Organization(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     org_id = Column(String, unique=True, nullable=False, index=True, comment="User-provided organization ID")
     name = Column(String, nullable=False, comment="Organization name")
+    logo = Column(String, nullable=True, comment="Path to organization logo file")
+    display_name = Column(String(7), nullable=False, comment="Short display name (max 7 characters)")
+    address = Column(String, nullable=False, comment="Organization address")
+    country = Column(String, nullable=False, comment="Country")
+    pincode = Column(String, nullable=False, comment="Postal/PIN code")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships

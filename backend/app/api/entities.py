@@ -15,13 +15,14 @@ from app.models.room import Room as RoomModel
 from app.models.floor import Floor as FloorModel
 from app.models.building import Building as BuildingModel
 from app.utils.enums import TagStatus
-from app.api.deps import get_db, get_current_organization
+from app.api.deps import get_db, get_current_organization, require_permission
 from app.models.organization import Organization
+from app.utils.permissions import Permission
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[Entity])
+@router.get("/", response_model=List[Entity], dependencies=[Depends(require_permission(Permission.ENTITY_VIEW))])
 async def list_entities(
     type: Optional[str] = Query(None, description="Filter by type: person or material"),
     organization: Organization = Depends(get_current_organization),
@@ -75,7 +76,7 @@ async def list_entities(
     return entities
 
 
-@router.post("/", response_model=Entity, status_code=201)
+@router.post("/", response_model=Entity, status_code=201, dependencies=[Depends(require_permission(Permission.ENTITY_ADMIT))])
 async def create_entity(
     entity: EntityCreate,
     organization: Organization = Depends(get_current_organization),
@@ -141,7 +142,7 @@ async def get_entity(
     return entity
 
 
-@router.put("/{entity_id}", response_model=Entity)
+@router.put("/{entity_id}", response_model=Entity, dependencies=[Depends(require_permission(Permission.ENTITY_EDIT))])
 async def update_entity(
     entity_id: str,
     entity_update: EntityUpdate,
@@ -204,7 +205,7 @@ async def update_entity(
     return entity
 
 
-@router.delete("/{entity_id}", status_code=204)
+@router.delete("/{entity_id}", status_code=204, dependencies=[Depends(require_permission(Permission.ENTITY_DELETE))])
 async def delete_entity(
     entity_id: str,
     organization: Organization = Depends(get_current_organization),

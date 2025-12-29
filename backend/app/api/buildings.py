@@ -8,12 +8,13 @@ from typing import List
 from app.schemas.building import Building, BuildingCreate, BuildingUpdate
 from app.models.building import Building as BuildingModel
 from app.models.organization import Organization
-from app.api.deps import get_db, get_current_organization
+from app.api.deps import get_db, get_current_organization, require_permission
+from app.utils.permissions import Permission
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[Building])
+@router.get("/", response_model=List[Building], dependencies=[Depends(require_permission(Permission.BUILDING_VIEW))])
 async def list_buildings(
     organization: Organization = Depends(get_current_organization),
     db: Session = Depends(get_db)
@@ -22,7 +23,7 @@ async def list_buildings(
     return db.query(BuildingModel).filter(BuildingModel.organization_id == organization.id).all()
 
 
-@router.post("/", response_model=Building, status_code=201)
+@router.post("/", response_model=Building, status_code=201, dependencies=[Depends(require_permission(Permission.BUILDING_CREATE))])
 async def create_building(
     building: BuildingCreate,
     organization: Organization = Depends(get_current_organization),
@@ -37,7 +38,7 @@ async def create_building(
     return db_building
 
 
-@router.get("/{building_id}", response_model=Building)
+@router.get("/{building_id}", response_model=Building, dependencies=[Depends(require_permission(Permission.BUILDING_VIEW))])
 async def get_building(
     building_id: int,
     organization: Organization = Depends(get_current_organization),
@@ -53,7 +54,7 @@ async def get_building(
     return building
 
 
-@router.put("/{building_id}", response_model=Building)
+@router.put("/{building_id}", response_model=Building, dependencies=[Depends(require_permission(Permission.BUILDING_EDIT))])
 async def update_building(
     building_id: int,
     building_update: BuildingUpdate,
@@ -80,7 +81,7 @@ async def update_building(
     return building
 
 
-@router.delete("/{building_id}", status_code=204)
+@router.delete("/{building_id}", status_code=204, dependencies=[Depends(require_permission(Permission.BUILDING_DELETE))])
 async def delete_building(
     building_id: int,
     organization: Organization = Depends(get_current_organization),

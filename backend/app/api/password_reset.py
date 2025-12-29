@@ -13,6 +13,7 @@ from app.schemas.password_reset import (
     PasswordResetResponse
 )
 from app.utils.email import generate_otp, send_otp_email, send_password_reset_success_email
+from app.utils.email_config import get_email_config
 from app.utils.auth import get_password_hash
 from app.config import settings
 
@@ -36,19 +37,23 @@ async def forgot_password(
     # Check if staff exists
     staff = db.query(Staff).filter(Staff.email == request.email).first()
     if not staff:
-        # Development mode: Log that email was not found
-        if not settings.SMTP_PASSWORD:
-            print(f"\n⚠️  FORGOT PASSWORD: Email '{request.email}' not found in system (no OTP sent)\n")
-        # Don't reveal if email exists or not for security
-        return PasswordResetResponse(
-            message="If the email exists in our system, an OTP has been sent.",
-            success=True
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User with this email does not exist"
         )
 
     if not staff.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is inactive. Please contact administrator."
+        )
+
+    # Check if email configuration is set up
+    email_config = get_email_config(db, staff.organization_id)
+    if not email_config["smtp_username"] or not email_config["smtp_password"]:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Email is not configured. Please ask your administrator to configure email settings in the Settings page."
         )
 
     # Generate OTP
@@ -73,8 +78,8 @@ async def forgot_password(
     db.add(reset_token)
     db.commit()
 
-    # Send OTP email
-    email_sent = await send_otp_email(staff.email, otp, staff.name)
+    # Send OTP email (with organization-specific config)
+    email_sent = await send_otp_email(staff.email, otp, staff.name, db, staff.organization_id)
 
     if not email_sent:
         raise HTTPException(
@@ -184,7 +189,7 @@ async def reset_password(
 
     # Send confirmation email (don't wait for it)
     try:
-        await send_password_reset_success_email(staff.email, staff.name)
+        await send_password_reset_success_email(staff.email, staff.name, db, staff.organization_id)
     except Exception as e:
         # Log error but don't fail the request
         print(f"Failed to send confirmation email: {str(e)}")
@@ -208,15 +213,23 @@ async def resend_otp(
     # Check if staff exists
     staff = db.query(Staff).filter(Staff.email == request.email).first()
     if not staff:
-        return PasswordResetResponse(
-            message="If the email exists in our system, an OTP has been sent.",
-            success=True
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User with this email does not exist"
         )
 
     if not staff.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is inactive. Please contact administrator."
+        )
+
+    # Check if email configuration is set up
+    email_config = get_email_config(db, staff.organization_id)
+    if not email_config["smtp_username"] or not email_config["smtp_password"]:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Email is not configured. Please ask your administrator to configure email settings."
         )
 
     # Generate new OTP
@@ -241,8 +254,8 @@ async def resend_otp(
     db.add(reset_token)
     db.commit()
 
-    # Send OTP email
-    email_sent = await send_otp_email(staff.email, otp, staff.name)
+    # Send OTP email (with organization-specific config)
+    email_sent = await send_otp_email(staff.email, otp, staff.name, db, staff.organization_id)
 
     if not email_sent:
         raise HTTPException(

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Table from '../components/ui/Table';
 import Modal from '../components/ui/Modal';
+import PermissionGate from '../components/PermissionGate';
 import {
   fetchDevices,
   createDevice,
@@ -17,11 +18,13 @@ import {
   fetchRooms
 } from '../services/api';
 import { useOrganization } from '../contexts/OrganizationContext';
+import { useSearch } from '../contexts/SearchContext';
 import './Devices.css';
 import { FiWifi, FiBluetooth, FiEdit2, FiTrash2 } from "react-icons/fi";
 
 const Devices = () => {
   const { currentOrganization, loading: orgLoading } = useOrganization();
+  const { searchQuery } = useSearch();
   const [activeTab, setActiveTab] = useState('anchors');
 
   // Anchors state
@@ -79,6 +82,9 @@ const Devices = () => {
       setAnchors(data);
     } catch (err) {
       console.error('Error loading anchors:', err);
+      if (err.response?.status === 403) {
+        setError('You do not have permission to view devices. Please contact your administrator.');
+      }
     } finally {
       setLoadingAnchors(false);
     }
@@ -91,6 +97,9 @@ const Devices = () => {
       setTags(data);
     } catch (err) {
       console.error('Error loading tags:', err);
+      if (err.response?.status === 403) {
+        setError('You do not have permission to view devices. Please contact your administrator.');
+      }
     } finally {
       setLoadingTags(false);
     }
@@ -403,6 +412,71 @@ const Devices = () => {
     return entities.filter(entity => !entity.assigned_tag_id);
   };
 
+  // Filter anchors based on search query
+  const getFilteredAnchors = () => {
+    if (!searchQuery.trim()) {
+      return anchors;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return anchors.filter(anchor => {
+      // Search by anchor ID
+      if (anchor.anchor_id?.toLowerCase().includes(query)) {
+        return true;
+      }
+
+      // Search by anchor name
+      if (anchor.anchor_name?.toLowerCase().includes(query)) {
+        return true;
+      }
+
+      // Search by location
+      const locationText = getRoomLocationText(anchor.room_id).toLowerCase();
+      if (locationText.includes(query)) {
+        return true;
+      }
+
+      return false;
+    });
+  };
+
+  // Filter tags based on search query
+  const getFilteredTags = () => {
+    if (!searchQuery.trim()) {
+      return tags;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return tags.filter(tag => {
+      // Search by tag ID
+      if (tag.tag_id?.toLowerCase().includes(query)) {
+        return true;
+      }
+
+      // Search by tag name
+      if (tag.name?.toLowerCase().includes(query)) {
+        return true;
+      }
+
+      // Search by assigned entity/patient
+      if (tag.assigned_entity_id) {
+        const entity = entities.find(e => e.id === tag.assigned_entity_id);
+        if (entity) {
+          // Search by entity name
+          if (entity.name?.toLowerCase().includes(query)) {
+            return true;
+          }
+          // Search by entity ID
+          if (entity.entity_id?.toLowerCase().includes(query)) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    });
+  };
+
   if (orgLoading || (loadingAnchors && loadingTags && !currentOrganization)) {
     return (
       <div className="page-container">
@@ -499,9 +573,11 @@ const Devices = () => {
                 </div>
                 <p className="section-subtitle">{anchors.length} anchors configured</p>
               </div>
-              <button onClick={openAnchorCreateModal} className="btn btn-primary">
-                + Add Anchor
-              </button>
+              <PermissionGate permission="DEVICE_CREATE">
+                <button onClick={openAnchorCreateModal} className="btn btn-primary">
+                  + Add Anchor
+                </button>
+              </PermissionGate>
             </div>
           </Card.Header>
           <Card.Content>
@@ -510,9 +586,15 @@ const Devices = () => {
             ) : anchors.length === 0 ? (
               <div className="empty-state">
                 <p>No anchors found. Add your first anchor to get started.</p>
-                <button onClick={openAnchorCreateModal} className="btn btn-primary">
-                  + Add Anchor
-                </button>
+                <PermissionGate permission="DEVICE_CREATE">
+                  <button onClick={openAnchorCreateModal} className="btn btn-primary">
+                    + Add Anchor
+                  </button>
+                </PermissionGate>
+              </div>
+            ) : getFilteredAnchors().length === 0 ? (
+              <div className="empty-state">
+                <p>No anchors match your search criteria.</p>
               </div>
             ) : (
               <Table>
@@ -526,7 +608,7 @@ const Devices = () => {
                   </Table.Row>
                 </Table.Header>
                 <Table.Body>
-                  {anchors.map((anchor) => {
+                  {getFilteredAnchors().map((anchor) => {
                     const isActive = anchor.room_id !== null;
                     const statusText = isActive ? 'active' : 'inactive';
                     return (
@@ -543,20 +625,24 @@ const Devices = () => {
                         </Table.Cell>
                         <Table.Cell>
                           <div className="action-buttons">
-                            <button
-                              onClick={() => openAnchorEditModal(anchor)}
-                              className="btn-icon btn-edit"
-                              title="Edit anchor"
-                            >
-                              <FiEdit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => openAnchorDeleteModal(anchor)}
-                              className="btn-icon btn-delete"
-                              title="Delete anchor"
-                            >
-                              <FiTrash2 size={16} />
-                            </button>
+                            <PermissionGate permission="DEVICE_EDIT">
+                              <button
+                                onClick={() => openAnchorEditModal(anchor)}
+                                className="btn-icon btn-edit"
+                                title="Edit anchor"
+                              >
+                                <FiEdit2 size={16} />
+                              </button>
+                            </PermissionGate>
+                            <PermissionGate permission="DEVICE_DELETE">
+                              <button
+                                onClick={() => openAnchorDeleteModal(anchor)}
+                                className="btn-icon btn-delete"
+                                title="Delete anchor"
+                              >
+                                <FiTrash2 size={16} />
+                              </button>
+                            </PermissionGate>
                           </div>
                         </Table.Cell>
                       </Table.Row>
@@ -581,9 +667,11 @@ const Devices = () => {
                 </div>
                 <p className="section-subtitle">{tags.length} tags configured</p>
               </div>
-              <button onClick={openTagCreateModal} className="btn btn-primary">
-                + Add Tag
-              </button>
+              <PermissionGate permission="DEVICE_CREATE">
+                <button onClick={openTagCreateModal} className="btn btn-primary">
+                  + Add Tag
+                </button>
+              </PermissionGate>
             </div>
           </Card.Header>
           <Card.Content>
@@ -592,9 +680,15 @@ const Devices = () => {
             ) : tags.length === 0 ? (
               <div className="empty-state">
                 <p>No tags found. Add your first tag to get started.</p>
-                <button onClick={openTagCreateModal} className="btn btn-primary">
-                  + Add Tag
-                </button>
+                <PermissionGate permission="DEVICE_CREATE">
+                  <button onClick={openTagCreateModal} className="btn btn-primary">
+                    + Add Tag
+                  </button>
+                </PermissionGate>
+              </div>
+            ) : getFilteredTags().length === 0 ? (
+              <div className="empty-state">
+                <p>No tags match your search criteria.</p>
               </div>
             ) : (
               <Table>
@@ -608,7 +702,7 @@ const Devices = () => {
                   </Table.Row>
                 </Table.Header>
                 <Table.Body>
-                  {tags.map((tag) => {
+                  {getFilteredTags().map((tag) => {
                     const assignment = getAssignmentStatus(tag);
                     return (
                       <Table.Row key={tag.tag_id}>
@@ -622,20 +716,24 @@ const Devices = () => {
                         <Table.Cell>{assignment.details}</Table.Cell>
                         <Table.Cell>
                           <div className="action-buttons">
-                            <button
-                              onClick={() => openTagEditModal(tag)}
-                              className="btn-icon btn-edit"
-                              title="Edit tag"
-                            >
-                              <FiEdit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => openTagDeleteModal(tag)}
-                              className="btn-icon btn-delete"
-                              title="Delete tag"
-                            >
-                              <FiTrash2 size={16} />
-                            </button>
+                            <PermissionGate permission="DEVICE_EDIT">
+                              <button
+                                onClick={() => openTagEditModal(tag)}
+                                className="btn-icon btn-edit"
+                                title="Edit tag"
+                              >
+                                <FiEdit2 size={16} />
+                              </button>
+                            </PermissionGate>
+                            <PermissionGate permission="DEVICE_DELETE">
+                              <button
+                                onClick={() => openTagDeleteModal(tag)}
+                                className="btn-icon btn-delete"
+                                title="Delete tag"
+                              >
+                                <FiTrash2 size={16} />
+                              </button>
+                            </PermissionGate>
                           </div>
                         </Table.Cell>
                       </Table.Row>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import { fetchSettings, updateSettings } from '../services/api';
 import { useOrganization } from '../contexts/OrganizationContext';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 import './Settings.css';
 
 const Settings = () => {
@@ -11,8 +12,15 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    untracked_threshold_seconds: 30
+    untracked_threshold_seconds: 30,
+    smtp_host: '',
+    smtp_port: '',
+    smtp_username: '',
+    smtp_password: '',
+    smtp_from_email: '',
+    smtp_from_name: ''
   });
 
   useEffect(() => {
@@ -28,7 +36,13 @@ const Settings = () => {
       const data = await fetchSettings();
       setSettings(data);
       setFormData({
-        untracked_threshold_seconds: data.untracked_threshold_seconds
+        untracked_threshold_seconds: data.untracked_threshold_seconds,
+        smtp_host: data.smtp_host || '',
+        smtp_port: data.smtp_port || '',
+        smtp_username: data.smtp_username || '',
+        smtp_password: data.smtp_password || '',
+        smtp_from_email: data.smtp_from_email || '',
+        smtp_from_name: data.smtp_from_name || ''
       });
     } catch (err) {
       console.error('Error loading settings:', err);
@@ -51,9 +65,19 @@ const Settings = () => {
 
     try {
       setSaving(true);
-      await updateSettings({
+      const updateData = {
         untracked_threshold_seconds: parseInt(formData.untracked_threshold_seconds)
-      });
+      };
+
+      // Add email settings if provided
+      if (formData.smtp_host) updateData.smtp_host = formData.smtp_host;
+      if (formData.smtp_port) updateData.smtp_port = parseInt(formData.smtp_port);
+      if (formData.smtp_username) updateData.smtp_username = formData.smtp_username;
+      if (formData.smtp_password && formData.smtp_password !== '********') updateData.smtp_password = formData.smtp_password;
+      if (formData.smtp_from_email) updateData.smtp_from_email = formData.smtp_from_email;
+      if (formData.smtp_from_name) updateData.smtp_from_name = formData.smtp_from_name;
+
+      await updateSettings(updateData);
       setSuccess(true);
       await loadSettings(); // Reload to confirm
       setTimeout(() => setSuccess(false), 3000);
@@ -191,6 +215,109 @@ const Settings = () => {
                   <em>Note: After changing this value, restart the Python scanner service for it to take effect.</em>
                 </small>
               </div>
+            </div>
+
+            <div className="settings-section">
+              <h2 className="section-title">Email Configuration</h2>
+              <p className="section-description">
+                Configure SMTP settings for sending emails (password reset, staff invitations, etc.)
+              </p>
+
+              <div className="form-group">
+                <label htmlFor="smtp_host">SMTP Host</label>
+                <input
+                  type="text"
+                  id="smtp_host"
+                  name="smtp_host"
+                  value={formData.smtp_host}
+                  onChange={handleInputChange}
+                  placeholder="smtp.gmail.com"
+                  className="settings-input"
+                />
+                <small className="help-text">
+                  SMTP server hostname (e.g., smtp.gmail.com for Gmail)
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="smtp_port">SMTP Port</label>
+                <input
+                  type="number"
+                  id="smtp_port"
+                  name="smtp_port"
+                  value={formData.smtp_port}
+                  onChange={handleInputChange}
+                  placeholder="587"
+                  className="settings-input"
+                />
+                <small className="help-text">
+                  SMTP server port (587 for TLS/STARTTLS, 465 for SSL)
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="smtp_username">SMTP Username/Email</label>
+                <input
+                  type="email"
+                  id="smtp_username"
+                  name="smtp_username"
+                  value={formData.smtp_username}
+                  onChange={handleInputChange}
+                  placeholder="your-email@gmail.com"
+                  className="settings-input"
+                />
+                <small className="help-text">
+                  Email address used to authenticate with SMTP server
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="smtp_password">SMTP Password/App Password</label>
+                <input
+                  type="password"
+                  id="smtp_password"
+                  name="smtp_password"
+                  value={formData.smtp_password}
+                  onChange={handleInputChange}
+                  placeholder="Enter password to update"
+                  className="settings-input"
+                />
+                <small className="help-text">
+                  For Gmail, use an <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer">App Password</a>. Leave blank to keep existing password.
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="smtp_from_email">From Email Address</label>
+                <input
+                  type="email"
+                  id="smtp_from_email"
+                  name="smtp_from_email"
+                  value={formData.smtp_from_email}
+                  onChange={handleInputChange}
+                  placeholder="noreply@yourcompany.com"
+                  className="settings-input"
+                />
+                <small className="help-text">
+                  Email address that will appear as the sender
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="smtp_from_name">From Name</label>
+                <input
+                  type="text"
+                  id="smtp_from_name"
+                  name="smtp_from_name"
+                  value={formData.smtp_from_name}
+                  onChange={handleInputChange}
+                  placeholder="RTLS System"
+                  className="settings-input"
+                />
+                <small className="help-text">
+                  Display name that will appear as the sender
+                </small>
+              </div>
 
               <div className="form-actions">
                 <button
@@ -213,6 +340,38 @@ const Settings = () => {
           </form>
         </Card.Content>
       </Card>
+
+      {/* Security Section */}
+      <Card>
+        <Card.Content>
+          <div className="settings-section">
+            <h2 className="section-title">Security</h2>
+            <p className="section-description">
+              Manage your account security settings
+            </p>
+
+            <div className="form-group">
+              <label>Password</label>
+              <p className="help-text" style={{ marginBottom: '12px' }}>
+                Change your password to keep your account secure. You will be logged out after changing your password.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsChangePasswordModalOpen(true)}
+                className="btn btn-secondary"
+              >
+                Change Password
+              </button>
+            </div>
+          </div>
+        </Card.Content>
+      </Card>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onClose={() => setIsChangePasswordModalOpen(false)}
+      />
 
     </div>
   );

@@ -7,9 +7,11 @@ import {
   fetchPermissionsGrouped
 } from '../services/api';
 import PermissionGate from '../components/PermissionGate';
+import { useSearch } from '../contexts/SearchContext';
 import './RoleManagement.css';
 
 const RoleManagement = () => {
+  const { searchQuery } = useSearch();
   const [roles, setRoles] = useState([]);
   const [permissionsGrouped, setPermissionsGrouped] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -186,6 +188,16 @@ const RoleManagement = () => {
     return names[module] || module;
   };
 
+  // Filter roles based on global search
+  const filteredRoles = roles.filter(role => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      role.name?.toLowerCase().includes(query) ||
+      role.description?.toLowerCase().includes(query)
+    );
+  });
+
   if (loading) {
     return <div className="loading">Loading...</div>;
   }
@@ -215,7 +227,14 @@ const RoleManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {roles.map((role) => (
+            {filteredRoles.length === 0 ? (
+              <tr>
+                <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                  {searchQuery.trim() ? 'No matching roles found' : 'No roles available'}
+                </td>
+              </tr>
+            ) : (
+              filteredRoles.map((role) => (
               <tr key={role.id}>
                 <td><strong>{role.name}</strong></td>
                 <td>{role.description || '-'}</td>
@@ -253,7 +272,8 @@ const RoleManagement = () => {
                   </div>
                 </td>
               </tr>
-            ))}
+              ))
+            )}
           </tbody>
         </table>
       </div>

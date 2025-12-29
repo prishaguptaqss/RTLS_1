@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.api.deps import get_db, get_current_staff, get_staff_permissions
 from app.models.staff import Staff
-from app.schemas.auth import LoginRequest, TokenResponse, CurrentUserResponse
-from app.utils.auth import verify_password, create_access_token
+from app.schemas.auth import LoginRequest, TokenResponse, CurrentUserResponse, ChangePasswordRequest
+from app.utils.auth import verify_password, create_access_token, get_password_hash
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -106,3 +106,78 @@ def logout():
     This endpoint exists for API completeness and could be extended with token blacklisting.
     """
     return {"message": "Successfully logged out"}
+
+
+@router.post("/change-password")
+def change_password(
+    password_data: ChangePasswordRequest,
+    current_staff: Staff = Depends(get_current_staff),
+    db: Session = Depends(get_db)
+):
+    """
+    Change password endpoint - allows authenticated users to change their password.
+
+    Args:
+        password_data: Current password, new password, and confirm new password
+        current_staff: Currently authenticated staff member
+        db: Database session
+
+    Returns:
+        Success message
+    """
+    # Verify current password
+    if not verify_password(password_data.current_password, current_staff.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect"
+        )
+
+    # Verify new password confirmation
+    if password_data.new_password != password_data.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New passwords do not match"
+        )
+
+    # Validate new password strength (same as password reset)
+    if len(password_data.new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 8 characters long"
+        )
+
+    # Check for at least one uppercase, one lowercase, one digit, and one special character
+    import re
+    if not re.search(r'[A-Z]', password_data.new_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least one uppercase letter"
+        )
+    if not re.search(r'[a-z]', password_data.new_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least one lowercase letter"
+        )
+    if not re.search(r'\d', password_data.new_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least one number"
+        )
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password_data.new_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least one special character"
+        )
+
+    # Check if new password is same as current password
+    if verify_password(password_data.new_password, current_staff.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from current password"
+        )
+
+    # Hash and update password
+    current_staff.password_hash = get_password_hash(password_data.new_password)
+    db.commit()
+
+    return {"message": "Password changed successfully"}

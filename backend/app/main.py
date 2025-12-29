@@ -4,6 +4,7 @@ Configures routes, CORS, and lifecycle events.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import asyncio
 import logging
@@ -123,6 +124,11 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-Organization-ID"],
 )
+
+# Mount static files directory for uploaded logos
+uploads_dir = Path(__file__).parent.parent / "uploads"
+uploads_dir.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
 # Include routers
 # Authentication & Authorization

@@ -52,8 +52,17 @@ async def get_settings(
         db.commit()
         db.refresh(settings)
 
+    # Mask password in response
+    masked_password = "********" if settings.smtp_password else None
+
     return Settings(
-        untracked_threshold_seconds=settings.untracked_threshold_seconds
+        untracked_threshold_seconds=settings.untracked_threshold_seconds,
+        smtp_host=settings.smtp_host,
+        smtp_port=settings.smtp_port,
+        smtp_username=settings.smtp_username,
+        smtp_password=masked_password,
+        smtp_from_email=settings.smtp_from_email,
+        smtp_from_name=settings.smtp_from_name
     )
 
 
@@ -102,6 +111,33 @@ async def update_settings(
         except requests.exceptions.RequestException as e:
             logger.warning(f"Could not connect to Python service: {e}")
 
+    # Update email settings if provided
+    if settings_update.smtp_host is not None:
+        settings.smtp_host = settings_update.smtp_host
+    if settings_update.smtp_port is not None:
+        settings.smtp_port = settings_update.smtp_port
+    if settings_update.smtp_username is not None:
+        settings.smtp_username = settings_update.smtp_username
+    if settings_update.smtp_password is not None and settings_update.smtp_password != "********":
+        # Only update password if it's not the masked value
+        settings.smtp_password = settings_update.smtp_password
+    if settings_update.smtp_from_email is not None:
+        settings.smtp_from_email = settings_update.smtp_from_email
+    if settings_update.smtp_from_name is not None:
+        settings.smtp_from_name = settings_update.smtp_from_name
+
+    db.commit()
+    db.refresh(settings)
+
+    # Mask password in response
+    masked_password = "********" if settings.smtp_password else None
+
     return Settings(
-        untracked_threshold_seconds=settings.untracked_threshold_seconds
+        untracked_threshold_seconds=settings.untracked_threshold_seconds,
+        smtp_host=settings.smtp_host,
+        smtp_port=settings.smtp_port,
+        smtp_username=settings.smtp_username,
+        smtp_password=masked_password,
+        smtp_from_email=settings.smtp_from_email,
+        smtp_from_name=settings.smtp_from_name
     )

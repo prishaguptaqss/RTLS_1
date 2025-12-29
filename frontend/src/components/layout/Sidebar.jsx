@@ -10,13 +10,21 @@ import {
   Shield,
   Building2,
   Target,
-  Activity
+  Activity,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useOrganization } from '../../contexts/OrganizationContext';
 import './Sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const { user, hasPermission } = useAuth();
+  const { currentOrganization } = useOrganization();
+
+  // Get the API base URL for logo images
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  const BASE_URL = API_BASE_URL.replace('/api', ''); // Remove /api to get base URL
 
   // Define all menu items with their required permissions
   const menuItems = [
@@ -92,15 +100,39 @@ const Sidebar = () => {
   });
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-header">
         <div className="sidebar-brand">
-          <Activity size={24} className="brand-icon" />
-          <div className="brand-text">
-            <h2 className="sidebar-title">RPM System</h2>
-            <p className="sidebar-subtitle">Doctor Portal</p>
-          </div>
+          {currentOrganization?.logo ? (
+            <img
+              src={`${BASE_URL}/${currentOrganization.logo}`}
+              alt="Organization logo"
+              className="brand-logo"
+            />
+          ) : (
+            <Activity size={24} className="brand-icon" />
+          )}
+          {!isCollapsed && (
+            <div className="brand-text">
+              <h2 className="sidebar-title">RPM System</h2>
+              <p className="sidebar-subtitle">Doctor Portal</p>
+            </div>
+          )}
+          <button
+            className="sidebar-toggle"
+            onClick={toggleSidebar}
+            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
         </div>
+
+        {/* Current Organization Display */}
+        {currentOrganization && !isCollapsed && currentOrganization.display_name && (
+          <div className="current-organization">
+            <div className="org-display-name">{currentOrganization.display_name}</div>
+          </div>
+        )}
       </div>
 
       <nav className="sidebar-nav">
@@ -111,9 +143,10 @@ const Sidebar = () => {
             className={({ isActive }) =>
               `sidebar-link ${isActive ? 'active' : ''}`
             }
+            title={isCollapsed ? item.label : ''}
           >
             <item.icon size={20} />
-            <span>{item.label}</span>
+            {!isCollapsed && <span>{item.label}</span>}
           </NavLink>
         ))}
       </nav>

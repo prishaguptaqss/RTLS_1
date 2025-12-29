@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { OrganizationProvider } from './contexts/OrganizationContext';
+import { ToastProvider } from './contexts/ToastContext';
+import { SearchProvider } from './contexts/SearchContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
@@ -21,10 +23,12 @@ import './App.css';
 
 function App() {
   return (
-    <AuthProvider>
-      <OrganizationProvider>
-        <BrowserRouter>
-          <Routes>
+    <ToastProvider>
+      <AuthProvider>
+        <OrganizationProvider>
+<SearchProvider>
+          <BrowserRouter>
+            <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -125,8 +129,10 @@ function App() {
             </Route>
           </Routes>
         </BrowserRouter>
+</SearchProvider>
       </OrganizationProvider>
     </AuthProvider>
+    </ToastProvider>
   );
 }
 

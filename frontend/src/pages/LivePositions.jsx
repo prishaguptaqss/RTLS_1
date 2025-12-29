@@ -4,9 +4,11 @@ import Card from '../components/ui/Card';
 import StatCard from '../components/ui/StatCard';
 import Table from '../components/ui/Table';
 import { fetchEntities } from '../services/api';
+import { useSearch } from '../contexts/SearchContext';
 import './LivePositions.css';
 
 const LivePositions = () => {
+  const { searchQuery } = useSearch();
   const [entities, setEntities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,13 +52,17 @@ const LivePositions = () => {
   const tabFilteredEntities = entities.filter(e => e.tracking_status === activeTab);
 
   // Then filter by search
-  const filteredEntities = tabFilteredEntities.filter(entity =>
-    entity.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entity.entity_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entity.assigned_tag_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entity.tag_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entity.current_location?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEntities = tabFilteredEntities.filter(entity => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      entity.name?.toLowerCase().includes(query) ||
+      entity.entity_id?.toLowerCase().includes(query) ||
+      entity.assigned_tag_id?.toLowerCase().includes(query) ||
+      entity.tag_name?.toLowerCase().includes(query) ||
+      entity.current_location?.toLowerCase().includes(query)
+    );
+  });
 
   const formatTimeAgo = (dateString) => {
     if (!dateString) return '-';
@@ -92,24 +98,54 @@ const LivePositions = () => {
       </div>
 
       <div className="stats-grid">
-        <StatCard
-          title="Tracked Entities"
-          value={stats.trackedCount}
-          subtitle="Currently being tracked"
-          icon={Users}
-        />
-        <StatCard
-          title="Untracked Entities"
-          value={stats.untrackedCount}
-          subtitle="Lost signal"
-          icon={AlertTriangle}
-        />
-        <StatCard
-          title="Latest Update"
-          value={stats.lastUpdate ? formatDateTime(stats.lastUpdate).split(',')[0] : '-'}
-          subtitle={stats.lastUpdate ? formatDateTime(stats.lastUpdate).split(',')[1] : 'Most recent update'}
-          icon={Clock}
-        />
+        <div
+          className={`stat-card clickable ${activeTab === 'tracked' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tracked')}
+          style={{ cursor: 'pointer' }}
+        >
+          <div className="stat-card-content">
+            <h4 className="stat-card-title">Tracked Entities</h4>
+            <p className="stat-card-value" style={{ color: '#10b981', fontSize: '2rem', fontWeight: 'bold' }}>
+              {stats.trackedCount}
+            </p>
+            <p className="stat-card-subtitle">Currently being tracked</p>
+          </div>
+          <div className="stat-card-icon" style={{ color: '#10b981' }}>
+            <Users size={28} />
+          </div>
+        </div>
+
+        <div
+          className={`stat-card clickable ${activeTab === 'untracked' ? 'active' : ''}`}
+          onClick={() => setActiveTab('untracked')}
+          style={{ cursor: 'pointer' }}
+        >
+          <div className="stat-card-content">
+            <h4 className="stat-card-title">Untracked Entities</h4>
+            <p className="stat-card-value" style={{ color: '#ef4444', fontSize: '2rem', fontWeight: 'bold' }}>
+              {stats.untrackedCount}
+            </p>
+            <p className="stat-card-subtitle">Lost signal</p>
+          </div>
+          <div className="stat-card-icon" style={{ color: '#ef4444' }}>
+            <AlertTriangle size={28} />
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-card-content">
+            <h4 className="stat-card-title">Latest Update</h4>
+            <p className="stat-card-value" style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
+              {stats.lastUpdate ? formatDateTime(stats.lastUpdate).split(',')[0] : '-'}
+            </p>
+            <p className="stat-card-subtitle">
+              {stats.lastUpdate ? formatDateTime(stats.lastUpdate).split(',')[1] : 'Most recent update'}
+            </p>
+          </div>
+          <div className="stat-card-icon">
+            <Clock size={28} />
+          </div>
+        </div>
       </div>
 
       <Card className="positions-card">
@@ -155,7 +191,7 @@ const LivePositions = () => {
             <div className="loading-state">Loading entities...</div>
           ) : filteredEntities.length === 0 ? (
             <div className="empty-state">
-              {searchTerm ? 'No matching entities found' : `No ${activeTab} entities`}
+              {searchQuery.trim() ? 'No matching entities found' : `No ${activeTab} entities`}
             </div>
           ) : (
             <Table>

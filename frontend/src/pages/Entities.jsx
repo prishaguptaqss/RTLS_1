@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Table from '../components/ui/Table';
 import Modal from '../components/ui/Modal';
+import PermissionGate from '../components/PermissionGate';
 import {
   fetchEntities,
   createEntity,
@@ -11,11 +12,13 @@ import {
   fetchAvailableTags
 } from '../services/api';
 import { useOrganization } from '../contexts/OrganizationContext';
+import { useSearch } from '../contexts/SearchContext';
 import './Entities.css';
 import { FiEdit2, FiTrash2, FiClock, FiUserX } from "react-icons/fi";
 
 const Entities = () => {
   const { currentOrganization, loading: orgLoading } = useOrganization();
+  const { searchQuery } = useSearch();
   const [entities, setEntities] = useState([]);
   const [availableTags, setAvailableTags] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,8 +56,13 @@ const Entities = () => {
       setEntities(data);
     } catch (err) {
       console.error('Error loading entities:', err);
-      const errorMsg = err.response?.data?.detail || err.message || 'Failed to load entities';
-      setError(`Failed to load entities: ${errorMsg}`);
+      // Check if it's a permission error (403 Forbidden)
+      if (err.response?.status === 403) {
+        setError('You do not have permission to view entities. Please contact your administrator.');
+      } else {
+        const errorMsg = err.response?.data?.detail || err.message || 'Failed to load entities';
+        setError(`Failed to load entities: ${errorMsg}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -292,6 +300,18 @@ const Entities = () => {
     );
   };
 
+  // Filter entities based on global search
+  const filteredEntities = entities.filter(entity => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      entity.entity_id?.toLowerCase().includes(query) ||
+      entity.name?.toLowerCase().includes(query) ||
+      entity.tag_name?.toLowerCase().includes(query) ||
+      entity.type?.toLowerCase().includes(query)
+    );
+  });
+
   // Show loading state while organization or entities are loading
   if (orgLoading || (loading && !currentOrganization)) {
     return (
@@ -370,20 +390,26 @@ const Entities = () => {
               <option value="material">Material</option>
             </select>
           </div>
-          <button onClick={openCreateModal} className="btn btn-primary">
-            + Add Entity
-          </button>
+          <PermissionGate permission="ENTITY_ADMIT">
+            <button onClick={openCreateModal} className="btn btn-primary">
+              + Add Entity
+            </button>
+          </PermissionGate>
         </div>
       </div>
 
       <Card>
         <Card.Content>
-          {entities.length === 0 ? (
+          {filteredEntities.length === 0 ? (
             <div className="empty-state">
-              <p>No entities found. Add your first entity to get started.</p>
-              <button onClick={openCreateModal} className="btn btn-primary">
-                + Add Entity
-              </button>
+              <p>{searchQuery.trim() ? 'No matching entities found.' : 'No entities found. Add your first entity to get started.'}</p>
+              {!searchQuery.trim() && (
+                <PermissionGate permission="ENTITY_ADMIT">
+                  <button onClick={openCreateModal} className="btn btn-primary">
+                    + Add Entity
+                  </button>
+                </PermissionGate>
+              )}
             </div>
           ) : (
             <Table>
@@ -399,7 +425,7 @@ const Entities = () => {
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {entities.map((entity) => (
+                {filteredEntities.map((entity) => (
                   <Table.Row key={entity.entity_id}>
                     <Table.Cell><strong>{entity.entity_id}</strong></Table.Cell>
                     <Table.Cell>{entity.name || '-'}</Table.Cell>
@@ -417,7 +443,7 @@ const Entities = () => {
                     </Table.Cell>
                     <Table.Cell>
                       <div className="action-buttons">
-                        {entity.assigned_tag_id && 
+                        {entity.assigned_tag_id &&
                         (<button
                           onClick={() => openHistoryModal(entity)}
                           className="btn-icon btn-info"
@@ -434,20 +460,24 @@ const Entities = () => {
                             <FiUserX size={16} />
                           </button>
                         )}
-                        <button
-                          onClick={() => openEditModal(entity)}
-                          className="btn-icon btn-edit"
-                          title="Edit entity"
-                        >
-                          <FiEdit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => openDeleteModal(entity)}
-                          className="btn-icon btn-delete"
-                          title="Delete entity"
-                        >
-                          <FiTrash2 size={16} />
-                        </button>
+                        <PermissionGate permission="ENTITY_EDIT">
+                          <button
+                            onClick={() => openEditModal(entity)}
+                            className="btn-icon btn-edit"
+                            title="Edit entity"
+                          >
+                            <FiEdit2 size={16} />
+                          </button>
+                        </PermissionGate>
+                        <PermissionGate permission="ENTITY_DELETE">
+                          <button
+                            onClick={() => openDeleteModal(entity)}
+                            className="btn-icon btn-delete"
+                            title="Delete entity"
+                          >
+                            <FiTrash2 size={16} />
+                          </button>
+                        </PermissionGate>
                       </div>
                     </Table.Cell>
                   </Table.Row>

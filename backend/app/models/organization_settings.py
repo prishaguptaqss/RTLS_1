@@ -1,7 +1,7 @@
 """
 OrganizationSettings model for RTLS system.
 """
-from sqlalchemy import Column, Integer, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -14,6 +14,15 @@ class OrganizationSettings(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
     untracked_threshold_seconds = Column(Integer, nullable=False, default=30, comment="Seconds before tag is marked as lost/untracked")
+
+    # Email Configuration
+    smtp_host = Column(String, nullable=True, default="smtp.gmail.com", comment="SMTP server host")
+    smtp_port = Column(Integer, nullable=True, default=587, comment="SMTP server port")
+    smtp_username = Column(String, nullable=True, comment="SMTP username (email address)")
+    smtp_password = Column(String, nullable=True, comment="SMTP password or app password")
+    smtp_from_email = Column(String, nullable=True, comment="Email address to send from")
+    smtp_from_name = Column(String, nullable=True, default="RTLS System", comment="Display name for sent emails")
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

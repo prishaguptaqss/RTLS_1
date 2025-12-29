@@ -9,12 +9,13 @@ from app.schemas.floor import Floor, FloorCreate, FloorUpdate
 from app.models.floor import Floor as FloorModel
 from app.models.building import Building as BuildingModel
 from app.models.organization import Organization
-from app.api.deps import get_db, get_current_organization
+from app.api.deps import get_db, get_current_organization, require_permission
+from app.utils.permissions import Permission
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[Floor])
+@router.get("/", response_model=List[Floor], dependencies=[Depends(require_permission(Permission.BUILDING_VIEW))])
 async def list_floors(
     organization: Organization = Depends(get_current_organization),
     building_id: Optional[int] = Query(None, description="Filter by building ID"),
@@ -30,7 +31,7 @@ async def list_floors(
     return query.all()
 
 
-@router.post("/", response_model=Floor, status_code=201)
+@router.post("/", response_model=Floor, status_code=201, dependencies=[Depends(require_permission(Permission.FLOOR_CREATE))])
 async def create_floor(floor: FloorCreate, db: Session = Depends(get_db)):
     """Create a new floor."""
     db_floor = FloorModel(**floor.model_dump())
@@ -40,7 +41,7 @@ async def create_floor(floor: FloorCreate, db: Session = Depends(get_db)):
     return db_floor
 
 
-@router.get("/{floor_id}", response_model=Floor)
+@router.get("/{floor_id}", response_model=Floor, dependencies=[Depends(require_permission(Permission.BUILDING_VIEW))])
 async def get_floor(
     floor_id: int,
     organization: Organization = Depends(get_current_organization),
@@ -56,7 +57,7 @@ async def get_floor(
     return floor
 
 
-@router.put("/{floor_id}", response_model=Floor)
+@router.put("/{floor_id}", response_model=Floor, dependencies=[Depends(require_permission(Permission.FLOOR_EDIT))])
 async def update_floor(
     floor_id: int,
     floor_update: FloorUpdate,
@@ -80,7 +81,7 @@ async def update_floor(
     return floor
 
 
-@router.delete("/{floor_id}", status_code=204)
+@router.delete("/{floor_id}", status_code=204, dependencies=[Depends(require_permission(Permission.FLOOR_DELETE))])
 async def delete_floor(
     floor_id: int,
     organization: Organization = Depends(get_current_organization),

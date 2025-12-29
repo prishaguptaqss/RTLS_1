@@ -11,12 +11,13 @@ from app.models.floor import Floor as FloorModel
 from app.models.building import Building as BuildingModel
 from app.models.organization import Organization
 from app.services.room_cache import room_cache
-from app.api.deps import get_db, get_current_organization
+from app.api.deps import get_db, get_current_organization, require_permission
+from app.utils.permissions import Permission
 
 router = APIRouter()
 
 
-@router.get("/", response_model=List[Room])
+@router.get("/", response_model=List[Room], dependencies=[Depends(require_permission(Permission.BUILDING_VIEW))])
 async def list_rooms(
     organization: Organization = Depends(get_current_organization),
     floor_id: Optional[int] = Query(None, description="Filter by floor ID"),
@@ -42,7 +43,7 @@ async def list_rooms(
     return rooms
 
 
-@router.post("/", response_model=Room, status_code=201)
+@router.post("/", response_model=Room, status_code=201, dependencies=[Depends(require_permission(Permission.ROOM_CREATE))])
 async def create_room(
     room: RoomCreate,
     organization: Organization = Depends(get_current_organization),
@@ -106,7 +107,7 @@ async def create_room(
     return db_room
 
 
-@router.get("/{room_id}", response_model=Room)
+@router.get("/{room_id}", response_model=Room, dependencies=[Depends(require_permission(Permission.BUILDING_VIEW))])
 async def get_room(
     room_id: int,
     organization: Organization = Depends(get_current_organization),
@@ -125,7 +126,7 @@ async def get_room(
     return room
 
 
-@router.put("/{room_id}", response_model=Room)
+@router.put("/{room_id}", response_model=Room, dependencies=[Depends(require_permission(Permission.ROOM_EDIT))])
 async def update_room(
     room_id: int,
     room_update: RoomUpdate,
@@ -185,7 +186,7 @@ async def update_room(
     return room
 
 
-@router.delete("/{room_id}", status_code=204)
+@router.delete("/{room_id}", status_code=204, dependencies=[Depends(require_permission(Permission.ROOM_DELETE))])
 async def delete_room(
     room_id: int,
     organization: Organization = Depends(get_current_organization),

@@ -82,3 +82,55 @@
   color: #991b1b;
   margin-bottom: 0.25rem;
 }
+
+/* Logo upload styles */
+.logo-upload-container {
+  margin-top: 0.5rem;
+}
+
+.file-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.file-upload:hover {
+  border-color: #3b82f6;
+  background-color: #f8fafc;
+}
+
+.file-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.file-upload-label:hover {
+  color: #3b82f6;
+}
+
+.logo-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.logo-preview img {
+  max-width: 200px;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 4px;
+}

@@ -97,11 +97,11 @@ const Login = () => {
           </div>
         </form>
 
-        <div className="login-footer">
+        {/* <div className="login-footer">
           <p className="default-credentials">
             Default: admin@rtls.com / admin123
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   );

@@ -1,14 +1,35 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, Settings, Bell, User, LogOut, Lock } from 'lucide-react';
+import { Search, Settings, Bell, User, LogOut, Lock, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useSearch } from '../../contexts/SearchContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './Header.css';
 
 const Header = () => {
   const { user, logout } = useAuth();
+  const { searchQuery, setSearchQuery, clearSearch } = useSearch();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const settingsRef = useRef(null);
+
+  // Get dynamic placeholder based on current route
+  const getSearchPlaceholder = () => {
+    const path = location.pathname;
+    if (path === '/devices') return 'Search anchors/tags by ID, name, location, or patient...';
+    if (path === '/entities') return 'Search entities by ID or name...';
+    if (path === '/organizations') return 'Search organizations...';
+    if (path === '/live-positions') return 'Search by entity ID or name...';
+    if (path === '/roles') return 'Search roles by name...';
+    if (path === '/locations') return 'Search locations by building, floor, or room...';
+    if (path.startsWith('/staff')) return 'Search users by name or email...';
+    return 'Search...';
+  };
+
+  // Clear search when route changes
+  useEffect(() => {
+    clearSearch();
+  }, [location.pathname, clearSearch]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -39,9 +60,20 @@ const Header = () => {
         <Search size={20} className="search-icon" />
         <input
           type="text"
-          placeholder="Type here..."
+          placeholder={getSearchPlaceholder()}
           className="search-input"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
+        {searchQuery && (
+          <button
+            className="header-search-clear"
+            onClick={clearSearch}
+            title="Clear search"
+          >
+            <X size={18} />
+          </button>
+        )}
       </div>
 
       <div className="header-actions">

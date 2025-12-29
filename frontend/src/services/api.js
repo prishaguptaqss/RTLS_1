@@ -26,6 +26,11 @@ api.interceptors.request.use(
       config.headers['X-Organization-ID'] = orgId;
     }
 
+    // If sending FormData, remove Content-Type header to let axios set it automatically with boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     return config;
   },
   (error) => {
@@ -331,11 +336,8 @@ export const deleteStaff = async (id) => {
 };
 
 // Staff - Change password
-export const changePassword = async (currentPassword, newPassword) => {
-  return api.post('/staff/change-password', {
-    current_password: currentPassword,
-    new_password: newPassword
-  });
+export const changePassword = async (passwordData) => {
+  return api.post('/auth/change-password', passwordData);
 };
 
 // ==================== ROLE MANAGEMENT ====================

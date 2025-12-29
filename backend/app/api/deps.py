@@ -178,19 +178,32 @@ def require_permission(required_permission: Permission):
         current_staff: Staff = Depends(get_current_staff),
         db: Session = Depends(get_db)
     ):
+        print(f"\n🔐 Permission Check:")
+        print(f"  Staff: {current_staff.email}")
+        print(f"  Is Admin: {current_staff.is_admin}")
+        print(f"  Required Permission: {required_permission}")
+
         # Admins bypass all permission checks
         if current_staff.is_admin:
+            print(f"  ✅ Admin access granted\n")
             return current_staff
 
         # Get staff permissions
         permissions = get_staff_permissions(current_staff, db)
+        print(f"  User Permissions: {permissions}")
 
-        if required_permission not in permissions:
+        # Convert enum to string value for comparison
+        required_permission_code = required_permission.value if hasattr(required_permission, 'value') else required_permission
+        print(f"  Required Permission Code: {required_permission_code}")
+
+        if required_permission_code not in permissions:
+            print(f"  ❌ Permission denied\n")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permission denied. Required permission: {required_permission}"
+                detail=f"Permission denied. Required permission: {required_permission_code}"
             )
 
+        print(f"  ✅ Permission granted\n")
         return current_staff
 
     return permission_checker
