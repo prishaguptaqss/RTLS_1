@@ -19,7 +19,13 @@ from app.models import (
     Anchor,
     LiveLocation,
     LocationHistory,
+    PasswordResetToken,
 )
+
+# Import models not in __init__.py
+from app.models.staff import Staff, staff_roles
+from app.models.role import Role
+from app.models.permission import Permission
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

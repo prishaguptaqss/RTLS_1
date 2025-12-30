@@ -21,24 +21,43 @@ fi
 echo "✓ Docker is running"
 echo ""
 
-# Check if PostgreSQL container exists
-if docker ps -a | grep -q rtls-postgres; then
+# Check if PostgreSQL is accessible on port 5433
+if pg_isready -h localhost -p 5433 -U rtls_user > /dev/null 2>&1 || nc -z localhost 5433 > /dev/null 2>&1; then
+    echo "✓ PostgreSQL is already running on port 5433"
+elif docker ps -a | grep -q rtls-postgres; then
     if docker ps | grep -q rtls-postgres; then
         echo "✓ PostgreSQL container is already running"
     else
         echo "Starting existing PostgreSQL container..."
-        docker start rtls-postgres
+        docker start rtls-postgres || {
+            echo "⚠️  Failed to start container, but PostgreSQL may already be running"
+            echo "   Checking database connection..."
+        }
     fi
 else
     echo "Creating and starting PostgreSQL container..."
-    docker-compose up -d
+    docker-compose up -d || {
+        echo "⚠️  Docker compose failed, checking if PostgreSQL is already accessible..."
+    }
     echo "Waiting for PostgreSQL to be ready..."
     sleep 5
 fi
 
-echo ""
-echo "✓ PostgreSQL is ready"
-echo ""
+# Verify PostgreSQL is actually accessible
+if command -v psql > /dev/null 2>&1; then
+    if PGPASSWORD=rtls_password psql -h localhost -p 5433 -U rtls_user -d rtls_db -c "SELECT 1" > /dev/null 2>&1; then
+        echo ""
+        echo "✓ PostgreSQL is ready and accessible"
+        echo ""
+    else
+        echo "❌ PostgreSQL is not accessible"
+        exit 1
+    fi
+else
+    echo ""
+    echo "✓ PostgreSQL appears to be running (skipping connection test - psql not installed)"
+    echo ""
+fi
 
 # Check if virtual environment exists
 if [ ! -d "venv" ]; then
