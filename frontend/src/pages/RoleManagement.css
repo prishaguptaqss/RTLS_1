@@ -3,8 +3,8 @@
 }
 
 .permission-count {
-  background: #e6fffa;
-  color: #234e52;
+  background: var(--success-bg);
+  color: var(--success-text);
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 13px;
@@ -12,7 +12,7 @@
 }
 
 .btn-view {
-  background: #48bb78;
+  background: var(--success);
   color: white;
   border: none;
   padding: 6px 12px;
@@ -32,11 +32,13 @@
 
 .form-group textarea {
   padding: 10px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 14px;
   font-family: inherit;
   resize: vertical;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
 }
 
 .permissions-section {
@@ -52,24 +54,24 @@
 .section-description {
   margin: 0 0 20px 0;
   font-size: 14px;
-  color: #718096;
+  color: var(--text-secondary);
 }
 
 .permissions-matrix {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 16px;
   max-height: 500px;
   overflow-y: auto;
-  background: #f7fafc;
+  background: var(--bg-secondary);
 }
 
 .permission-group {
   margin-bottom: 20px;
-  background: white;
+  background: var(--bg-card);
   border-radius: 6px;
   padding: 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .permission-group:last-child {
@@ -82,10 +84,10 @@
   gap: 10px;
   cursor: pointer;
   padding: 8px;
-  background: #edf2f7;
+  background: var(--bg-secondary);
   border-radius: 6px;
   font-weight: 600;
-  color: #2d3748;
+  color: var(--text-primary);
 }
 
 .permission-parent input[type="checkbox"] {
@@ -98,7 +100,7 @@
   margin-top: 12px;
   margin-left: 28px;
   padding-left: 16px;
-  border-left: 2px solid #e2e8f0;
+  border-left: 2px solid var(--border-color);
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 8px;
@@ -110,7 +112,7 @@
 }
 
 .permission-children.disabled .permission-child {
-  background-color: #f8f9fa;
+  background-color: var(--bg-secondary);
 }
 
 .permission-child {
@@ -124,7 +126,7 @@
 }
 
 .permission-child:hover:not(:has(input:disabled)) {
-  background: #f7fafc;
+  background: var(--bg-secondary);
 }
 
 .permission-child input[type="checkbox"] {
@@ -139,16 +141,16 @@
 }
 
 .permission-child input[type="checkbox"]:not(:checked):not(:disabled) {
-  border: 2px solid #cbd5e0;
+  border: 2px solid var(--border-color);
 }
 
 .permission-label {
   font-size: 14px;
-  color: #4a5568;
+  color: var(--text-secondary);
   user-select: none;
 }
 
 .permission-parent .permission-label {
   font-size: 15px;
-  color: #2d3748;
+  color: var(--text-primary);
 }

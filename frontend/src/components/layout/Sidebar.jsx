@@ -115,7 +115,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
           {!isCollapsed && (
             <div className="brand-text">
               <h2 className="sidebar-title">RPM System</h2>
-              <p className="sidebar-subtitle">Doctor Portal</p>
+  
             </div>
           )}
           <button

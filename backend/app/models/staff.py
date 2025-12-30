@@ -32,6 +32,7 @@ class Staff(Base):
     email = Column(String, unique=True, nullable=False, index=True)
     phone = Column(String, nullable=True)
     password_hash = Column(String, nullable=False)
+    profile_picture = Column(String, nullable=True)  # URL to profile picture
     is_admin = Column(Boolean, default=False, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     organization_id = Column(Integer, ForeignKey('organizations.id', ondelete='SET NULL'), nullable=True)

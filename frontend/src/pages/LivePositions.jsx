@@ -153,9 +153,9 @@ const LivePositions = () => {
           <div className="card-header-content">
             <div>
               <Card.Title>Entity Positions</Card.Title>
-              <p className="table-subtitle">Showing {filteredEntities.length} of {tabFilteredEntities.length} entities</p>
+              {/* <p className="table-subtitle">Showing {filteredEntities.length} of {tabFilteredEntities.length} entities</p> */}
             </div>
-            <div className="search-box">
+            {/* <div className="search-box">
               <Search size={18} />
               <input
                 type="text"
@@ -164,7 +164,7 @@ const LivePositions = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-box-input"
               />
-            </div>
+            </div> */}
           </div>
         </Card.Header>
 
@@ -220,12 +220,7 @@ const LivePositions = () => {
                     </Table.Cell>
                     <Table.Cell>
                       {entity.tag_name ? (
-                        <div>
-                          <div>{entity.tag_name}</div>
-                          <code className="serial-code" style={{ fontSize: '0.75rem', color: '#6c757d' }}>
-                            {entity.assigned_tag_id}
-                          </code>
-                        </div>
+                        <span>{entity.tag_name}</span>
                       ) : (
                         <code className="serial-code">{entity.assigned_tag_id}</code>
                       )}

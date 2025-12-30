@@ -31,7 +31,7 @@
   padding: 10px 48px 10px 48px;
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  background-color: var(--bg-main);
+  background-color: var(--bg-secondary);
   font-size: 14px;
   outline: none;
   transition: all 0.2s ease;

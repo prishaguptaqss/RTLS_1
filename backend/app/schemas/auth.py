@@ -33,6 +33,7 @@ class CurrentUserResponse(BaseModel):
     name: str
     email: str
     phone: Optional[str] = None
+    profile_picture: Optional[str] = None
     is_admin: bool
     is_active: bool
     organization_id: Optional[int] = None

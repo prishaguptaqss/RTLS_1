@@ -93,6 +93,18 @@ export const AuthProvider = ({ children }) => {
     return permissionList.every(permission => permissions.includes(permission));
   };
 
+  const refreshUser = async () => {
+    try {
+      const userData = await getCurrentUser();
+      setUser(userData);
+      setPermissions(userData.permissions || []);
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+      return { success: false, error: error.message };
+    }
+  };
+
   const value = {
     user,
     permissions,
@@ -100,6 +112,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     login,
     logout,
+    refreshUser,
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,

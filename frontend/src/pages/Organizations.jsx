@@ -37,6 +37,7 @@ const Organizations = () => {
   const [logoPreview, setLogoPreview] = useState(null);
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     loadOrganizations();
@@ -279,6 +280,53 @@ const Organizations = () => {
     }
   };
 
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      // Validate file type
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+      if (allowedTypes.includes(file.type)) {
+        setLogoFile(file);
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setLogoPreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+
+        // Clear logo error if exists
+        if (formErrors.logo) {
+          setFormErrors(prev => ({ ...prev, logo: '' }));
+        }
+      } else {
+        setFormErrors(prev => ({ ...prev, logo: 'Logo must be a PNG or JPEG image' }));
+      }
+    }
+  };
+
   const handleSelectOrganization = (org) => {
     setSelectedOrg(selectedOrg?.id === org.id ? null : org);
   };
@@ -500,7 +548,13 @@ const Organizations = () => {
                     </button>
                   </div>
                 ) : (
-                  <div className="file-upload">
+                  <div
+                    className={`file-upload ${isDragging ? 'drag-over' : ''}`}
+                    onDragOver={handleDragOver}
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
                     <input
                       type="file"
                       id="logo"
@@ -511,7 +565,7 @@ const Organizations = () => {
                     />
                     <label htmlFor="logo" className="file-upload-label">
                       <FiUpload size={20} />
-                      <span>Choose logo file</span>
+                      <span>Drag & drop logo here or click to choose</span>
                     </label>
                   </div>
                 )}
@@ -688,7 +742,13 @@ const Organizations = () => {
                     </button>
                   </div>
                 ) : (
-                  <div className="file-upload">
+                  <div
+                    className={`file-upload ${isDragging ? 'drag-over' : ''}`}
+                    onDragOver={handleDragOver}
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
                     <input
                       type="file"
                       id="edit-logo"
@@ -699,7 +759,7 @@ const Organizations = () => {
                     />
                     <label htmlFor="edit-logo" className="file-upload-label">
                       <FiUpload size={20} />
-                      <span>Choose logo file</span>
+                      <span>Drag & drop logo here or click to choose</span>
                     </label>
                   </div>
                 )}

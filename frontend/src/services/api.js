@@ -340,6 +340,16 @@ export const changePassword = async (passwordData) => {
   return api.post('/auth/change-password', passwordData);
 };
 
+// Profile - Upload profile picture
+export const uploadProfilePicture = async (formData) => {
+  return api.post('/auth/upload-profile-picture', formData);
+};
+
+// Profile - Remove profile picture
+export const removeProfilePicture = async () => {
+  return api.delete('/auth/profile-picture');
+};
+
 // ==================== ROLE MANAGEMENT ====================
 
 // Roles - List all

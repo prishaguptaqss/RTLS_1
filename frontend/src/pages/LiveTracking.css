@@ -40,7 +40,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #ECFDF5;
+  background: var(--success-bg);
   padding: 6px 12px;
   border-radius: 20px;
 }
@@ -48,7 +48,7 @@
 .live-dot {
   width: 8px;
   height: 8px;
-  background: #10B981;
+  background: var(--success);
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
@@ -65,7 +65,7 @@
 .live-text {
   font-size: 13px;
   font-weight: 600;
-  color: #10B981;
+  color: var(--success-text);
 }
 
 .update-time {
@@ -92,7 +92,7 @@
 /* View Toggle */
 .view-toggle {
   display: flex;
-  background: white;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow: hidden;
@@ -103,7 +103,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: white;
+  background: var(--bg-card);
   border: none;
   font-size: 14px;
   font-weight: 500;
@@ -153,7 +153,7 @@
 .select-input {
   width: 100%;
   padding: 8px 32px 8px 12px;
-  background: white;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 14px;
@@ -200,7 +200,7 @@
 /* Right Sidebar */
 .tracking-sidebar {
   width: 320px;
-  background: white;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 20px;
@@ -232,7 +232,7 @@
   padding: 10px 12px 10px 38px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: white;
+  background: var(--bg-card);
   outline: none;
   font-size: 14px;
   color: var(--text-primary);
@@ -257,7 +257,7 @@
 
 .filter-btn {
   padding: 8px 16px;
-  background: white;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 13px;
@@ -319,7 +319,7 @@
 /* Map/List View Area */
 .tracking-main {
   flex: 1;
-  background: white;
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   display: flex;

@@ -78,12 +78,12 @@
 }
 
 .status-active {
-  background-color: rgba(0, 184, 148, 0.1);
-  color: var(--success);
+  background-color: var(--success-bg);
+  color: var(--success-text);
 }
 
 .status-inactive {
-  background-color: rgba(178, 190, 195, 0.2);
+  background-color: var(--badge-gray-bg);
   color: var(--text-light);
 }
 
@@ -107,7 +107,7 @@
 }
 
 .delete-user-info {
-  background-color: #f5f6fa;
+  background-color: var(--bg-secondary);
   padding: 16px;
   border-radius: 6px;
   margin: 16px 0;

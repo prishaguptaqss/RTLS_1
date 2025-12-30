@@ -6,8 +6,8 @@
 }
 
 .organization-card {
-  background: white;
-  border: 2px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 2px solid var(--border-color);
   border-radius: 8px;
   padding: 1.5rem;
   cursor: pointer;
@@ -15,13 +15,13 @@
 }
 
 .organization-card:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
 }
 
 .organization-card.selected {
-  border-color: #3b82f6;
-  background-color: #eff6ff;
+  border-color: var(--primary);
+  background-color: var(--info-bg);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -35,18 +35,18 @@
 .org-card-title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0 0 0.25rem 0;
 }
 
 .org-card-id {
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--text-secondary);
   margin: 0;
 }
 
 .selected-icon {
-  color: #3b82f6;
+  color: var(--primary);
   flex-shrink: 0;
 }
 
@@ -59,19 +59,19 @@
 .buildings-section {
   margin-top: 2rem;
   padding-top: 2rem;
-  border-top: 2px solid #e2e8f0;
+  border-top: 2px solid var(--border-color);
 }
 
 .section-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0 0 1.5rem 0;
 }
 
 .delete-org-info {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger);
   border-radius: 6px;
   padding: 1rem;
   margin: 1rem 0;
@@ -79,7 +79,7 @@
 
 .delete-org-info strong {
   display: block;
-  color: #991b1b;
+  color: var(--danger-text);
   margin-bottom: 0.25rem;
 }
 
@@ -92,16 +92,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px dashed #cbd5e1;
+  border: 2px dashed var(--border-color);
   border-radius: 8px;
   padding: 2rem;
   text-align: center;
   transition: all 0.2s ease;
+  position: relative;
 }
 
 .file-upload:hover {
-  border-color: #3b82f6;
-  background-color: #f8fafc;
+  border-color: var(--primary);
+  background-color: var(--bg-secondary);
+}
+
+.file-upload.drag-over {
+  border-color: var(--primary);
+  background-color: rgba(59, 130, 246, 0.1);
+  transform: scale(1.02);
 }
 
 .file-upload-label {
@@ -110,12 +117,12 @@
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
 .file-upload-label:hover {
-  color: #3b82f6;
+  color: var(--primary);
 }
 
 .logo-preview {
@@ -124,7 +131,7 @@
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border-color);
   border-radius: 8px;
 }
 

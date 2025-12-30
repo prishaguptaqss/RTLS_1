@@ -123,6 +123,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-Organization-ID"],
+    max_age=0,  # Disable CORS preflight caching during development
 )
 
 # Mount static files directory for uploaded logos

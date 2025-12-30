@@ -36,49 +36,64 @@ const ForgotPassword = () => {
 
   return (
     <div className="forgot-password-container">
-      <div className="forgot-password-box">
-        <div className="forgot-password-header">
-          <h1>Forgot Password</h1>
-          <p>Enter your email address and we'll send you a code to reset your password</p>
+      {/* Left Panel - Brand/Hero Section */}
+      <div className="forgot-password-brand-panel">
+        <div className="brand-content">
+          <h1 className="brand-title">MODERN HEALTHCARE</h1>
+          <h2 className="brand-subtitle">Never Lose Track of What Saves Lives</h2>
+          <p className="brand-description">
+            Cutting-edge BLE technology that makes every piece of equipment instantly locatable, every time.
+          </p>
         </div>
+        <div className="brand-decoration"></div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="forgot-password-form">
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
-
-          <div className="form-group">
-            <label htmlFor="email">Email Address</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              disabled={loading}
-              autoFocus
-            />
+      {/* Right Panel - Forgot Password Form */}
+      <div className="forgot-password-form-panel">
+        <div className="forgot-password-box">
+          <div className="forgot-password-header">
+            <h1>Forgot Password</h1>
+            <p>Enter your email to receive a reset code</p>
           </div>
 
-          <button
-            type="submit"
-            className="submit-button"
-            disabled={loading}
-          >
-            {loading ? 'Sending...' : 'Send Reset Code'}
-          </button>
+          <form onSubmit={handleSubmit} className="forgot-password-form">
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
 
-          <button
-            type="button"
-            className="back-button"
-            onClick={() => navigate('/login')}
-            disabled={loading}
-          >
-            Back to Login
-          </button>
-        </form>
+            <div className="form-group">
+              <label htmlFor="email">Email*</label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder=""
+                required
+                autoFocus
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="submit-button"
+              disabled={loading}
+            >
+              {loading ? 'Sending...' : 'Send Reset Code'}
+            </button>
+
+            <button
+              type="button"
+              className="back-button"
+              onClick={() => navigate('/login')}
+              disabled={loading}
+            >
+              Back to Login
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

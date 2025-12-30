@@ -29,7 +29,9 @@
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   box-shadow: var(--shadow-lg);
   animation: slideUp 0.3s ease-out;
 }
@@ -46,7 +48,7 @@
 }
 
 .modal-header {
-  padding: 24px;
+  padding: 20px;
   border-bottom: 1px solid var(--border-light);
   display: flex;
   justify-content: space-between;
@@ -82,7 +84,9 @@
 }
 
 .modal-body {
-  padding: 24px;
+  padding: 20px;
+  flex: 1;
+  overflow: hidden;
 }
 
 .modal-footer {
@@ -112,7 +116,7 @@
   padding: 10px 12px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: white;
+  background-color: var(--bg-card);
   color: var(--text-primary);
   font-size: 0.95rem;
   transition: all 0.2s ease;
@@ -170,7 +174,7 @@
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: #f5f6fa;
+  background-color: var(--bg-secondary);
 }
 
 .btn-danger {
@@ -179,12 +183,12 @@
 }
 
 .btn-danger:hover:not(:disabled) {
-  background-color: #c0242a;
+  background-color: #dc2626;
 }
 
 .error-message {
-  background-color: rgba(214, 48, 49, 0.1);
-  color: var(--danger);
+  background-color: var(--danger-bg);
+  color: var(--danger-text);
   padding: 12px;
   border-radius: 6px;
   margin-bottom: 16px;

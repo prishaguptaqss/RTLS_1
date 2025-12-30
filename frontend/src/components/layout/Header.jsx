@@ -1,18 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, Settings, Bell, User, LogOut, Lock, X } from 'lucide-react';
+import { Search, Settings, Bell, User, LogOut, Lock, X, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSearch } from '../../contexts/SearchContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ChangePasswordModal from '../ChangePasswordModal';
+import ProfileModal from '../ProfileModal';
 import './Header.css';
 
 const Header = () => {
   const { user, logout } = useAuth();
   const { searchQuery, setSearchQuery, clearSearch } = useSearch();
+  const { theme, toggleTheme, isDark } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const settingsRef = useRef(null);
 
   // Get dynamic placeholder based on current route
@@ -55,6 +59,11 @@ const Header = () => {
     setIsChangePasswordModalOpen(true);
   };
 
+  const handleThemeToggle = () => {
+    toggleTheme();
+    setIsSettingsOpen(false);
+  };
+
   return (
     <header className="header">
       <div className="header-search">
@@ -79,9 +88,22 @@ const Header = () => {
 
       <div className="header-actions">
         {user && (
-          <div className="header-user-section">
+          <div
+            className="header-user-section"
+            onClick={() => setIsProfileModalOpen(true)}
+            style={{ cursor: 'pointer' }}
+            title="View Profile"
+          >
             <div className="header-user-avatar">
-              <User size={18} />
+              {user.profile_picture ? (
+                <img
+                  src={`http://localhost:3000${user.profile_picture}`}
+                  alt={user.name}
+                  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                />
+              ) : (
+                <User size={18} />
+              )}
             </div>
             <div className="header-user-info">
               <span className="header-user-name">{user.name}</span>
@@ -101,6 +123,11 @@ const Header = () => {
 
           {isSettingsOpen && (
             <div className="header-dropdown-menu">
+              <button className="header-dropdown-item" onClick={handleThemeToggle}>
+                {isDark ? <Sun size={18} /> : <Moon size={18} />}
+                <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+              </button>
+              <div className="header-dropdown-divider"></div>
               <button className="header-dropdown-item" onClick={handleChangePassword}>
                 <Lock size={18} />
                 <span>Change Password</span>
@@ -124,6 +151,12 @@ const Header = () => {
       <ChangePasswordModal
         isOpen={isChangePasswordModalOpen}
         onClose={() => setIsChangePasswordModalOpen(false)}
+      />
+
+      {/* Profile Modal */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
       />
     </header>
   );

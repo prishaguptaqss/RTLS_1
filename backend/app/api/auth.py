@@ -3,8 +3,11 @@ Authentication API endpoints.
 Handles login, logout, and current user information.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
+from pathlib import Path
+import shutil
+import uuid
 from app.api.deps import get_db, get_current_staff, get_staff_permissions
 from app.models.staff import Staff
 from app.schemas.auth import LoginRequest, TokenResponse, CurrentUserResponse, ChangePasswordRequest
@@ -88,6 +91,7 @@ def get_current_user(
         name=current_staff.name,
         email=current_staff.email,
         phone=current_staff.phone,
+        profile_picture=current_staff.profile_picture,
         is_admin=current_staff.is_admin,
         is_active=current_staff.is_active,
         organization_id=current_staff.organization_id,
@@ -181,3 +185,77 @@ def change_password(
     db.commit()
 
     return {"message": "Password changed successfully"}
+
+
+@router.post("/upload-profile-picture")
+async def upload_profile_picture(
+    profile_picture: UploadFile = File(...),
+    current_staff: Staff = Depends(get_current_staff),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload profile picture for the authenticated user.
+
+    Args:
+        profile_picture: Image file to upload
+        current_staff: Currently authenticated staff member
+        db: Database session
+
+    Returns:
+        URL of the uploaded profile picture
+    """
+    # Validate file type
+    allowed_extensions = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+    file_ext = Path(profile_picture.filename).suffix.lower()
+
+    if file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid file type. Allowed types: {', '.join(allowed_extensions)}"
+        )
+
+    # Validate file size (max 5MB)
+    profile_picture.file.seek(0, 2)  # Seek to end
+    file_size = profile_picture.file.tell()
+    profile_picture.file.seek(0)  # Reset to beginning
+
+    max_size = 5 * 1024 * 1024  # 5MB
+    if file_size > max_size:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File size exceeds 5MB limit"
+        )
+
+    # Create uploads directory if it doesn't exist
+    uploads_dir = Path(__file__).parent.parent.parent / "uploads" / "profile_pictures"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate unique filename
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    file_path = uploads_dir / unique_filename
+
+    # Delete old profile picture if exists
+    if current_staff.profile_picture:
+        old_file_path = Path(__file__).parent.parent.parent / "uploads" / current_staff.profile_picture.replace("/uploads/", "")
+        if old_file_path.exists():
+            old_file_path.unlink()
+
+    # Save file
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(profile_picture.file, buffer)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save file: {str(e)}"
+        )
+
+    # Update staff profile picture URL
+    profile_picture_url = f"/uploads/profile_pictures/{unique_filename}"
+    current_staff.profile_picture = profile_picture_url
+    db.commit()
+
+    return {
+        "message": "Profile picture uploaded successfully",
+        "profile_picture_url": profile_picture_url
+    }
