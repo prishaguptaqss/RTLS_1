@@ -95,7 +95,7 @@ function App() {
               <Route
                 path="live-tracking"
                 element={
-                  <ProtectedRoute requiredPermission="LIVE_POSITION_VIEW">
+                  <ProtectedRoute requiredPermission="LIVE_TRACKING_VIEW">
                     <LiveTracking />
                   </ProtectedRoute>
                 }

@@ -104,3 +104,70 @@
 .toast-container .toast {
   pointer-events: auto;
 }
+
+/* Password toast styles */
+.toast-password {
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  color: #78350f;
+  min-width: 400px;
+  padding: 16px;
+}
+
+.toast-password .toast-icon {
+  color: #f59e0b;
+}
+
+.toast-content-password {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.toast-message-password {
+  font-weight: 500;
+  font-size: 14px;
+  color: #78350f;
+}
+
+.toast-password-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #fbbf24;
+}
+
+.password-code-toast {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  font-weight: 600;
+  color: #d97706;
+  letter-spacing: 1px;
+}
+
+.toast-copy-btn {
+  background: #f59e0b;
+  border: none;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.toast-copy-btn:hover {
+  background: #d97706;
+  transform: scale(1.05);
+}
+
+.toast-copy-btn:active {
+  transform: scale(0.95);
+}

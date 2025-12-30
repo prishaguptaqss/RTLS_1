@@ -35,12 +35,17 @@ export const ToastProvider = ({ children }) => {
     showToast(message, 'info', duration);
   }, [showToast]);
 
+  const passwordToast = useCallback((password, message) => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type: 'password', password, duration: 0 }]);
+  }, []);
+
   const removeToast = useCallback((id) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   }, []);
 
   return (
-    <ToastContext.Provider value={{ showToast, success, error, warning, info }}>
+    <ToastContext.Provider value={{ showToast, success, error, warning, info, passwordToast }}>
       {children}
       <div className="toast-container">
         {toasts.map(toast => (
@@ -49,6 +54,7 @@ export const ToastProvider = ({ children }) => {
             message={toast.message}
             type={toast.type}
             duration={toast.duration}
+            password={toast.password}
             onClose={() => removeToast(toast.id)}
           />
         ))}

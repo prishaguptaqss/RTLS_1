@@ -95,6 +95,9 @@ def seed_permissions(db):
             -- Live Positions
             ('LIVE_POSITION_VIEW', 'View Live Positions', 'live_position', 'View real-time location tracking'),
 
+            -- Live Tracking
+            ('LIVE_TRACKING_VIEW', 'View Live Tracking', 'live_tracking', 'Access live tracking feature with map view'),
+
             -- Staff Management
             ('STAFF_VIEW', 'View Staff', 'staff', 'View staff users'),
             ('STAFF_CREATE', 'Create Staff', 'staff', 'Create new staff users'),

@@ -6,10 +6,11 @@ Handles CRUD operations for roles and their permissions.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from app.api.deps import get_db, get_current_staff, require_permission, require_admin
+from app.api.deps import get_db, get_current_staff, get_current_organization, require_permission, require_admin
 from app.models.staff import Staff
 from app.models.role import Role
 from app.models.permission import Permission as PermissionModel
+from app.models.organization import Organization
 from app.schemas.role import (
     RoleCreate,
     RoleUpdate,
@@ -27,22 +28,16 @@ router = APIRouter(prefix="/roles", tags=["Role Management"])
 def list_roles(
     skip: int = 0,
     limit: int = 100,
+    organization: Organization = Depends(get_current_organization),
     db: Session = Depends(get_db),
     current_staff: Staff = Depends(get_current_staff)
 ):
     """
-    List all roles.
+    List all roles within the selected organization.
 
-    Admins see all roles. Staff members see roles in their organization.
+    Filters roles by the current organization context (from X-Organization-ID header).
     """
-    query = db.query(Role)
-
-    # Filter by organization for non-admin users
-    if not current_staff.is_admin and current_staff.organization_id:
-        query = query.filter(
-            (Role.organization_id == current_staff.organization_id) |
-            (Role.organization_id == None)  # Global roles
-        )
+    query = db.query(Role).filter(Role.organization_id == organization.id)
 
     total = query.count()
     roles = query.offset(skip).limit(limit).all()
@@ -84,35 +79,31 @@ def get_role(
 @router.post("", response_model=RoleResponse, dependencies=[Depends(require_permission(Permission.ROLE_CREATE))])
 def create_role(
     role_data: RoleCreate,
+    organization: Organization = Depends(get_current_organization),
     db: Session = Depends(get_db),
     current_staff: Staff = Depends(get_current_staff)
 ):
     """
-    Create a new role.
+    Create a new role within the selected organization.
+
+    Uses the organization from X-Organization-ID header.
     """
-    # Check if role name already exists
-    existing_role = db.query(Role).filter(Role.name == role_data.name).first()
+    # Check if role name already exists within this organization
+    existing_role = db.query(Role).filter(
+        Role.name == role_data.name,
+        Role.organization_id == organization.id
+    ).first()
     if existing_role:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Role with name '{role_data.name}' already exists"
+            detail=f"Role with name '{role_data.name}' already exists in this organization"
         )
 
-    # For non-admin users, enforce organization scoping
-    org_id = role_data.organization_id
-    if not current_staff.is_admin:
-        if not current_staff.organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Staff member must belong to an organization to create roles"
-            )
-        org_id = current_staff.organization_id
-
-    # Create role
+    # Create role within the current organization context
     new_role = Role(
         name=role_data.name,
         description=role_data.description,
-        organization_id=org_id
+        organization_id=organization.id
     )
 
     # Add permissions

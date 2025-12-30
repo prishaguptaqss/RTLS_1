@@ -8,11 +8,13 @@ import {
 } from '../services/api';
 import PermissionGate from '../components/PermissionGate';
 import { useSearch } from '../contexts/SearchContext';
+import { useOrganization } from '../contexts/OrganizationContext';
 import { Edit2, Trash2, Eye } from 'lucide-react';
 import './RoleManagement.css';
 
 const RoleManagement = () => {
   const { searchQuery } = useSearch();
+  const { currentOrganization } = useOrganization();
   const [roles, setRoles] = useState([]);
   const [permissionsGrouped, setPermissionsGrouped] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +46,7 @@ const RoleManagement = () => {
       children: ['DEVICE_CREATE', 'DEVICE_EDIT', 'DEVICE_DELETE']
     },
     live_position: { parent: 'LIVE_POSITION_VIEW', children: [] },
+    live_tracking: { parent: 'LIVE_TRACKING_VIEW', children: [] },
     organization: {
       parent: 'ORGANIZATION_VIEW',
       children: ['ORGANIZATION_CREATE', 'ORGANIZATION_EDIT', 'ORGANIZATION_DELETE']
@@ -59,9 +62,12 @@ const RoleManagement = () => {
     settings: { parent: 'SETTINGS_VIEW', children: [] }
   };
 
+  // Reload data when organization changes
   useEffect(() => {
-    loadData();
-  }, []);
+    if (currentOrganization) {
+      loadData();
+    }
+  }, [currentOrganization]);
 
   const loadData = async () => {
     try {
@@ -181,6 +187,7 @@ const RoleManagement = () => {
       entity: 'Entities',
       device: 'Devices',
       live_position: 'Live Positions',
+      live_tracking: 'Live Tracking',
       organization: 'Organizations',
       staff: 'Staff Management',
       role: 'Role Management',

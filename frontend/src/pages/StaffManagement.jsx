@@ -2,16 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { fetchStaff, createStaff, updateStaff, deleteStaff, fetchRoles } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useSearch } from '../contexts/SearchContext';
+import { useToast } from '../contexts/ToastContext';
+import { useOrganization } from '../contexts/OrganizationContext';
 import PermissionGate from '../components/PermissionGate';
-import { Eye, EyeOff, Copy, Edit2, Trash2 } from 'lucide-react';
+import { Edit2, Trash2 } from 'lucide-react';
 import './StaffManagement.css';
 
 const StaffManagement = () => {
   const { user } = useAuth();
   const { searchQuery } = useSearch();
+  const toast = useToast();
+  const { currentOrganization } = useOrganization();
   const [staff, setStaff] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
   const [formData, setFormData] = useState({
@@ -22,12 +27,13 @@ const StaffManagement = () => {
     role_ids: [],
     is_admin: false
   });
-  const [generatedPassword, setGeneratedPassword] = useState('');
-  const [showGeneratedPassword, setShowGeneratedPassword] = useState(false);
 
+  // Reload data when organization changes
   useEffect(() => {
-    loadData();
-  }, []);
+    if (currentOrganization) {
+      loadData();
+    }
+  }, [currentOrganization]);
 
   const loadData = async () => {
     try {
@@ -72,7 +78,6 @@ const StaffManagement = () => {
         role_ids: [],
         is_admin: false
       });
-      setGeneratedPassword('');
     }
     setShowModal(true);
   };
@@ -80,34 +85,50 @@ const StaffManagement = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingStaff(null);
-    setGeneratedPassword('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+
     try {
       if (editingStaff) {
         await updateStaff(editingStaff.id, formData);
+        toast.success('User updated successfully!');
       } else {
         const result = await createStaff(formData);
-        if (result.temporary_password) {
-          setGeneratedPassword(result.temporary_password);
 
-          // Show warning if email is not configured
-          if (result.email_warning) {
-            alert(`${result.email_warning}\n\nStaff created! Temporary password: ${result.temporary_password}\nPlease save this password.`);
+        // Show appropriate message based on email sending result
+        if (result.email_warning) {
+          // Check if it's a success or error message
+          if (result.email_warning.startsWith('⚠️')) {
+            // Email failed - show error toast
+            toast.error(result.email_warning.replace('⚠️ ', ''), 5000);
+          } else if (result.email_warning.includes('successfully')) {
+            // Email sent successfully
+            toast.success('User created successfully! Credentials sent to their email.', 4000);
+          } else if (result.temporary_password) {
+            // Email not configured - show password toast (no auto-dismiss)
+            toast.passwordToast(
+              result.temporary_password,
+              `User created! Email not configured - save this password for ${result.name}:`
+            );
           } else {
-            alert(`Staff created! Temporary password: ${result.temporary_password}\nPlease save this password.`);
+            // Development mode or other info
+            toast.info(result.email_warning, 4000);
           }
+        } else {
+          toast.success('User created successfully!');
         }
       }
+
       await loadData();
-      if (!generatedPassword) {
-        handleCloseModal();
-      }
+      handleCloseModal();
     } catch (error) {
       console.error('Error saving staff:', error);
-      alert(error.response?.data?.detail || 'Failed to save staff member');
+      toast.error(error.response?.data?.detail || 'Failed to save user');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -115,17 +136,13 @@ const StaffManagement = () => {
     if (window.confirm(`Are you sure you want to delete ${name}?`)) {
       try {
         await deleteStaff(id);
+        toast.success(`User "${name}" deleted successfully!`);
         await loadData();
       } catch (error) {
         console.error('Error deleting staff:', error);
-        alert(error.response?.data?.detail || 'Failed to delete staff member');
+        toast.error(error.response?.data?.detail || 'Failed to delete user');
       }
     }
-  };
-
-  const copyPassword = () => {
-    navigator.clipboard.writeText(generatedPassword);
-    alert('Password copied to clipboard!');
   };
 
   const isMainAdmin = (staffMember) => {
@@ -225,7 +242,8 @@ const StaffManagement = () => {
                       <button
                         className="btn-icon btn-edit"
                         onClick={() => handleOpenModal(member)}
-                        title="Edit user"
+                        disabled={member.is_admin && !user?.is_admin}
+                        title={member.is_admin && !user?.is_admin ? "Only admins can edit admin accounts" : "Edit user"}
                       >
                         <Edit2 size={16} />
                       </button>
@@ -234,8 +252,14 @@ const StaffManagement = () => {
                       <button
                         className="btn-icon btn-delete"
                         onClick={() => handleDelete(member.id, member.name)}
-                        disabled={member.id === user?.id}
-                        title={member.id === user?.id ? "Cannot delete yourself" : "Delete user"}
+                        disabled={member.id === user?.id || (member.is_admin && !user?.is_admin)}
+                        title={
+                          member.id === user?.id
+                            ? "Cannot delete yourself"
+                            : member.is_admin && !user?.is_admin
+                            ? "Only admins can delete admin accounts"
+                            : "Delete user"
+                        }
                       >
                         <Trash2 size={16} />
                       </button>
@@ -374,40 +398,61 @@ const StaffManagement = () => {
                 </div>
               )}
 
-              {generatedPassword && (
-                <div className="password-alert">
-                  <strong>Generated Password:</strong>
-                  <div className="password-display">
-                    <code className="password-code">
-                      {showGeneratedPassword ? generatedPassword : '••••••••••••'}
-                    </code>
-                    <button
-                      type="button"
-                      className="password-action-btn"
-                      onClick={() => setShowGeneratedPassword(!showGeneratedPassword)}
-                      title={showGeneratedPassword ? "Hide password" : "Show password"}
-                    >
-                      {showGeneratedPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                    <button
-                      type="button"
-                      className="password-action-btn"
-                      onClick={copyPassword}
-                      title="Copy to clipboard"
-                    >
-                      <Copy size={18} />
-                    </button>
-                  </div>
-                  <p>Please save this password. It won't be shown again.</p>
+              {!editingStaff && (
+                <div className="info-message" style={{
+                  padding: '12px',
+                  backgroundColor: '#e0f2fe',
+                  border: '1px solid #7dd3fc',
+                  borderRadius: '6px',
+                  marginTop: '16px',
+                  fontSize: '14px',
+                  color: '#0c4a6e'
+                }}>
+                  📧 Login credentials will be automatically sent to the user's email address.
                 </div>
               )}
 
               <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={handleCloseModal}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={handleCloseModal}
+                  disabled={submitting}
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary">
-                  {editingStaff ? 'Update' : 'Create'}
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={submitting}
+                  style={{ position: 'relative', minWidth: '100px' }}
+                >
+                  {submitting ? (
+                    <>
+                      <span style={{ opacity: 0 }}>{editingStaff ? 'Update' : 'Create'}</span>
+                      <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
+                        <div className="spinner" style={{
+                          width: '16px',
+                          height: '16px',
+                          border: '2px solid rgba(255, 255, 255, 0.3)',
+                          borderTopColor: 'white',
+                          borderRadius: '50%',
+                          animation: 'spin 0.8s linear infinite'
+                        }}></div>
+                        <span>{editingStaff ? 'Updating...' : 'Sending...'}</span>
+                      </div>
+                    </>
+                  ) : (
+                    editingStaff ? 'Update' : 'Create'
+                  )}
                 </button>
               </div>
             </form>

@@ -7,9 +7,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import secrets
 import string
-from app.api.deps import get_db, get_current_staff, require_permission
+from app.api.deps import get_db, get_current_staff, get_current_organization, require_permission
 from app.models.staff import Staff
 from app.models.role import Role
+from app.models.organization import Organization
 from app.schemas.staff import (
     StaffCreate,
     StaffUpdate,
@@ -20,6 +21,7 @@ from app.schemas.staff import (
 from app.utils.auth import get_password_hash, verify_password
 from app.utils.permissions import Permission
 from app.utils.email_config import get_email_config
+from app.utils.email import send_welcome_email
 
 
 router = APIRouter(prefix="/staff", tags=["Staff Management"])
@@ -36,28 +38,16 @@ def generate_random_password(length: int = 12) -> str:
 def list_staff(
     skip: int = 0,
     limit: int = 100,
+    organization: Organization = Depends(get_current_organization),
     db: Session = Depends(get_db),
     current_staff: Staff = Depends(get_current_staff)
 ):
     """
-    List all staff members.
+    List all staff members within the selected organization.
 
-    Admins see all staff. Regular staff see staff in their organization + global admins.
+    Filters staff by the current organization context (from X-Organization-ID header).
     """
-    query = db.query(Staff)
-
-    # Filter by organization for non-admin users
-    # Non-admins see: staff in their organization + global admins (organization_id is NULL)
-    if not current_staff.is_admin:
-        if current_staff.organization_id:
-            # Show staff in same organization OR global admins (org_id = NULL)
-            query = query.filter(
-                (Staff.organization_id == current_staff.organization_id) |
-                (Staff.organization_id.is_(None))
-            )
-        else:
-            # If user has no organization, only show global staff (org_id = NULL)
-            query = query.filter(Staff.organization_id.is_(None))
+    query = db.query(Staff).filter(Staff.organization_id == organization.id)
 
     total = query.count()
     staff = query.offset(skip).limit(limit).all()
@@ -98,25 +88,30 @@ def get_staff_member(
 
 
 @router.post("", response_model=StaffResponse, dependencies=[Depends(require_permission(Permission.STAFF_CREATE))])
-def create_staff(
+async def create_staff(
     staff_data: StaffCreate,
+    organization: Organization = Depends(get_current_organization),
     db: Session = Depends(get_db),
     current_staff: Staff = Depends(get_current_staff)
 ):
     """
-    Create a new staff member.
+    Create a new staff member within the selected organization.
 
-    Returns the created staff member along with the auto-generated password.
+    Uses the organization from X-Organization-ID header.
+    Sends welcome email with credentials to the new staff member.
     """
-    # Check if staff_id already exists
-    existing_staff_id = db.query(Staff).filter(Staff.staff_id == staff_data.staff_id).first()
+    # Check if staff_id already exists within this organization
+    existing_staff_id = db.query(Staff).filter(
+        Staff.staff_id == staff_data.staff_id,
+        Staff.organization_id == organization.id
+    ).first()
     if existing_staff_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Staff ID '{staff_data.staff_id}' already exists"
+            detail=f"Staff ID '{staff_data.staff_id}' already exists in this organization"
         )
 
-    # Check if email already exists
+    # Check if email already exists (globally, not per org)
     existing_email = db.query(Staff).filter(Staff.email == staff_data.email).first()
     if existing_email:
         raise HTTPException(
@@ -127,30 +122,14 @@ def create_staff(
     # Generate password if not provided
     password = staff_data.password if staff_data.password else generate_random_password()
 
-    # Determine organization for new staff member
-    org_id = staff_data.organization_id
+    # Non-admins cannot create admins
+    if not current_staff.is_admin and staff_data.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can create admin users"
+        )
 
-    if not current_staff.is_admin:
-        # Non-admin users: always assign to their own organization
-        if not current_staff.organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Staff member must belong to an organization to create staff"
-            )
-        org_id = current_staff.organization_id
-
-        # Non-admins cannot create admins
-        if staff_data.is_admin:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only admins can create admin users"
-            )
-    else:
-        # Admin users: if organization not specified, use their own organization
-        if not org_id:
-            org_id = current_staff.organization_id
-
-    # Create staff member
+    # Create staff member within the current organization context
     new_staff = Staff(
         staff_id=staff_data.staff_id,
         name=staff_data.name,
@@ -159,7 +138,7 @@ def create_staff(
         password_hash=get_password_hash(password),
         is_admin=staff_data.is_admin,
         is_active=True,
-        organization_id=org_id
+        organization_id=organization.id
     )
 
     # Add roles
@@ -171,17 +150,27 @@ def create_staff(
     db.commit()
     db.refresh(new_staff)
 
-    # Check if email is configured for this organization
-    email_config = get_email_config(db, org_id)
-    email_warning = None
-    if not email_config["smtp_username"] or not email_config["smtp_password"]:
-        email_warning = "Warning: Email is not configured for this user's organization. They will not be able to use the 'Forgot Password' feature. Please configure email settings in the Settings page or contact the system administrator to configure global email settings."
+    # Send welcome email with credentials
+    email_result = await send_welcome_email(
+        to_email=staff_data.email,
+        staff_name=staff_data.name,
+        staff_id=staff_data.staff_id,
+        password=password,
+        db=db,
+        organization_id=organization.id
+    )
 
-    # Note: In production, you should send password via email or secure channel
-    # For now, we'll return it in the response (you may want to modify this)
+    # Prepare response
     response = StaffResponse.model_validate(new_staff)
-    response.temporary_password = password  # Add temp password to response
-    response.email_warning = email_warning  # Add warning if email not configured
+
+    # Set email warning/success message based on email result
+    if email_result["success"]:
+        response.email_warning = email_result["message"]
+        # If email was not sent (dev mode or no SMTP config), include password in response
+        if "Email configuration not set" in email_result["message"] or "development mode" in email_result["message"].lower():
+            response.temporary_password = password
+    else:
+        response.email_warning = f"⚠️ {email_result['message']}"
 
     return response
 
@@ -206,7 +195,14 @@ def update_staff(
 
     # Check access
     if not current_staff.is_admin:
-        # Allow update if same organization, but NOT global admins (can't edit admins)
+        # Non-admins cannot edit admin accounts
+        if staff.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only admins can edit admin accounts"
+            )
+
+        # Allow update if same organization
         if staff.organization_id is None or staff.organization_id != current_staff.organization_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -283,7 +279,14 @@ def delete_staff(
 
     # Check access
     if not current_staff.is_admin:
-        # Allow delete if same organization, but NOT global admins (can't delete admins)
+        # Non-admins cannot delete admin accounts
+        if staff.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only admins can delete admin accounts"
+            )
+
+        # Allow delete if same organization
         if staff.organization_id is None or staff.organization_id != current_staff.organization_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

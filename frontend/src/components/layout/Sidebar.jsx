@@ -68,7 +68,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
       icon: Target,
       label: 'Live Tracking',
       path: '/live-tracking',
-      permission: 'LIVE_POSITION_VIEW'
+      permission: 'LIVE_TRACKING_VIEW'
     },
     {
       icon: UserPlus,
