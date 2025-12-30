@@ -8,6 +8,7 @@ import {
 } from '../services/api';
 import PermissionGate from '../components/PermissionGate';
 import { useSearch } from '../contexts/SearchContext';
+import { Edit2, Trash2, Eye } from 'lucide-react';
 import './RoleManagement.css';
 
 const RoleManagement = () => {
@@ -247,26 +248,29 @@ const RoleManagement = () => {
                   <div className="action-buttons">
                     <PermissionGate permission="ROLE_VIEW">
                       <button
-                        className="btn-view"
+                        className="btn-icon btn-view"
                         onClick={() => handleOpenModal(role)}
+                        title="View role"
                       >
-                        View
+                        <Eye size={16} />
                       </button>
                     </PermissionGate>
                     <PermissionGate permission="ROLE_EDIT">
                       <button
-                        className="btn-edit"
+                        className="btn-icon btn-edit"
                         onClick={() => handleOpenModal(role)}
+                        title="Edit role"
                       >
-                        Edit
+                        <Edit2 size={16} />
                       </button>
                     </PermissionGate>
                     <PermissionGate permission="ROLE_DELETE">
                       <button
-                        className="btn-delete"
+                        className="btn-icon btn-delete"
                         onClick={() => handleDelete(role.id, role.name)}
+                        title="Delete role"
                       >
-                        Delete
+                        <Trash2 size={16} />
                       </button>
                     </PermissionGate>
                   </div>

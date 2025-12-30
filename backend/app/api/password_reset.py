@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.models.staff import Staff
 from app.models.password_reset import PasswordResetToken
+from app.models.organization_settings import OrganizationSettings
 from app.schemas.password_reset import (
     ForgotPasswordRequest,
     VerifyOTPRequest,
@@ -48,12 +49,22 @@ async def forgot_password(
             detail="Account is inactive. Please contact administrator."
         )
 
-    # Check if email configuration is set up
+    # Get email configuration (uses organization settings or falls back to global)
     email_config = get_email_config(db, staff.organization_id)
     if not email_config["smtp_username"] or not email_config["smtp_password"]:
+        # Check if organization has partial settings to provide better error message
+        org_settings = db.query(OrganizationSettings).filter(
+            OrganizationSettings.organization_id == staff.organization_id
+        ).first()
+
+        if org_settings and (org_settings.smtp_username or org_settings.smtp_password):
+            detail = "Organization email configuration is incomplete. Please ask your administrator to configure all email settings in the Settings page."
+        else:
+            detail = "Email is not configured for your organization. Please ask your administrator to configure email settings in the Settings page, or contact the system administrator to configure global email settings."
+
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Email is not configured. Please ask your administrator to configure email settings in the Settings page."
+            detail=detail
         )
 
     # Generate OTP
@@ -224,12 +235,22 @@ async def resend_otp(
             detail="Account is inactive. Please contact administrator."
         )
 
-    # Check if email configuration is set up
+    # Get email configuration (uses organization settings or falls back to global)
     email_config = get_email_config(db, staff.organization_id)
     if not email_config["smtp_username"] or not email_config["smtp_password"]:
+        # Check if organization has partial settings to provide better error message
+        org_settings = db.query(OrganizationSettings).filter(
+            OrganizationSettings.organization_id == staff.organization_id
+        ).first()
+
+        if org_settings and (org_settings.smtp_username or org_settings.smtp_password):
+            detail = "Organization email configuration is incomplete. Please ask your administrator to configure all email settings in the Settings page."
+        else:
+            detail = "Email is not configured for your organization. Please ask your administrator to configure email settings in the Settings page, or contact the system administrator to configure global email settings."
+
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Email is not configured. Please ask your administrator to configure email settings."
+            detail=detail
         )
 
     # Generate new OTP

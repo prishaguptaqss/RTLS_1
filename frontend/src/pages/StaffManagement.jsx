@@ -3,7 +3,7 @@ import { fetchStaff, createStaff, updateStaff, deleteStaff, fetchRoles } from '.
 import { useAuth } from '../contexts/AuthContext';
 import { useSearch } from '../contexts/SearchContext';
 import PermissionGate from '../components/PermissionGate';
-import { Eye, EyeOff, Copy } from 'lucide-react';
+import { Eye, EyeOff, Copy, Edit2, Trash2 } from 'lucide-react';
 import './StaffManagement.css';
 
 const StaffManagement = () => {
@@ -92,7 +92,13 @@ const StaffManagement = () => {
         const result = await createStaff(formData);
         if (result.temporary_password) {
           setGeneratedPassword(result.temporary_password);
-          alert(`Staff created! Temporary password: ${result.temporary_password}\nPlease save this password.`);
+
+          // Show warning if email is not configured
+          if (result.email_warning) {
+            alert(`${result.email_warning}\n\nStaff created! Temporary password: ${result.temporary_password}\nPlease save this password.`);
+          } else {
+            alert(`Staff created! Temporary password: ${result.temporary_password}\nPlease save this password.`);
+          }
         }
       }
       await loadData();
@@ -217,19 +223,21 @@ const StaffManagement = () => {
                   <div className="action-buttons">
                     <PermissionGate permission="STAFF_EDIT">
                       <button
-                        className="btn-edit"
+                        className="btn-icon btn-edit"
                         onClick={() => handleOpenModal(member)}
+                        title="Edit user"
                       >
-                        Edit
+                        <Edit2 size={16} />
                       </button>
                     </PermissionGate>
                     <PermissionGate permission="STAFF_DELETE">
                       <button
-                        className="btn-delete"
+                        className="btn-icon btn-delete"
                         onClick={() => handleDelete(member.id, member.name)}
                         disabled={member.id === user?.id}
+                        title={member.id === user?.id ? "Cannot delete yourself" : "Delete user"}
                       >
-                        Delete
+                        <Trash2 size={16} />
                       </button>
                     </PermissionGate>
                   </div>

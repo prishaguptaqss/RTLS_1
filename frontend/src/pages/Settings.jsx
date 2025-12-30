@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import { fetchSettings, updateSettings } from '../services/api';
 import { useOrganization } from '../contexts/OrganizationContext';
-import ChangePasswordModal from '../components/ChangePasswordModal';
 import './Settings.css';
 
 const Settings = () => {
@@ -12,7 +11,6 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     untracked_threshold_seconds: 30,
     smtp_host: '',
@@ -340,38 +338,6 @@ const Settings = () => {
           </form>
         </Card.Content>
       </Card>
-
-      {/* Security Section */}
-      <Card>
-        <Card.Content>
-          <div className="settings-section">
-            <h2 className="section-title">Security</h2>
-            <p className="section-description">
-              Manage your account security settings
-            </p>
-
-            <div className="form-group">
-              <label>Password</label>
-              <p className="help-text" style={{ marginBottom: '12px' }}>
-                Change your password to keep your account secure. You will be logged out after changing your password.
-              </p>
-              <button
-                type="button"
-                onClick={() => setIsChangePasswordModalOpen(true)}
-                className="btn btn-secondary"
-              >
-                Change Password
-              </button>
-            </div>
-          </div>
-        </Card.Content>
-      </Card>
-
-      {/* Change Password Modal */}
-      <ChangePasswordModal
-        isOpen={isChangePasswordModalOpen}
-        onClose={() => setIsChangePasswordModalOpen(false)}
-      />
 
     </div>
   );

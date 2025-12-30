@@ -19,6 +19,7 @@ from app.schemas.staff import (
 )
 from app.utils.auth import get_password_hash, verify_password
 from app.utils.permissions import Permission
+from app.utils.email_config import get_email_config
 
 
 router = APIRouter(prefix="/staff", tags=["Staff Management"])
@@ -126,9 +127,11 @@ def create_staff(
     # Generate password if not provided
     password = staff_data.password if staff_data.password else generate_random_password()
 
-    # For non-admin users, enforce organization scoping
+    # Determine organization for new staff member
     org_id = staff_data.organization_id
+
     if not current_staff.is_admin:
+        # Non-admin users: always assign to their own organization
         if not current_staff.organization_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -142,6 +145,10 @@ def create_staff(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only admins can create admin users"
             )
+    else:
+        # Admin users: if organization not specified, use their own organization
+        if not org_id:
+            org_id = current_staff.organization_id
 
     # Create staff member
     new_staff = Staff(
@@ -164,10 +171,17 @@ def create_staff(
     db.commit()
     db.refresh(new_staff)
 
+    # Check if email is configured for this organization
+    email_config = get_email_config(db, org_id)
+    email_warning = None
+    if not email_config["smtp_username"] or not email_config["smtp_password"]:
+        email_warning = "Warning: Email is not configured for this user's organization. They will not be able to use the 'Forgot Password' feature. Please configure email settings in the Settings page or contact the system administrator to configure global email settings."
+
     # Note: In production, you should send password via email or secure channel
     # For now, we'll return it in the response (you may want to modify this)
     response = StaffResponse.model_validate(new_staff)
     response.temporary_password = password  # Add temp password to response
+    response.email_warning = email_warning  # Add warning if email not configured
 
     return response
 

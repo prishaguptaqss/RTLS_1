@@ -3,6 +3,7 @@ import { Search, Settings, Bell, User, LogOut, Lock, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSearch } from '../../contexts/SearchContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import ChangePasswordModal from '../ChangePasswordModal';
 import './Header.css';
 
 const Header = () => {
@@ -11,6 +12,7 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const settingsRef = useRef(null);
 
   // Get dynamic placeholder based on current route
@@ -50,8 +52,7 @@ const Header = () => {
 
   const handleChangePassword = () => {
     setIsSettingsOpen(false);
-    // Navigate to change password or open modal
-    navigate('/settings'); // You can change this to open a modal instead
+    setIsChangePasswordModalOpen(true);
   };
 
   return (
@@ -118,6 +119,12 @@ const Header = () => {
           <span className="notification-badge">3</span>
         </button>
       </div>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onClose={() => setIsChangePasswordModalOpen(false)}
+      />
     </header>
   );
 };

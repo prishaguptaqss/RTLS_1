@@ -57,6 +57,7 @@ class StaffResponse(StaffBase):
     updated_at: datetime
     roles: List[RoleInfo] = []
     temporary_password: Optional[str] = Field(None, description="Auto-generated password (only returned on creation)")
+    email_warning: Optional[str] = Field(None, description="Warning message about email configuration")
 
     class Config:
         from_attributes = True
