@@ -17,6 +17,8 @@ class TokenResponse(BaseModel):
     """Schema for token response."""
     access_token: str
     token_type: str = "bearer"
+    organization_id: Optional[int] = None
+    organization_name: Optional[str] = None
 
 
 class UserPermission(BaseModel):

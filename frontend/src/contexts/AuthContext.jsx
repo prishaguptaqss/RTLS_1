@@ -36,11 +36,18 @@ export const AuthProvider = ({ children }) => {
       console.log('Attempting login with:', { email, password: '***' });
       const response = await apiLogin(email, password);
       console.log('Login API response:', response);
-      const { access_token } = response;
+      const { access_token, organization_id, organization_name } = response;
 
-      // Store token
+      // IMPORTANT: Store organization ID FIRST, before token
+      // This ensures OrganizationContext can load immediately
+      if (organization_id) {
+        localStorage.setItem('currentOrganizationId', organization_id);
+        console.log('Organization ID stored:', organization_id);
+      }
+
+      // Then store token
       localStorage.setItem('authToken', access_token);
-      console.log('Token stored, fetching user data...');
+      console.log('Token stored');
 
       // Fetch user data
       const userData = await getCurrentUser();
@@ -48,6 +55,9 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       setPermissions(userData.permissions || []);
       setIsAuthenticated(true);
+
+      // Trigger a custom event to notify OrganizationContext
+      window.dispatchEvent(new CustomEvent('organizationChanged'));
 
       return { success: true };
     } catch (error) {
@@ -69,6 +79,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       localStorage.removeItem('authToken');
+      localStorage.removeItem('currentOrganizationId');
       setUser(null);
       setPermissions([]);
       setIsAuthenticated(false);

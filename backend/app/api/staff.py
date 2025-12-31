@@ -141,9 +141,20 @@ async def create_staff(
         organization_id=organization.id
     )
 
-    # Add roles
+    # Add roles (ensure they belong to the same organization)
     if staff_data.role_ids:
-        roles = db.query(Role).filter(Role.id.in_(staff_data.role_ids)).all()
+        roles = db.query(Role).filter(
+            Role.id.in_(staff_data.role_ids),
+            Role.organization_id == organization.id
+        ).all()
+
+        # Validate that all requested roles were found in this organization
+        if len(roles) != len(staff_data.role_ids):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="One or more roles do not belong to this organization"
+            )
+
         new_staff.roles = roles
 
     db.add(new_staff)
@@ -242,9 +253,23 @@ def update_staff(
     if staff_data.is_admin is not None and current_staff.is_admin:
         staff.is_admin = staff_data.is_admin
 
-    # Update roles
+    # Update roles (ensure they belong to the same organization as the staff)
     if staff_data.role_ids is not None:
-        roles = db.query(Role).filter(Role.id.in_(staff_data.role_ids)).all()
+        # Get the staff's organization
+        staff_org_id = staff.organization_id
+
+        roles = db.query(Role).filter(
+            Role.id.in_(staff_data.role_ids),
+            Role.organization_id == staff_org_id
+        ).all()
+
+        # Validate that all requested roles were found in the staff's organization
+        if len(roles) != len(staff_data.role_ids):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="One or more roles do not belong to the staff member's organization"
+            )
+
         staff.roles = roles
 
     db.commit()

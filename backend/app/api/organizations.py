@@ -10,7 +10,8 @@ from pathlib import Path
 
 from app.schemas.organization import Organization, OrganizationCreate, OrganizationUpdate
 from app.models.organization import Organization as OrganizationModel
-from app.api.deps import get_db, require_permission
+from app.models.staff import Staff
+from app.api.deps import get_db, require_permission, get_current_staff
 from app.utils.permissions import Permission
 
 router = APIRouter()
@@ -23,9 +24,30 @@ ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 
 
 @router.get("/", response_model=List[Organization])
-async def list_organizations(db: Session = Depends(get_db)):
-    """List all organizations."""
-    return db.query(OrganizationModel).all()
+async def list_organizations(
+    current_staff: Staff = Depends(get_current_staff),
+    db: Session = Depends(get_db)
+):
+    """
+    List organizations based on user access.
+
+    - Admins can see all organizations
+    - Non-admin users can only see their assigned organization
+    """
+    if current_staff.is_admin:
+        # Admins can see all organizations
+        return db.query(OrganizationModel).all()
+    else:
+        # Non-admin users can only see their organization
+        if current_staff.organization_id is None:
+            # User not assigned to any organization
+            return []
+
+        organization = db.query(OrganizationModel).filter(
+            OrganizationModel.id == current_staff.organization_id
+        ).first()
+
+        return [organization] if organization else []
 
 
 async def save_logo_file(file: UploadFile) -> str:
@@ -98,11 +120,29 @@ async def create_organization(
 
 
 @router.get("/{organization_id}", response_model=Organization, dependencies=[Depends(require_permission(Permission.ORGANIZATION_VIEW))])
-async def get_organization(organization_id: int, db: Session = Depends(get_db)):
-    """Get organization by ID."""
+async def get_organization(
+    organization_id: int,
+    current_staff: Staff = Depends(get_current_staff),
+    db: Session = Depends(get_db)
+):
+    """
+    Get organization by ID.
+
+    - Admins can access any organization
+    - Non-admin users can only access their assigned organization
+    """
     organization = db.query(OrganizationModel).filter(OrganizationModel.id == organization_id).first()
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Validate access
+    if not current_staff.is_admin:
+        if current_staff.organization_id != organization_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied. You do not have permission to view this organization."
+            )
+
     return organization
 
 
@@ -115,12 +155,26 @@ async def update_organization(
     country: Optional[str] = Form(None),
     pincode: Optional[str] = Form(None),
     logo: Optional[UploadFile] = File(None),
+    current_staff: Staff = Depends(get_current_staff),
     db: Session = Depends(get_db)
 ):
-    """Update organization with optional logo upload."""
+    """
+    Update organization with optional logo upload.
+
+    - Admins can update any organization
+    - Non-admin users can only update their assigned organization
+    """
     organization = db.query(OrganizationModel).filter(OrganizationModel.id == organization_id).first()
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Validate access
+    if not current_staff.is_admin:
+        if current_staff.organization_id != organization_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied. You do not have permission to update this organization."
+            )
 
     # Handle logo upload if provided
     logo_path = None
@@ -153,11 +207,28 @@ async def update_organization(
 
 
 @router.delete("/{organization_id}", status_code=204, dependencies=[Depends(require_permission(Permission.ORGANIZATION_DELETE))])
-async def delete_organization(organization_id: int, db: Session = Depends(get_db)):
-    """Delete organization (cascades to buildings, floors, rooms)."""
+async def delete_organization(
+    organization_id: int,
+    current_staff: Staff = Depends(get_current_staff),
+    db: Session = Depends(get_db)
+):
+    """
+    Delete organization (cascades to buildings, floors, rooms).
+
+    - Admins can delete any organization
+    - Non-admin users can only delete their assigned organization
+    """
     organization = db.query(OrganizationModel).filter(OrganizationModel.id == organization_id).first()
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Validate access
+    if not current_staff.is_admin:
+        if current_staff.organization_id != organization_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied. You do not have permission to delete this organization."
+            )
 
     db.delete(organization)
     db.commit()

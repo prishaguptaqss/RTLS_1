@@ -1,23 +1,16 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { fetchOrganizations } from '../services/api';
 
 const OrganizationContext = createContext();
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export const OrganizationProvider = ({ children }) => {
   const [currentOrganization, setCurrentOrganization] = useState(null);
   const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadOrganizations();
-  }, []);
-
   const loadOrganizations = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/organizations/`);
-      const orgs = response.data;
+      const orgs = await fetchOrganizations();
       setOrganizations(orgs);
 
       // Load saved organization from localStorage
@@ -44,6 +37,33 @@ export const OrganizationProvider = ({ children }) => {
     }
   };
 
+  useEffect(() => {
+    // Only load organizations if user is authenticated
+    const token = localStorage.getItem('authToken');
+    const orgId = localStorage.getItem('currentOrganizationId');
+
+    if (token && orgId) {
+      loadOrganizations();
+    } else {
+      setLoading(false);
+    }
+
+    // Listen for organization changes (e.g., after login)
+    const handleOrganizationChange = () => {
+      const newOrgId = localStorage.getItem('currentOrganizationId');
+      if (newOrgId) {
+        loadOrganizations();
+      }
+    };
+
+    window.addEventListener('organizationChanged', handleOrganizationChange);
+
+    return () => {
+      window.removeEventListener('organizationChanged', handleOrganizationChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const switchOrganization = (orgId) => {
     const org = organizations.find(o => o.id === parseInt(orgId));
     if (org) {
@@ -55,7 +75,16 @@ export const OrganizationProvider = ({ children }) => {
   };
 
   const reloadOrganizations = async () => {
+    setLoading(true);
     await loadOrganizations();
+  };
+
+  const initializeOrganization = async () => {
+    // This method is called after login to set up organization
+    const orgId = localStorage.getItem('currentOrganizationId');
+    if (orgId) {
+      await loadOrganizations();
+    }
   };
 
   return (
@@ -64,6 +93,7 @@ export const OrganizationProvider = ({ children }) => {
       organizations,
       switchOrganization,
       reloadOrganizations,
+      initializeOrganization,
       loading
     }}>
       {children}

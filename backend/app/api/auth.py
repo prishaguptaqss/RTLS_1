@@ -55,12 +55,17 @@ def login(
             detail="Account is inactive"
         )
 
-    # Create access token
-    access_token = create_access_token(data={"sub": staff.staff_id})
+    # Create access token with organization information
+    access_token = create_access_token(data={
+        "sub": staff.staff_id,
+        "org_id": staff.organization_id
+    })
 
     return {
         "access_token": access_token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "organization_id": staff.organization_id,
+        "organization_name": staff.organization.name if staff.organization else None
     }
 
 

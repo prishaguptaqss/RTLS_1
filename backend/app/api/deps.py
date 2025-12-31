@@ -35,37 +35,6 @@ def get_db():
         db.close()
 
 
-async def get_current_organization(
-    x_organization_id: int = Header(None, alias="X-Organization-ID"),
-    db: Session = Depends(get_db)
-) -> Organization:
-    """
-    Get current organization from request header.
-
-    The organization ID is passed via X-Organization-ID header.
-    This dependency ensures all API calls are scoped to an organization.
-
-    Usage in route:
-        @router.get("/entities")
-        def list_entities(org: Organization = Depends(get_current_organization)):
-            return org.entities
-    """
-    if not x_organization_id:
-        raise HTTPException(
-            status_code=400,
-            detail="Organization ID required. Please provide X-Organization-ID header."
-        )
-
-    org = db.query(Organization).filter(Organization.id == x_organization_id).first()
-    if not org:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Organization with ID {x_organization_id} not found"
-        )
-
-    return org
-
-
 async def get_current_staff(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: Session = Depends(get_db)
@@ -118,6 +87,55 @@ async def get_current_staff(
         )
 
     return staff
+
+
+async def get_current_organization(
+    x_organization_id: int = Header(None, alias="X-Organization-ID"),
+    current_staff: Staff = Depends(get_current_staff),
+    db: Session = Depends(get_db)
+) -> Organization:
+    """
+    Get current organization from request header.
+
+    The organization ID is passed via X-Organization-ID header.
+    This dependency ensures all API calls are scoped to an organization.
+    Validates that the current user has access to the requested organization.
+
+    Usage in route:
+        @router.get("/entities")
+        def list_entities(org: Organization = Depends(get_current_organization)):
+            return org.entities
+    """
+    if not x_organization_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Organization ID required. Please provide X-Organization-ID header."
+        )
+
+    org = db.query(Organization).filter(Organization.id == x_organization_id).first()
+    if not org:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Organization with ID {x_organization_id} not found"
+        )
+
+    # Validate that the user has access to this organization
+    # Admins (is_admin=True) have full access to all organizations
+    # Non-admin users can only access their assigned organization
+    if not current_staff.is_admin:
+        # Non-admin users must belong to an organization and it must match
+        if current_staff.organization_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied. Staff member is not assigned to any organization."
+            )
+        if current_staff.organization_id != x_organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied. You do not have permission to access this organization."
+            )
+
+    return org
 
 
 async def get_current_active_staff(
