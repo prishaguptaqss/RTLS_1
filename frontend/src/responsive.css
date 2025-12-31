@@ -1,0 +1,247 @@
+/*
+ * Global Responsive Styles
+ * This file provides responsive utilities for all pages
+ */
+
+/* Responsive Grid Utilities */
+@media (max-width: 1024px) {
+  /* Grid adjustments for tablets */
+  .grid-auto-fit {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Single column grids for mobile */
+  .grid-auto-fit,
+  .grid-auto-fill {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Flex to column layout */
+  .flex-row-to-col {
+    flex-direction: column !important;
+  }
+
+  /* Stack buttons vertically */
+  .btn-group {
+    flex-direction: column !important;
+  }
+
+  .btn-group .btn,
+  .btn-group button {
+    width: 100% !important;
+  }
+
+  /* Full width inputs on mobile */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="number"],
+  select,
+  textarea {
+    max-width: 100% !important;
+  }
+
+  /* Reduce padding on cards and containers */
+  .card,
+  .container,
+  .section {
+    padding: 16px !important;
+  }
+
+  /* Smaller headings */
+  h1 {
+    font-size: 22px !important;
+  }
+
+  h2 {
+    font-size: 20px !important;
+  }
+
+  h3 {
+    font-size: 18px !important;
+  }
+
+  /* Adjust table font sizes */
+  table {
+    font-size: 12px !important;
+  }
+
+  th {
+    font-size: 11px !important;
+    padding: 10px 12px !important;
+  }
+
+  td {
+    padding: 12px !important;
+  }
+
+  /* Badge adjustments */
+  .badge {
+    font-size: 11px !important;
+    padding: 3px 8px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra small mobile adjustments */
+  .card,
+  .container,
+  .section {
+    padding: 12px !important;
+  }
+
+  h1 {
+    font-size: 20px !important;
+  }
+
+  h2 {
+    font-size: 18px !important;
+  }
+
+  h3 {
+    font-size: 16px !important;
+  }
+
+  table {
+    font-size: 11px !important;
+  }
+
+  th {
+    font-size: 10px !important;
+    padding: 8px 10px !important;
+  }
+
+  td {
+    padding: 10px !important;
+  }
+
+  .btn {
+    font-size: 12px !important;
+    padding: 8px 14px !important;
+  }
+
+  .badge {
+    font-size: 10px !important;
+    padding: 2px 6px !important;
+  }
+}
+
+/* Utility Classes */
+.mobile-hide {
+  display: block;
+}
+
+.mobile-show {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-hide {
+    display: none !important;
+  }
+
+  .mobile-show {
+    display: block !important;
+  }
+
+  .mobile-show-flex {
+    display: flex !important;
+  }
+}
+
+/* Responsive text utilities */
+@media (max-width: 768px) {
+  .text-sm-left {
+    text-align: left !important;
+  }
+
+  .text-sm-center {
+    text-align: center !important;
+  }
+
+  .text-sm-right {
+    text-align: right !important;
+  }
+}
+
+/* Touch-friendly improvements */
+@media (max-width: 768px) {
+  /* Ensure all clickable elements have adequate touch targets */
+  button,
+  a,
+  input[type="button"],
+  input[type="submit"],
+  .btn,
+  .btn-icon {
+    min-height: 44px;
+  }
+
+  /* Prevent text selection on double-tap */
+  button,
+  .btn,
+  .btn-icon {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Allow text selection in inputs */
+  input,
+  textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  /* Prevent horizontal overflow */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Improve image responsiveness */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-width: 768px) and (orientation: landscape) {
+  .header {
+    height: 52px;
+  }
+
+  .modal-content {
+    max-height: 85vh;
+  }
+}
+
+/* Very small devices optimization */
+@media (max-width: 360px) {
+  /* Extra small adjustments for older phones */
+  .btn {
+    font-size: 11px !important;
+    padding: 7px 12px !important;
+  }
+
+  .card,
+  .container,
+  .section {
+    padding: 10px !important;
+  }
+
+  h1 {
+    font-size: 18px !important;
+  }
+
+  h2 {
+    font-size: 16px !important;
+  }
+
+  h3 {
+    font-size: 14px !important;
+  }
+}

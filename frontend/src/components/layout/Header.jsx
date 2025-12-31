@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Search, Settings, Bell, User, LogOut, Lock, X, Moon, Sun } from 'lucide-react';
+import { Search, Settings, Bell, User, LogOut, Lock, X, Moon, Sun, Menu } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSearch } from '../../contexts/SearchContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -8,7 +8,7 @@ import ChangePasswordModal from '../ChangePasswordModal';
 import ProfileModal from '../ProfileModal';
 import './Header.css';
 
-const Header = () => {
+const Header = ({ toggleMobileMenu }) => {
   const { user, logout } = useAuth();
   const { searchQuery, setSearchQuery, clearSearch } = useSearch();
   const { theme, toggleTheme, isDark } = useTheme();
@@ -66,6 +66,15 @@ const Header = () => {
 
   return (
     <header className="header">
+      {/* Mobile Menu Button */}
+      <button
+        className="mobile-menu-btn"
+        onClick={toggleMobileMenu}
+        title="Toggle menu"
+      >
+        <Menu size={20} />
+      </button>
+
       <div className="header-search">
         <Search size={20} className="search-icon" />
         <input

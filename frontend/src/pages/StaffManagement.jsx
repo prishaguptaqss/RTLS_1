@@ -5,7 +5,7 @@ import { useSearch } from '../contexts/SearchContext';
 import { useToast } from '../contexts/ToastContext';
 import { useOrganization } from '../contexts/OrganizationContext';
 import PermissionGate from '../components/PermissionGate';
-import { Edit2, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, Copy, Edit2, Trash2 } from 'lucide-react';
 import './StaffManagement.css';
 
 const StaffManagement = () => {

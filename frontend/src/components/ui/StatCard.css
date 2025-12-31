@@ -60,3 +60,70 @@
   color: var(--primary);
   flex-shrink: 0;
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 1024px) {
+  .stat-card {
+    padding: 20px;
+    min-height: 110px;
+  }
+
+  .stat-card-value {
+    font-size: 32px;
+  }
+
+  .stat-card-icon {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+@media (max-width: 768px) {
+  .stat-card {
+    padding: 16px;
+    min-height: 100px;
+    gap: 16px;
+  }
+
+  .stat-card-title {
+    font-size: 12px;
+  }
+
+  .stat-card-value {
+    font-size: 28px;
+  }
+
+  .stat-card-subtitle {
+    font-size: 12px;
+  }
+
+  .stat-card-icon {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-card {
+    padding: 14px;
+    min-height: 90px;
+    gap: 12px;
+  }
+
+  .stat-card-title {
+    font-size: 11px;
+  }
+
+  .stat-card-value {
+    font-size: 24px;
+  }
+
+  .stat-card-subtitle {
+    font-size: 11px;
+  }
+
+  .stat-card-icon {
+    width: 42px;
+    height: 42px;
+  }
+}

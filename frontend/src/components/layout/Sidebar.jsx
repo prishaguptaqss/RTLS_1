@@ -18,7 +18,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useOrganization } from '../../contexts/OrganizationContext';
 import './Sidebar.css';
 
-const Sidebar = ({ isCollapsed, toggleSidebar }) => {
+const Sidebar = ({ isCollapsed, toggleSidebar, isMobileMenuOpen, closeMobileMenu }) => {
   const { user, hasPermission } = useAuth();
   const { currentOrganization } = useOrganization();
 
@@ -100,57 +100,66 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   });
 
   return (
-    <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
-      <div className="sidebar-header">
-        <div className="sidebar-brand">
-          {currentOrganization?.logo ? (
-            <img
-              src={`${BASE_URL}/${currentOrganization.logo}`}
-              alt="Organization logo"
-              className="brand-logo"
-            />
-          ) : (
-            <Activity size={24} className="brand-icon" />
-          )}
-          {!isCollapsed && (
-            <div className="brand-text">
-              <h2 className="sidebar-title">RPM System</h2>
-  
+    <>
+      {/* Mobile overlay */}
+      <div
+        className={`sidebar-overlay ${isMobileMenuOpen ? 'active' : ''}`}
+        onClick={closeMobileMenu}
+      />
+
+      <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+        <div className="sidebar-header">
+          <div className="sidebar-brand">
+            {currentOrganization?.logo ? (
+              <img
+                src={`${BASE_URL}/${currentOrganization.logo}`}
+                alt="Organization logo"
+                className="brand-logo"
+              />
+            ) : (
+              <Activity size={24} className="brand-icon" />
+            )}
+            {!isCollapsed && (
+              <div className="brand-text">
+                <h2 className="sidebar-title">RPM System</h2>
+
+              </div>
+            )}
+            <button
+              className="sidebar-toggle"
+              onClick={toggleSidebar}
+              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </button>
+          </div>
+
+          {/* Current Organization Display */}
+          {currentOrganization && !isCollapsed && currentOrganization.display_name && (
+            <div className="current-organization">
+              <div className="org-display-name">{currentOrganization.display_name}</div>
             </div>
           )}
-          <button
-            className="sidebar-toggle"
-            onClick={toggleSidebar}
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-          </button>
         </div>
 
-        {/* Current Organization Display */}
-        {currentOrganization && !isCollapsed && currentOrganization.display_name && (
-          <div className="current-organization">
-            <div className="org-display-name">{currentOrganization.display_name}</div>
-          </div>
-        )}
-      </div>
-
-      <nav className="sidebar-nav">
-        {visibleMenuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) =>
-              `sidebar-link ${isActive ? 'active' : ''}`
-            }
-            title={isCollapsed ? item.label : ''}
-          >
-            <item.icon size={20} />
-            {!isCollapsed && <span>{item.label}</span>}
-          </NavLink>
-        ))}
-      </nav>
-    </aside>
+        <nav className="sidebar-nav">
+          {visibleMenuItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? 'active' : ''}`
+              }
+              title={isCollapsed ? item.label : ''}
+              onClick={closeMobileMenu}
+            >
+              <item.icon size={20} />
+              {!isCollapsed && <span>{item.label}</span>}
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
+    </>
   );
 };
 

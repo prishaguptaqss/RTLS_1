@@ -207,3 +207,56 @@
   font-size: 0.9rem;
   color: #495057;
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-wrap: wrap;
+  }
+
+  .entity-type-badge,
+  .status-badge {
+    padding: 5px 12px;
+    font-size: 11px;
+  }
+
+  .filter-select {
+    padding: 0.4rem;
+    font-size: 0.875rem;
+  }
+
+  .delete-entity-info {
+    padding: 0.75rem;
+    margin: 0.75rem 0;
+  }
+
+  .delete-entity-info strong {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .entity-type-badge,
+  .status-badge {
+    padding: 4px 10px;
+    font-size: 10px;
+  }
+
+  .filter-select {
+    padding: 0.35rem;
+    font-size: 0.8125rem;
+  }
+
+  .delete-entity-info {
+    padding: 0.625rem;
+    margin: 0.625rem 0;
+  }
+
+  .delete-entity-info strong {
+    font-size: 0.9375rem;
+  }
+
+  .location-text {
+    font-size: 0.8125rem;
+  }
+}

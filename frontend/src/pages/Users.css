@@ -138,3 +138,118 @@
   color: var(--danger);
   font-size: 0.85rem;
 }
+
+
+/* Responsive styles */
+@media (max-width: 1024px) {
+  /* Tablet adjustments */
+  .page-title {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Mobile adjustments */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.875rem;
+  }
+
+  .action-buttons {
+    gap: 4px;
+  }
+
+  .btn-icon {
+    padding: 5px;
+    min-width: 32px;
+    height: 32px;
+  }
+
+  .status-badge {
+    font-size: 0.75rem;
+    padding: 3px 10px;
+  }
+
+  .delete-user-info {
+    padding: 12px;
+  }
+
+  .delete-user-info strong {
+    font-size: 1rem;
+  }
+
+  .delete-user-info div {
+    font-size: 0.85rem;
+  }
+
+  .loading-state,
+  .empty-state,
+  .error-state {
+    padding: 40px 16px;
+  }
+
+  .empty-state p,
+  .error-state p {
+    font-size: 0.9rem;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table {
+    min-width: 600px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Small mobile adjustments */
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.8125rem;
+  }
+
+  .btn-icon {
+    padding: 4px;
+    min-width: 28px;
+    height: 28px;
+  }
+
+  .action-buttons {
+    gap: 3px;
+  }
+
+  .status-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+  }
+
+  .delete-user-info {
+    padding: 10px;
+  }
+
+  .error-text {
+    font-size: 0.8rem;
+  }
+
+  .warning-text {
+    font-size: 0.85rem;
+  }
+
+  .table {
+    min-width: 550px;
+  }
+}
