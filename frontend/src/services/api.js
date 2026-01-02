@@ -22,8 +22,12 @@ api.interceptors.request.use(
 
     // Add organization ID header for multi-tenant support
     const orgId = localStorage.getItem('currentOrganizationId');
+    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url} | Org ID from localStorage: ${orgId}`);
     if (orgId) {
       config.headers['X-Organization-ID'] = orgId;
+      console.log(`[API Request] Added X-Organization-ID header: ${orgId}`);
+    } else {
+      console.log(`[API Request] No X-Organization-ID header added (orgId is null/undefined)`);
     }
 
     // If sending FormData, remove Content-Type header to let axios set it automatically with boundary

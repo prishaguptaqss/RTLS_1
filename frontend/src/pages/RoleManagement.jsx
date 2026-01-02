@@ -266,7 +266,9 @@ const RoleManagement = () => {
                       <button
                         className="btn-icon btn-edit"
                         onClick={() => handleOpenModal(role)}
-                        title="Edit role"
+                        title={role.name === 'Admin' && !role.organization_id ? 'System Admin role cannot be edited' : 'Edit role'}
+                        disabled={role.name === 'Admin' && !role.organization_id}
+                        style={role.name === 'Admin' && !role.organization_id ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                       >
                         <Edit2 size={16} />
                       </button>
@@ -275,7 +277,9 @@ const RoleManagement = () => {
                       <button
                         className="btn-icon btn-delete"
                         onClick={() => handleDelete(role.id, role.name)}
-                        title="Delete role"
+                        title={role.name === 'Admin' && !role.organization_id ? 'System Admin role cannot be deleted' : 'Delete role'}
+                        disabled={role.name === 'Admin' && !role.organization_id}
+                        style={role.name === 'Admin' && !role.organization_id ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                       >
                         <Trash2 size={16} />
                       </button>

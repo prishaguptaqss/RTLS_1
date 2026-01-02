@@ -43,6 +43,10 @@ export const AuthProvider = ({ children }) => {
       if (organization_id) {
         localStorage.setItem('currentOrganizationId', organization_id);
         console.log('Organization ID stored:', organization_id);
+      } else {
+        // For admin users with no organization_id, remove any stale org ID
+        localStorage.removeItem('currentOrganizationId');
+        console.log('No organization ID - removed stale data');
       }
 
       // Then store token
@@ -57,6 +61,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
 
       // Trigger a custom event to notify OrganizationContext
+      // This will load organizations for both admin (no org_id) and regular users
       window.dispatchEvent(new CustomEvent('organizationChanged'));
 
       return { success: true };

@@ -46,8 +46,12 @@ def list_staff(
     List all staff members within the selected organization.
 
     Filters staff by the current organization context (from X-Organization-ID header).
+    Also includes global staff (organization_id = null) like system administrators.
     """
-    query = db.query(Staff).filter(Staff.organization_id == organization.id)
+    # Include both organization-specific staff AND global staff (organization_id = null)
+    query = db.query(Staff).filter(
+        (Staff.organization_id == organization.id) | (Staff.organization_id == None)
+    )
 
     total = query.count()
     staff = query.offset(skip).limit(limit).all()
@@ -204,6 +208,38 @@ def update_staff(
             detail=f"Staff member with ID {staff_id} not found"
         )
 
+    # Protect system admin - cannot modify their roles or admin status
+    if staff.is_admin and staff.organization_id is None:
+        # System admin (global) - only allow updating basic info (name, phone)
+        # Cannot change: email, is_admin status, roles, organization
+        if staff_data.email is not None and staff_data.email != staff.email:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot change the system administrator's email"
+            )
+        if staff_data.is_admin is not None and staff_data.is_admin != staff.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot change the system administrator's admin status"
+            )
+        if staff_data.role_ids is not None:
+            # Check if trying to remove Admin role
+            from app.config import settings
+            admin_role = db.query(Role).filter(
+                Role.name == "Admin",
+                Role.organization_id == None
+            ).first()
+            if admin_role and admin_role.id not in staff_data.role_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Cannot remove Admin role from the system administrator"
+                )
+        if staff_data.is_active is not None and staff_data.is_active == False:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot deactivate the system administrator account"
+            )
+
     # Check access
     if not current_staff.is_admin:
         # Non-admins cannot edit admin accounts
@@ -293,6 +329,13 @@ def delete_staff(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Staff member with ID {staff_id} not found"
+        )
+
+    # Protect system admin - cannot be deleted by anyone
+    if staff.is_admin and staff.organization_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The system administrator account cannot be deleted"
         )
 
     # Prevent self-deletion

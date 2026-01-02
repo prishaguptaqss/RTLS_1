@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../components/ui/Card';
 import { fetchSettings, updateSettings } from '../services/api';
 import { useOrganization } from '../contexts/OrganizationContext';
+import { useAuth } from '../contexts/AuthContext';
 import './Settings.css';
 
 const Settings = () => {
   const { currentOrganization, organizations, switchOrganization, loading: orgLoading } = useOrganization();
+  const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -122,7 +126,20 @@ const Settings = () => {
         <Card>
           <Card.Content>
             <div className="error-state">
-              <p>No organization selected. Please select an organization from the sidebar.</p>
+              {organizations.length === 0 && isAdmin ? (
+                <div>
+                  <p>No organizations found. Please create an organization first.</p>
+                  <button
+                    onClick={() => navigate('/organizations')}
+                    className="btn btn-primary"
+                    style={{ marginTop: '1rem' }}
+                  >
+                    Go to Organizations
+                  </button>
+                </div>
+              ) : (
+                <p>No organization selected. Please select an organization from the sidebar.</p>
+              )}
             </div>
           </Card.Content>
         </Card>

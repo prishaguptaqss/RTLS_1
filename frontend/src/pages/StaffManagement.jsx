@@ -242,8 +242,18 @@ const StaffManagement = () => {
                       <button
                         className="btn-icon btn-edit"
                         onClick={() => handleOpenModal(member)}
-                        disabled={member.is_admin && !user?.is_admin}
-                        title={member.is_admin && !user?.is_admin ? "Only admins can edit admin accounts" : "Edit user"}
+                        disabled={
+                          (member.is_admin && !member.organization_id) ||
+                          (member.is_admin && !user?.is_admin)
+                        }
+                        title={
+                          member.is_admin && !member.organization_id
+                            ? "System administrator cannot be edited"
+                            : member.is_admin && !user?.is_admin
+                            ? "Only admins can edit admin accounts"
+                            : "Edit user"
+                        }
+                        style={member.is_admin && !member.organization_id ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                       >
                         <Edit2 size={16} />
                       </button>
@@ -252,14 +262,21 @@ const StaffManagement = () => {
                       <button
                         className="btn-icon btn-delete"
                         onClick={() => handleDelete(member.id, member.name)}
-                        disabled={member.id === user?.id || (member.is_admin && !user?.is_admin)}
+                        disabled={
+                          (member.is_admin && !member.organization_id) ||
+                          member.id === user?.id ||
+                          (member.is_admin && !user?.is_admin)
+                        }
                         title={
-                          member.id === user?.id
+                          member.is_admin && !member.organization_id
+                            ? "System administrator cannot be deleted"
+                            : member.id === user?.id
                             ? "Cannot delete yourself"
                             : member.is_admin && !user?.is_admin
                             ? "Only admins can delete admin accounts"
                             : "Delete user"
                         }
+                        style={member.is_admin && !member.organization_id ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                       >
                         <Trash2 size={16} />
                       </button>

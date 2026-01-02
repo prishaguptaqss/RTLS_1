@@ -136,19 +136,88 @@ def seed_permissions(db):
         return False
 
 
+def create_admin_role(db):
+    """Create Admin role with all permissions if it doesn't exist."""
+    try:
+        # Check if Admin role already exists
+        result = db.execute(
+            text("SELECT id FROM roles WHERE name = :name"),
+            {"name": "Admin"}
+        )
+        admin_role = result.fetchone()
+
+        if admin_role:
+            logger.info(f"Admin role already exists (ID: {admin_role[0]})")
+            return admin_role[0]
+
+        logger.info("Creating Admin role...")
+
+        # Create Admin role (no organization_id means it's a global role)
+        role_sql = """
+            INSERT INTO roles (name, description, organization_id)
+            VALUES (:name, :description, :org_id)
+        """
+
+        db.execute(text(role_sql), {
+            "name": "Admin",
+            "description": "Administrator role with all permissions and access to all organizations",
+            "org_id": None
+        })
+
+        db.commit()
+
+        # Get the newly created role ID
+        result = db.execute(
+            text("SELECT id FROM roles WHERE name = :name"),
+            {"name": "Admin"}
+        )
+        admin_role_id = result.scalar()
+
+        logger.info(f"✓ Admin role created (ID: {admin_role_id})")
+
+        # Assign ALL permissions to Admin role
+        logger.info("Assigning all permissions to Admin role...")
+
+        # Get all permission IDs
+        result = db.execute(text("SELECT id FROM permissions"))
+        permission_ids = [row[0] for row in result.fetchall()]
+
+        if not permission_ids:
+            logger.error("No permissions found to assign to Admin role")
+            return admin_role_id
+
+        # Create role_permissions entries for all permissions
+        for perm_id in permission_ids:
+            db.execute(
+                text("INSERT INTO role_permissions (role_id, permission_id) VALUES (:role_id, :perm_id)"),
+                {"role_id": admin_role_id, "perm_id": perm_id}
+            )
+
+        db.commit()
+
+        logger.info(f"✓ Assigned {len(permission_ids)} permissions to Admin role")
+
+        return admin_role_id
+
+    except Exception as e:
+        logger.error(f"Failed to create Admin role: {e}")
+        db.rollback()
+        return None
+
+
 def create_default_admin(db):
     """Create default admin user if it doesn't exist."""
     try:
         # Check if admin already exists
         result = db.execute(
-            text("SELECT COUNT(*) FROM staff WHERE email = :email"),
+            text("SELECT id FROM staff WHERE email = :email"),
             {"email": settings.DEFAULT_ADMIN_EMAIL}
         )
-        count = result.scalar()
+        admin_user = result.fetchone()
 
-        if count > 0:
+        if admin_user:
             logger.info(f"Admin user already exists: {settings.DEFAULT_ADMIN_EMAIL}")
-            return True
+            return admin_user[0]
 
         logger.info("Creating default admin user...")
 
@@ -174,15 +243,56 @@ def create_default_admin(db):
 
         db.commit()
 
-        logger.info(f"✓ Default admin created successfully")
+        # Get the newly created admin user ID
+        result = db.execute(
+            text("SELECT id FROM staff WHERE email = :email"),
+            {"email": settings.DEFAULT_ADMIN_EMAIL}
+        )
+        admin_user_id = result.scalar()
+
+        logger.info(f"✓ Default admin created successfully (ID: {admin_user_id})")
         logger.info(f"  Email: {settings.DEFAULT_ADMIN_EMAIL}")
         logger.info(f"  Password: {settings.DEFAULT_ADMIN_PASSWORD}")
         logger.info(f"  ⚠️  IMPORTANT: Change this password in production!")
 
-        return True
+        return admin_user_id
 
     except Exception as e:
         logger.error(f"Failed to create default admin: {e}")
+        db.rollback()
+        return None
+
+
+def assign_admin_role_to_user(db, admin_user_id, admin_role_id):
+    """Assign Admin role to the admin user."""
+    try:
+        # Check if role is already assigned
+        result = db.execute(
+            text("SELECT COUNT(*) FROM staff_roles WHERE staff_id = :staff_id AND role_id = :role_id"),
+            {"staff_id": admin_user_id, "role_id": admin_role_id}
+        )
+        count = result.scalar()
+
+        if count > 0:
+            logger.info(f"Admin role already assigned to admin user")
+            return True
+
+        logger.info("Assigning Admin role to admin user...")
+
+        # Assign role to user
+        db.execute(
+            text("INSERT INTO staff_roles (staff_id, role_id) VALUES (:staff_id, :role_id)"),
+            {"staff_id": admin_user_id, "role_id": admin_role_id}
+        )
+
+        db.commit()
+
+        logger.info(f"✓ Admin role assigned to admin user successfully")
+
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to assign Admin role to user: {e}")
         db.rollback()
         return False
 
@@ -202,9 +312,10 @@ def initialize_database():
     if is_initialized:
         logger.info("✓ Database already initialized")
 
-        # Even if initialized, check and seed permissions if missing
+        # Even if initialized, check and seed missing data
         db = SessionLocal()
         try:
+            # Check and seed permissions if missing
             result = db.execute(text("SELECT COUNT(*) FROM permissions"))
             perm_count = result.scalar()
 
@@ -212,15 +323,43 @@ def initialize_database():
                 logger.info("Permissions table is empty, seeding...")
                 seed_permissions(db)
 
+            # Check and create Admin role if missing
             result = db.execute(
-                text("SELECT COUNT(*) FROM staff WHERE email = :email"),
+                text("SELECT id FROM roles WHERE name = :name"),
+                {"name": "Admin"}
+            )
+            admin_role = result.fetchone()
+
+            if not admin_role:
+                logger.info("Admin role missing, creating...")
+                admin_role_id = create_admin_role(db)
+            else:
+                admin_role_id = admin_role[0]
+
+            # Check and create admin user if missing
+            result = db.execute(
+                text("SELECT id FROM staff WHERE email = :email"),
                 {"email": settings.DEFAULT_ADMIN_EMAIL}
             )
-            admin_count = result.scalar()
+            admin_user = result.fetchone()
 
-            if admin_count == 0:
+            if not admin_user:
                 logger.info("Admin user missing, creating...")
-                create_default_admin(db)
+                admin_user_id = create_default_admin(db)
+            else:
+                admin_user_id = admin_user[0]
+
+            # Check if admin user has Admin role assigned
+            if admin_role_id and admin_user_id:
+                result = db.execute(
+                    text("SELECT COUNT(*) FROM staff_roles WHERE staff_id = :staff_id AND role_id = :role_id"),
+                    {"staff_id": admin_user_id, "role_id": admin_role_id}
+                )
+                role_assigned = result.scalar()
+
+                if role_assigned == 0:
+                    logger.info("Admin role not assigned to admin user, assigning...")
+                    assign_admin_role_to_user(db, admin_user_id, admin_role_id)
 
         finally:
             db.close()
@@ -248,9 +387,25 @@ def initialize_database():
 
         logger.info("")
 
-        # Create default admin
-        if not create_default_admin(db):
+        # Create Admin role with all permissions
+        admin_role_id = create_admin_role(db)
+        if not admin_role_id:
+            logger.error("Failed to create Admin role. Aborting initialization.")
+            return False
+
+        logger.info("")
+
+        # Create default admin user
+        admin_user_id = create_default_admin(db)
+        if not admin_user_id:
             logger.error("Failed to create default admin. Aborting initialization.")
+            return False
+
+        logger.info("")
+
+        # Assign Admin role to admin user
+        if not assign_admin_role_to_user(db, admin_user_id, admin_role_id):
+            logger.error("Failed to assign Admin role to admin user. Aborting initialization.")
             return False
 
         logger.info("")

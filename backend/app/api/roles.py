@@ -36,8 +36,12 @@ def list_roles(
     List all roles within the selected organization.
 
     Filters roles by the current organization context (from X-Organization-ID header).
+    Also includes global roles (organization_id = null) like "Admin" role.
     """
-    query = db.query(Role).filter(Role.organization_id == organization.id)
+    # Include both organization-specific roles AND global roles (organization_id = null)
+    query = db.query(Role).filter(
+        (Role.organization_id == organization.id) | (Role.organization_id == None)
+    )
 
     total = query.count()
     roles = query.offset(skip).limit(limit).all()
@@ -138,6 +142,13 @@ def update_role(
             detail=f"Role with ID {role_id} not found"
         )
 
+    # Protect system Admin role - cannot be modified by anyone
+    if role.name == "Admin" and role.organization_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The system Admin role cannot be modified"
+        )
+
     # Check access: admins or same organization
     if not current_staff.is_admin:
         if role.organization_id and role.organization_id != current_staff.organization_id:
@@ -191,6 +202,13 @@ def delete_role(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Role with ID {role_id} not found"
+        )
+
+    # Protect system Admin role - cannot be deleted by anyone
+    if role.name == "Admin" and role.organization_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The system Admin role cannot be deleted"
         )
 
     # Check access: admins or same organization

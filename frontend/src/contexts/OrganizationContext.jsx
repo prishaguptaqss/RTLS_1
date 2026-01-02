@@ -10,39 +10,58 @@ export const OrganizationProvider = ({ children }) => {
 
   const loadOrganizations = async () => {
     try {
+      console.log('[OrganizationContext] Loading organizations...');
       const orgs = await fetchOrganizations();
+      console.log('[OrganizationContext] Fetched organizations:', orgs);
       setOrganizations(orgs);
 
       // Load saved organization from localStorage
       const savedOrgId = localStorage.getItem('currentOrganizationId');
+      console.log('[OrganizationContext] Saved org ID from localStorage:', savedOrgId);
 
       if (savedOrgId) {
         const savedOrg = orgs.find(o => o.id === parseInt(savedOrgId));
         if (savedOrg) {
+          console.log('[OrganizationContext] Using saved organization:', savedOrg.name);
           setCurrentOrganization(savedOrg);
         } else if (orgs.length > 0) {
           // If saved org not found, use first organization
+          console.log('[OrganizationContext] Saved org not found, using first org:', orgs[0].name);
           setCurrentOrganization(orgs[0]);
           localStorage.setItem('currentOrganizationId', orgs[0].id);
+        } else {
+          // No organizations available
+          console.log('[OrganizationContext] No organizations available');
+          setCurrentOrganization(null);
+          localStorage.removeItem('currentOrganizationId');
         }
       } else if (orgs.length > 0) {
         // No saved org, use first one
+        console.log('[OrganizationContext] No saved org, auto-selecting first org:', orgs[0].name);
         setCurrentOrganization(orgs[0]);
         localStorage.setItem('currentOrganizationId', orgs[0].id);
+        console.log('[OrganizationContext] Stored org ID in localStorage:', orgs[0].id);
+      } else {
+        // No organizations available (fresh database)
+        console.log('[OrganizationContext] No organizations in database');
+        setCurrentOrganization(null);
+        localStorage.removeItem('currentOrganizationId');
       }
     } catch (error) {
-      console.error('Failed to load organizations:', error);
+      console.error('[OrganizationContext] Failed to load organizations:', error);
     } finally {
       setLoading(false);
+      console.log('[OrganizationContext] Loading complete');
     }
   };
 
   useEffect(() => {
     // Only load organizations if user is authenticated
     const token = localStorage.getItem('authToken');
-    const orgId = localStorage.getItem('currentOrganizationId');
 
-    if (token && orgId) {
+    if (token) {
+      // Load organizations for authenticated users (admin or regular)
+      // Admin users might not have an organization_id initially
       loadOrganizations();
     } else {
       setLoading(false);
@@ -50,10 +69,7 @@ export const OrganizationProvider = ({ children }) => {
 
     // Listen for organization changes (e.g., after login)
     const handleOrganizationChange = () => {
-      const newOrgId = localStorage.getItem('currentOrganizationId');
-      if (newOrgId) {
-        loadOrganizations();
-      }
+      loadOrganizations();
     };
 
     window.addEventListener('organizationChanged', handleOrganizationChange);
