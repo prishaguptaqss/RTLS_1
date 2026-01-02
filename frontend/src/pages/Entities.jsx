@@ -7,7 +7,6 @@ import {
   fetchEntities,
   createEntity,
   updateEntity,
-  deleteEntity,
   fetchEntityLocationHistory,
   fetchAvailableTags
 } from '../services/api';
@@ -26,12 +25,13 @@ const Entities = () => {
   const [typeFilter, setTypeFilter] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isUntrackModalOpen, setIsUntrackModalOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [locationHistory, setLocationHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [formData, setFormData] = useState({
     entity_id: '',
     type: 'person',
@@ -164,20 +164,6 @@ const Entities = () => {
     }
   };
 
-  const handleDeleteEntity = async () => {
-    try {
-      setSubmitting(true);
-      await deleteEntity(selectedEntity.entity_id);
-      await loadEntities();
-      setIsDeleteModalOpen(false);
-      setSelectedEntity(null);
-    } catch (err) {
-      console.error('Error deleting entity:', err);
-      alert('Failed to delete entity');
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const openCreateModal = async () => {
     resetForm();
@@ -199,15 +185,11 @@ const Entities = () => {
     setIsEditModalOpen(true);
   };
 
-  const openDeleteModal = (entity) => {
-    setSelectedEntity(entity);
-    setIsDeleteModalOpen(true);
-  };
-
   const openHistoryModal = async (entity) => {
     setSelectedEntity(entity);
     setIsHistoryModalOpen(true);
     setLoadingHistory(true);
+    setCurrentPage(1); // Reset to first page
     try {
       const data = await fetchEntityLocationHistory(entity.entity_id);
       setLocationHistory(data.history);
@@ -278,6 +260,140 @@ const Entities = () => {
       second: '2-digit',
       hour12: true
     });
+  };
+
+  const downloadHistoryAsCSV = () => {
+    if (!selectedEntity || locationHistory.length === 0) return;
+
+    // CSV header
+    const headers = ['Location', 'Entered At', 'Exited At', 'Duration (minutes)'];
+
+    // CSV rows
+    const rows = locationHistory.map(record => [
+      `${record.building_name} > Floor ${record.floor_number} > ${record.room_name}`,
+      formatHistoryDate(record.entered_at),
+      record.exited_at ? formatHistoryDate(record.exited_at) : 'Currently here',
+      record.duration_minutes !== null ? record.duration_minutes : '-'
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${selectedEntity.entity_id}_location_history.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const downloadHistoryAsPDF = () => {
+    if (!selectedEntity || locationHistory.length === 0) return;
+
+    // Create a new window for printing
+    const printWindow = window.open('', '', 'width=800,height=600');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Location History - ${selectedEntity.name || selectedEntity.entity_id}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+          }
+          h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+          }
+          .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+          }
+          th {
+            background-color: #4CAF50;
+            color: white;
+          }
+          tr:nth-child(even) {
+            background-color: #f2f2f2;
+          }
+          .current {
+            background-color: #4CAF50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Location History Report</h1>
+        <div class="subtitle">
+          <strong>Entity:</strong> ${selectedEntity.name || selectedEntity.entity_id} (${selectedEntity.entity_id})<br>
+          <strong>Generated:</strong> ${new Date().toLocaleString()}
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Location</th>
+              <th>Entered At</th>
+              <th>Exited At</th>
+              <th>Duration (min)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${locationHistory.map(record => `
+              <tr>
+                <td><strong>${record.building_name}</strong> &gt; Floor ${record.floor_number} &gt; ${record.room_name}</td>
+                <td>${formatHistoryDate(record.entered_at)}</td>
+                <td>${record.exited_at ? formatHistoryDate(record.exited_at) : '<span class="current">Currently here</span>'}</td>
+                <td>${record.duration_minutes !== null ? record.duration_minutes : '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+
+    // Wait for content to load, then print
+    printWindow.onload = () => {
+      printWindow.print();
+      // Close window after printing (optional)
+      setTimeout(() => {
+        printWindow.close();
+      }, 100);
+    };
+  };
+
+  const handleDownloadHistory = (format) => {
+    if (format === 'csv') {
+      downloadHistoryAsCSV();
+    } else if (format === 'pdf') {
+      downloadHistoryAsPDF();
+    }
   };
 
   const getTypeBadge = (type) => {
@@ -467,15 +583,6 @@ const Entities = () => {
                             title="Edit entity"
                           >
                             <FiEdit2 size={16} />
-                          </button>
-                        </PermissionGate>
-                        <PermissionGate permission="ENTITY_DELETE">
-                          <button
-                            onClick={() => openDeleteModal(entity)}
-                            className="btn-icon btn-delete"
-                            title="Delete entity"
-                          >
-                            <FiTrash2 size={16} />
                           </button>
                         </PermissionGate>
                       </div>
@@ -700,38 +807,6 @@ const Entities = () => {
         </form>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
-        <Modal.Header onClose={() => setIsDeleteModalOpen(false)}>
-          Confirm Delete
-        </Modal.Header>
-        <Modal.Body>
-          <p>Are you sure you want to delete this entity?</p>
-          {selectedEntity && (
-            <div className="delete-entity-info">
-              <strong>{selectedEntity.name || selectedEntity.entity_id}</strong> ({selectedEntity.entity_id})
-            </div>
-          )}
-          <p className="warning-text">This action cannot be undone.</p>
-        </Modal.Body>
-        <Modal.Footer>
-          <button
-            onClick={() => setIsDeleteModalOpen(false)}
-            className="btn btn-secondary"
-            disabled={submitting}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleDeleteEntity}
-            className="btn btn-danger"
-            disabled={submitting}
-          >
-            {submitting ? 'Deleting...' : 'Delete Entity'}
-          </button>
-        </Modal.Footer>
-      </Modal>
-
       {/* Location History Modal */}
       <Modal
         isOpen={isHistoryModalOpen}
@@ -754,47 +829,189 @@ const Entities = () => {
               <p>No location history found for this entity.</p>
             </div>
           ) : (
-            <Table>
-              <Table.Header>
-                <Table.Row>
-                  <Table.Head>Location</Table.Head>
-                  <Table.Head>Entered At</Table.Head>
-                  <Table.Head>Exited At</Table.Head>
-                  <Table.Head>Duration</Table.Head>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {locationHistory.map((record) => (
-                  <Table.Row key={record.id}>
-                    <Table.Cell>
-                      <strong>{record.building_name}</strong> &gt; Floor {record.floor_number} &gt; {record.room_name}
-                    </Table.Cell>
-                    <Table.Cell>{formatHistoryDate(record.entered_at)}</Table.Cell>
-                    <Table.Cell>
-                      {record.exited_at ? formatHistoryDate(record.exited_at) : (
-                        <span className="status-badge status-admitted">Currently here</span>
-                      )}
-                    </Table.Cell>
-                    <Table.Cell>
-                      {record.duration_minutes !== null ? (
-                        `${record.duration_minutes} min`
-                      ) : (
-                        '-'
-                      )}
-                    </Table.Cell>
+            <>
+              <Table>
+                <Table.Header>
+                  <Table.Row>
+                    <Table.Head>Location</Table.Head>
+                    <Table.Head>Entered At</Table.Head>
+                    <Table.Head>Exited At</Table.Head>
+                    <Table.Head>Duration</Table.Head>
                   </Table.Row>
-                ))}
-              </Table.Body>
-            </Table>
+                </Table.Header>
+                <Table.Body>
+                  {locationHistory
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((record) => (
+                      <Table.Row key={record.id}>
+                        <Table.Cell>
+                          <strong>{record.building_name}</strong> &gt; Floor {record.floor_number} &gt; {record.room_name}
+                        </Table.Cell>
+                        <Table.Cell>{formatHistoryDate(record.entered_at)}</Table.Cell>
+                        <Table.Cell>
+                          {record.exited_at ? formatHistoryDate(record.exited_at) : (
+                            <span className="status-badge status-admitted">Currently here</span>
+                          )}
+                        </Table.Cell>
+                        <Table.Cell>
+                          {record.duration_minutes !== null ? (
+                            `${record.duration_minutes} min`
+                          ) : (
+                            '-'
+                          )}
+                        </Table.Cell>
+                      </Table.Row>
+                    ))}
+                </Table.Body>
+              </Table>
+            </>
           )}
         </Modal.Body>
         <Modal.Footer>
-          <button
-            onClick={() => setIsHistoryModalOpen(false)}
-            className="btn btn-secondary"
-          >
-            Close
-          </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {/* Left side - Download buttons */}
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              {locationHistory.length > 0 && (
+                <>
+                  <button
+                    onClick={() => handleDownloadHistory('csv')}
+                    className="btn btn-primary"
+                    title="Download as CSV"
+                  >
+                    Download CSV
+                  </button>
+                  <button
+                    onClick={() => handleDownloadHistory('pdf')}
+                    className="btn btn-primary"
+                    title="Download/Print as PDF"
+                  >
+                    Download PDF
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Center - Pagination Controls */}
+            {locationHistory.length > 0 && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '1.5rem',
+                fontSize: '0.875rem'
+              }}>
+                {/* Left side - Record count */}
+                <span style={{
+                  color: '#6b7280',
+                  fontSize: '0.875rem',
+                  fontWeight: '400'
+                }}>
+                  {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, locationHistory.length)} of {locationHistory.length}
+                </span>
+
+                {/* Navigation buttons */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  {/* First page */}
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      border: '1px solid #e5e7eb',
+                      background: 'white',
+                      borderRadius: '4px',
+                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                      opacity: currentPage === 1 ? 0.5 : 1,
+                      fontSize: '0.875rem',
+                      color: '#374151'
+                    }}
+                    title="First page"
+                  >
+                    ⟪
+                  </button>
+
+                  {/* Previous page */}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      border: '1px solid #e5e7eb',
+                      background: 'white',
+                      borderRadius: '4px',
+                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                      opacity: currentPage === 1 ? 0.5 : 1,
+                      fontSize: '0.875rem',
+                      color: '#374151'
+                    }}
+                    title="Previous page"
+                  >
+                    ‹
+                  </button>
+
+                  {/* Page indicator */}
+                  <span style={{
+                    color: '#374151',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    padding: '0 0.5rem'
+                  }}>
+                    Page {currentPage} of {Math.ceil(locationHistory.length / itemsPerPage)}
+                  </span>
+
+                  {/* Next page */}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(locationHistory.length / itemsPerPage)))}
+                    disabled={currentPage === Math.ceil(locationHistory.length / itemsPerPage)}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      border: '1px solid #e5e7eb',
+                      background: 'white',
+                      borderRadius: '4px',
+                      cursor: currentPage === Math.ceil(locationHistory.length / itemsPerPage) ? 'not-allowed' : 'pointer',
+                      opacity: currentPage === Math.ceil(locationHistory.length / itemsPerPage) ? 0.5 : 1,
+                      fontSize: '0.875rem',
+                      color: '#374151'
+                    }}
+                    title="Next page"
+                  >
+                    ›
+                  </button>
+
+                  {/* Last page */}
+                  <button
+                    onClick={() => setCurrentPage(Math.ceil(locationHistory.length / itemsPerPage))}
+                    disabled={currentPage === Math.ceil(locationHistory.length / itemsPerPage)}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      border: '1px solid #e5e7eb',
+                      background: 'white',
+                      borderRadius: '4px',
+                      cursor: currentPage === Math.ceil(locationHistory.length / itemsPerPage) ? 'not-allowed' : 'pointer',
+                      opacity: currentPage === Math.ceil(locationHistory.length / itemsPerPage) ? 0.5 : 1,
+                      fontSize: '0.875rem',
+                      color: '#374151'
+                    }}
+                    title="Last page"
+                  >
+                    ⟫
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Right side - Close button */}
+            <button
+              onClick={() => setIsHistoryModalOpen(false)}
+              className="btn btn-secondary"
+            >
+              Close
+            </button>
+          </div>
         </Modal.Footer>
       </Modal>
 
