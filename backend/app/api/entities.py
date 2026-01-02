@@ -205,25 +205,6 @@ async def update_entity(
     return entity
 
 
-@router.delete("/{entity_id}", status_code=204, dependencies=[Depends(require_permission(Permission.ENTITY_DELETE))])
-async def delete_entity(
-    entity_id: str,
-    organization: Organization = Depends(get_current_organization),
-    db: Session = Depends(get_db)
-):
-    """Delete entity within the organization."""
-    entity = db.query(EntityModel).filter(
-        EntityModel.entity_id == entity_id,
-        EntityModel.organization_id == organization.id
-    ).first()
-    if not entity:
-        raise HTTPException(status_code=404, detail="Entity not found in this organization")
-
-    db.delete(entity)
-    db.commit()
-    return None
-
-
 @router.get("/{entity_id}/location-history", response_model=LocationHistoryResponse)
 async def get_entity_location_history(
     entity_id: str,

@@ -7,14 +7,13 @@ import {
   fetchEntities,
   createEntity,
   updateEntity,
-  deleteEntity,
   fetchEntityLocationHistory,
   fetchAvailableTags
 } from '../services/api';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { useSearch } from '../contexts/SearchContext';
 import './Entities.css';
-import { FiEdit2, FiTrash2, FiClock, FiUserX } from "react-icons/fi";
+import { FiEdit2, FiClock, FiUserX } from "react-icons/fi";
 
 const Entities = () => {
   const { currentOrganization, loading: orgLoading } = useOrganization();
@@ -26,7 +25,6 @@ const Entities = () => {
   const [typeFilter, setTypeFilter] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isUntrackModalOpen, setIsUntrackModalOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState(null);
@@ -164,20 +162,6 @@ const Entities = () => {
     }
   };
 
-  const handleDeleteEntity = async () => {
-    try {
-      setSubmitting(true);
-      await deleteEntity(selectedEntity.entity_id);
-      await loadEntities();
-      setIsDeleteModalOpen(false);
-      setSelectedEntity(null);
-    } catch (err) {
-      console.error('Error deleting entity:', err);
-      alert('Failed to delete entity');
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const openCreateModal = async () => {
     resetForm();
@@ -197,11 +181,6 @@ const Entities = () => {
     });
     setFormErrors({});
     setIsEditModalOpen(true);
-  };
-
-  const openDeleteModal = (entity) => {
-    setSelectedEntity(entity);
-    setIsDeleteModalOpen(true);
   };
 
   const openHistoryModal = async (entity) => {
@@ -469,15 +448,6 @@ const Entities = () => {
                             <FiEdit2 size={16} />
                           </button>
                         </PermissionGate>
-                        <PermissionGate permission="ENTITY_DELETE">
-                          <button
-                            onClick={() => openDeleteModal(entity)}
-                            className="btn-icon btn-delete"
-                            title="Delete entity"
-                          >
-                            <FiTrash2 size={16} />
-                          </button>
-                        </PermissionGate>
                       </div>
                     </Table.Cell>
                   </Table.Row>
@@ -698,38 +668,6 @@ const Entities = () => {
             </button>
           </Modal.Footer>
         </form>
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
-      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)}>
-        <Modal.Header onClose={() => setIsDeleteModalOpen(false)}>
-          Confirm Delete
-        </Modal.Header>
-        <Modal.Body>
-          <p>Are you sure you want to delete this entity?</p>
-          {selectedEntity && (
-            <div className="delete-entity-info">
-              <strong>{selectedEntity.name || selectedEntity.entity_id}</strong> ({selectedEntity.entity_id})
-            </div>
-          )}
-          <p className="warning-text">This action cannot be undone.</p>
-        </Modal.Body>
-        <Modal.Footer>
-          <button
-            onClick={() => setIsDeleteModalOpen(false)}
-            className="btn btn-secondary"
-            disabled={submitting}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleDeleteEntity}
-            className="btn btn-danger"
-            disabled={submitting}
-          >
-            {submitting ? 'Deleting...' : 'Delete Entity'}
-          </button>
-        </Modal.Footer>
       </Modal>
 
       {/* Location History Modal */}

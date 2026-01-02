@@ -151,10 +151,6 @@ export const updateEntity = async (entityId, entityData) => {
   return api.put(`/entities/${entityId}`, entityData);
 };
 
-export const deleteEntity = async (entityId) => {
-  return api.delete(`/entities/${entityId}`);
-};
-
 export const fetchEntityLocationHistory = async (entityId) => {
   return api.get(`/entities/${entityId}/location-history`);
 };
