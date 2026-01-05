@@ -2,12 +2,17 @@
 import random
 import string
 import aiosmtplib
+import os
+import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.config import settings
 from app.utils.email_config import get_email_config
+
+logger = logging.getLogger(__name__)
 
 
 def generate_otp() -> str:
@@ -52,11 +57,53 @@ async def send_otp_email(to_email: str, otp: str, staff_name: str, db: Optional[
         return True
 
     try:
+        # Get organization name
+        org_name = email_config.get('organization_name', 'RTLS System')
+        mail_signature = email_config.get('mail_signature_text', None)
+        org_website = email_config.get('organization_website', None)
+        org_phone = email_config.get('organization_phone', None)
+        org_address = email_config.get('organization_address_line', None)
+        social_links = email_config.get('social_links', [])
+
+        # Build signature HTML with preserved line breaks
+        signature_html = ""
+        if mail_signature:
+            # Convert newlines to <br> tags to preserve formatting
+            formatted_signature = mail_signature.replace('\n', '<br>')
+            signature_html = f"<p style='margin-top: 30px; color: #666; font-size: 14px;'>{formatted_signature}</p>"
+        else:
+            signature_html = f"<p style='margin-top: 30px; color: #666; font-size: 14px;'>Best regards,<br>{org_name} Team</p>"
+
+        # Add contact information if available
+        contact_info_html = ""
+        if org_website or org_phone or org_address or social_links:
+            contact_info_html = "<div style='margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;'>"
+            if org_website:
+                contact_info_html += f"<p style='margin: 5px 0; color: #666; font-size: 13px;'>Website: <a href='{org_website}' style='color: #2563eb;'>{org_website}</a></p>"
+            if org_phone:
+                contact_info_html += f"<p style='margin: 5px 0; color: #666; font-size: 13px;'>Phone: {org_phone}</p>"
+            if org_address:
+                contact_info_html += f"<p style='margin: 5px 0; color: #666; font-size: 13px;'>Address: {org_address}</p>"
+            if social_links:
+                social_html = " | ".join([f"<a href='{link['url']}' style='color: #2563eb; text-decoration: none;'>{link['platform']}</a>" for link in social_links])
+                contact_info_html += f"<p style='margin: 10px 0 0 0; color: #666; font-size: 13px;'>{social_html}</p>"
+            contact_info_html += "</div>"
+
         # Create message
-        message = MIMEMultipart("alternative")
-        message["Subject"] = "Password Reset OTP - RTLS System"
+        message = MIMEMultipart("related")
+        message["Subject"] = f"Password Reset OTP - {org_name}"
         message["From"] = f"{email_config['smtp_from_name']} <{email_config['smtp_from_email']}>"
         message["To"] = to_email
+
+        # Create alternative part for HTML
+        msg_alternative = MIMEMultipart("alternative")
+        message.attach(msg_alternative)
+
+        # Check if signature logo exists and create CID reference
+        signature_logo_cid = None
+        signature_logo_path = email_config.get('mail_signature_logo')
+        if signature_logo_path and os.path.exists(signature_logo_path):
+            signature_logo_cid = "signature_logo"
 
         # Create HTML content
         html = f"""
@@ -78,10 +125,9 @@ async def send_otp_email(to_email: str, otp: str, staff_name: str, db: Optional[
                         <li>If you didn't request this, please ignore this email</li>
                     </ul>
 
-                    <p style="margin-top: 30px; color: #666; font-size: 14px;">
-                        Best regards,<br>
-                        RTLS System Team
-                    </p>
+                    {signature_html}
+                    {f"<div style='margin-top: 15px;'><img src='cid:{signature_logo_cid}' alt='Signature' style='max-width: 200px; height: auto;' /></div>" if signature_logo_cid else ""}
+                    {contact_info_html}
                 </div>
             </body>
         </html>
@@ -89,7 +135,19 @@ async def send_otp_email(to_email: str, otp: str, staff_name: str, db: Optional[
 
         # Attach HTML content
         part = MIMEText(html, "html")
-        message.attach(part)
+        msg_alternative.attach(part)
+
+        # Attach signature logo if it exists
+        if signature_logo_cid and signature_logo_path:
+            try:
+                with open(signature_logo_path, 'rb') as img_file:
+                    img_data = img_file.read()
+                    image = MIMEImage(img_data)
+                    image.add_header('Content-ID', f'<{signature_logo_cid}>')
+                    image.add_header('Content-Disposition', 'inline', filename=os.path.basename(signature_logo_path))
+                    message.attach(image)
+            except Exception as e:
+                logger.warning(f"Failed to attach signature logo: {e}")
 
         # Send email using aiosmtplib
         await aiosmtplib.send(
@@ -136,11 +194,53 @@ async def send_password_reset_success_email(to_email: str, staff_name: str, db: 
         return True
 
     try:
+        # Get organization name
+        org_name = email_config.get('organization_name', 'RTLS System')
+        mail_signature = email_config.get('mail_signature_text', None)
+        org_website = email_config.get('organization_website', None)
+        org_phone = email_config.get('organization_phone', None)
+        org_address = email_config.get('organization_address_line', None)
+        social_links = email_config.get('social_links', [])
+
+        # Build signature HTML with preserved line breaks
+        signature_html = ""
+        if mail_signature:
+            # Convert newlines to <br> tags to preserve formatting
+            formatted_signature = mail_signature.replace('\n', '<br>')
+            signature_html = f"<p style='margin-top: 30px; color: #666; font-size: 14px;'>{formatted_signature}</p>"
+        else:
+            signature_html = f"<p style='margin-top: 30px; color: #666; font-size: 14px;'>Best regards,<br>{org_name} Team</p>"
+
+        # Add contact information if available
+        contact_info_html = ""
+        if org_website or org_phone or org_address or social_links:
+            contact_info_html = "<div style='margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;'>"
+            if org_website:
+                contact_info_html += f"<p style='margin: 5px 0; color: #666; font-size: 13px;'>Website: <a href='{org_website}' style='color: #2563eb;'>{org_website}</a></p>"
+            if org_phone:
+                contact_info_html += f"<p style='margin: 5px 0; color: #666; font-size: 13px;'>Phone: {org_phone}</p>"
+            if org_address:
+                contact_info_html += f"<p style='margin: 5px 0; color: #666; font-size: 13px;'>Address: {org_address}</p>"
+            if social_links:
+                social_html = " | ".join([f"<a href='{link['url']}' style='color: #2563eb; text-decoration: none;'>{link['platform']}</a>" for link in social_links])
+                contact_info_html += f"<p style='margin: 10px 0 0 0; color: #666; font-size: 13px;'>{social_html}</p>"
+            contact_info_html += "</div>"
+
         # Create message
-        message = MIMEMultipart("alternative")
-        message["Subject"] = "Password Reset Successful - RTLS System"
+        message = MIMEMultipart("related")
+        message["Subject"] = f"Password Reset Successful - {org_name}"
         message["From"] = f"{email_config['smtp_from_name']} <{email_config['smtp_from_email']}>"
         message["To"] = to_email
+
+        # Create alternative part for HTML
+        msg_alternative = MIMEMultipart("alternative")
+        message.attach(msg_alternative)
+
+        # Check if signature logo exists and create CID reference
+        signature_logo_cid = None
+        signature_logo_path = email_config.get('mail_signature_logo')
+        if signature_logo_path and os.path.exists(signature_logo_path):
+            signature_logo_cid = "signature_logo"
 
         # Create HTML content
         html = f"""
@@ -157,10 +257,9 @@ async def send_password_reset_success_email(to_email: str, staff_name: str, db: 
 
                     <p><strong>Security tip:</strong> If you did not perform this action, please contact your administrator immediately.</p>
 
-                    <p style="margin-top: 30px; color: #666; font-size: 14px;">
-                        Best regards,<br>
-                        RTLS System Team
-                    </p>
+                    {signature_html}
+                    {f"<div style='margin-top: 15px;'><img src='cid:{signature_logo_cid}' alt='Signature' style='max-width: 200px; height: auto;' /></div>" if signature_logo_cid else ""}
+                    {contact_info_html}
                 </div>
             </body>
         </html>
@@ -168,7 +267,19 @@ async def send_password_reset_success_email(to_email: str, staff_name: str, db: 
 
         # Attach HTML content
         part = MIMEText(html, "html")
-        message.attach(part)
+        msg_alternative.attach(part)
+
+        # Attach signature logo if it exists
+        if signature_logo_cid and signature_logo_path:
+            try:
+                with open(signature_logo_path, 'rb') as img_file:
+                    img_data = img_file.read()
+                    image = MIMEImage(img_data)
+                    image.add_header('Content-ID', f'<{signature_logo_cid}>')
+                    image.add_header('Content-Disposition', 'inline', filename=os.path.basename(signature_logo_path))
+                    message.attach(image)
+            except Exception as e:
+                logger.warning(f"Failed to attach signature logo: {e}")
 
         # Send email using aiosmtplib
         await aiosmtplib.send(
@@ -237,18 +348,60 @@ async def send_welcome_email(to_email: str, staff_name: str, staff_id: str, pass
         }
 
     try:
+        # Get organization name and signature info
+        org_name = email_config.get('organization_name', 'RTLS System')
+        mail_signature = email_config.get('mail_signature_text', None)
+        signature_logo = email_config.get('mail_signature_logo', None)
+        org_website = email_config.get('organization_website', None)
+        org_phone = email_config.get('organization_phone', None)
+        org_address = email_config.get('organization_address_line', None)
+        social_links = email_config.get('social_links', [])
+
+        # Build signature HTML with preserved line breaks
+        signature_html = ""
+        if mail_signature:
+            # Convert newlines to <br> tags to preserve formatting
+            formatted_signature = mail_signature.replace('\n', '<br>')
+            signature_html = f"<p style='margin-top: 30px; color: #666; font-size: 14px;'>{formatted_signature}</p>"
+        else:
+            signature_html = f"<p style='margin-top: 30px; color: #666; font-size: 14px;'>Best regards,<br>{org_name} Team</p>"
+
+        # Add contact information if available
+        contact_info_html = ""
+        if org_website or org_phone or org_address or social_links:
+            contact_info_html = "<div style='margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;'>"
+            if org_website:
+                contact_info_html += f"<p style='margin: 5px 0; color: #666; font-size: 13px;'>Website: <a href='{org_website}' style='color: #2563eb;'>{org_website}</a></p>"
+            if org_phone:
+                contact_info_html += f"<p style='margin: 5px 0; color: #666; font-size: 13px;'>Phone: {org_phone}</p>"
+            if org_address:
+                contact_info_html += f"<p style='margin: 5px 0; color: #666; font-size: 13px;'>Address: {org_address}</p>"
+            if social_links:
+                social_html = " | ".join([f"<a href='{link['url']}' style='color: #2563eb; text-decoration: none;'>{link['platform']}</a>" for link in social_links])
+                contact_info_html += f"<p style='margin: 10px 0 0 0; color: #666; font-size: 13px;'>{social_html}</p>"
+            contact_info_html += "</div>"
+
         # Create message
-        message = MIMEMultipart("alternative")
-        message["Subject"] = "Welcome to RTLS System - Your Login Credentials"
+        message = MIMEMultipart("related")
+        message["Subject"] = f"Welcome to {org_name} - Your Login Credentials"
         message["From"] = f"{email_config['smtp_from_name']} <{email_config['smtp_from_email']}>"
         message["To"] = to_email
+
+        # Create alternative part for HTML
+        msg_alternative = MIMEMultipart("alternative")
+        message.attach(msg_alternative)
+
+        # Check if signature logo exists and create CID reference
+        signature_logo_cid = None
+        if signature_logo and os.path.exists(signature_logo):
+            signature_logo_cid = "signature_logo"
 
         # Create HTML content
         html = f"""
         <html>
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #2563eb;">Welcome to RTLS System!</h2>
+                    <h2 style="color: #2563eb;">Welcome to {org_name}!</h2>
                     <p>Hello {staff_name},</p>
                     <p>Your account has been successfully created. Below are your login credentials:</p>
 
@@ -284,10 +437,9 @@ async def send_welcome_email(to_email: str, staff_name: str, staff_id: str, pass
                         If you have any questions or need assistance, please contact your system administrator.
                     </p>
 
-                    <p style="margin-top: 30px; color: #666; font-size: 14px;">
-                        Best regards,<br>
-                        RTLS System Team
-                    </p>
+                    {signature_html}
+                    {f"<div style='margin-top: 15px;'><img src='cid:{signature_logo_cid}' alt='Signature' style='max-width: 200px; height: auto;' /></div>" if signature_logo_cid else ""}
+                    {contact_info_html}
                 </div>
             </body>
         </html>
@@ -295,7 +447,19 @@ async def send_welcome_email(to_email: str, staff_name: str, staff_id: str, pass
 
         # Attach HTML content
         part = MIMEText(html, "html")
-        message.attach(part)
+        msg_alternative.attach(part)
+
+        # Attach signature logo if it exists
+        if signature_logo_cid and signature_logo:
+            try:
+                with open(signature_logo, 'rb') as img_file:
+                    img_data = img_file.read()
+                    image = MIMEImage(img_data)
+                    image.add_header('Content-ID', f'<{signature_logo_cid}>')
+                    image.add_header('Content-Disposition', 'inline', filename=os.path.basename(signature_logo))
+                    message.attach(image)
+            except Exception as e:
+                logger.warning(f"Failed to attach signature logo: {e}")
 
         # Send email using aiosmtplib
         await aiosmtplib.send(

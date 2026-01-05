@@ -15,6 +15,7 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     untracked_threshold_seconds: 30,
     smtp_host: '',
@@ -22,7 +23,13 @@ const Settings = () => {
     smtp_username: '',
     smtp_password: '',
     smtp_from_email: '',
-    smtp_from_name: ''
+    smtp_from_name: '',
+    mail_signature_text: '',
+    mail_signature_logo: '',
+    organization_website: '',
+    organization_phone: '',
+    organization_address_line: '',
+    social_links: []
   });
 
   useEffect(() => {
@@ -44,7 +51,13 @@ const Settings = () => {
         smtp_username: data.smtp_username || '',
         smtp_password: data.smtp_password || '',
         smtp_from_email: data.smtp_from_email || '',
-        smtp_from_name: data.smtp_from_name || ''
+        smtp_from_name: data.smtp_from_name || '',
+        mail_signature_text: data.mail_signature_text || '',
+        mail_signature_logo: data.mail_signature_logo || '',
+        organization_website: data.organization_website || '',
+        organization_phone: data.organization_phone || '',
+        organization_address_line: data.organization_address_line || '',
+        social_links: data.social_links || []
       });
     } catch (err) {
       console.error('Error loading settings:', err);
@@ -71,13 +84,23 @@ const Settings = () => {
         untracked_threshold_seconds: parseInt(formData.untracked_threshold_seconds)
       };
 
-      // Add email settings if provided
-      if (formData.smtp_host) updateData.smtp_host = formData.smtp_host;
-      if (formData.smtp_port) updateData.smtp_port = parseInt(formData.smtp_port);
-      if (formData.smtp_username) updateData.smtp_username = formData.smtp_username;
-      if (formData.smtp_password && formData.smtp_password !== '********') updateData.smtp_password = formData.smtp_password;
-      if (formData.smtp_from_email) updateData.smtp_from_email = formData.smtp_from_email;
-      if (formData.smtp_from_name) updateData.smtp_from_name = formData.smtp_from_name;
+      // Add email settings (send even if empty to allow clearing)
+      updateData.smtp_host = formData.smtp_host || '';
+      updateData.smtp_port = formData.smtp_port ? parseInt(formData.smtp_port) : null;
+      updateData.smtp_username = formData.smtp_username || '';
+      if (formData.smtp_password && formData.smtp_password !== '********') {
+        updateData.smtp_password = formData.smtp_password;
+      }
+      updateData.smtp_from_email = formData.smtp_from_email || '';
+      updateData.smtp_from_name = formData.smtp_from_name || '';
+
+      // Add mail signature settings (send even if empty to allow clearing)
+      updateData.mail_signature_text = formData.mail_signature_text || '';
+      updateData.mail_signature_logo = formData.mail_signature_logo || '';
+      updateData.organization_website = formData.organization_website || '';
+      updateData.organization_phone = formData.organization_phone || '';
+      updateData.organization_address_line = formData.organization_address_line || '';
+      updateData.social_links = formData.social_links || [];
 
       await updateSettings(updateData);
       setSuccess(true);
@@ -96,6 +119,86 @@ const Settings = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
     setError(null);
     setSuccess(false);
+  };
+
+  const handleAddSocialLink = () => {
+    setFormData(prev => ({
+      ...prev,
+      social_links: [...prev.social_links, { platform: '', url: '' }]
+    }));
+  };
+
+  const handleRemoveSocialLink = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      social_links: prev.social_links.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSocialLinkChange = (index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      social_links: prev.social_links.map((link, i) =>
+        i === index ? { ...link, [field]: value } : link
+      )
+    }));
+  };
+
+  const handleSignatureLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Invalid file type. Please upload a PNG, JPG, or GIF image.');
+      return;
+    }
+
+    // Validate file size (1MB)
+    if (file.size > 1 * 1024 * 1024) {
+      setError('File size exceeds 1MB. Please upload a smaller image.');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setError(null);
+
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8000/api/settings/upload-signature-logo', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-Organization-ID': currentOrganization.id.toString()
+        },
+        body: uploadFormData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Upload failed');
+      }
+
+      const data = await response.json();
+
+      // Update form data with the file path
+      setFormData(prev => ({ ...prev, mail_signature_logo: data.file_path }));
+
+      // Reload settings to ensure consistency with database
+      await loadSettings();
+
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      console.error('Error uploading signature logo:', err);
+      setError(err.message || 'Failed to upload signature logo');
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (orgLoading || (loading && !currentOrganization)) {
@@ -331,6 +434,146 @@ const Settings = () => {
                 />
                 <small className="help-text">
                   Display name that will appear as the sender
+                </small>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <h2 className="section-title">Mail Signature Configuration</h2>
+              <p className="section-description">
+                Customize email signatures and footer information for all emails sent by the system.
+                Note: The organization logo from organization settings will be used by default in emails.
+              </p>
+
+              <div className="form-group">
+                <label htmlFor="mail_signature_text">Email Signature</label>
+                <textarea
+                  id="mail_signature_text"
+                  name="mail_signature_text"
+                  value={formData.mail_signature_text}
+                  onChange={handleInputChange}
+                  placeholder="Best regards,&#10;Your Organization Team"
+                  rows="4"
+                  className="settings-input"
+                />
+                <small className="help-text">
+                  Custom signature text for emails. Leave blank to use default signature with organization name.
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="mail_signature_logo">Email Signature Logo/Image</label>
+                <input
+                  type="file"
+                  id="mail_signature_logo"
+                  accept="image/png,image/jpeg,image/jpg,image/gif"
+                  onChange={handleSignatureLogoUpload}
+                  className="settings-input"
+                  disabled={uploading}
+                />
+                {uploading && <p className="upload-status">Uploading...</p>}
+                {formData.mail_signature_logo && (
+                  <div className="signature-logo-preview">
+                    <img
+                      src={`http://localhost:8000/${formData.mail_signature_logo}`}
+                      alt="Signature Logo Preview"
+                      style={{ maxWidth: '200px', maxHeight: '100px', marginTop: '10px', border: '1px solid #ddd', padding: '5px' }}
+                    />
+                    <p className="file-path-display">{formData.mail_signature_logo}</p>
+                  </div>
+                )}
+                <small className="help-text">
+                  Upload an image for email signature (PNG, JPG, or GIF, max 1MB). The image will be displayed below the signature text in emails.
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="organization_website">Organization Website</label>
+                <input
+                  type="url"
+                  id="organization_website"
+                  name="organization_website"
+                  value={formData.organization_website}
+                  onChange={handleInputChange}
+                  placeholder="https://www.yourorganization.com"
+                  className="settings-input"
+                />
+                <small className="help-text">
+                  Website URL to display in email footer
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="organization_phone">Organization Phone</label>
+                <input
+                  type="tel"
+                  id="organization_phone"
+                  name="organization_phone"
+                  value={formData.organization_phone}
+                  onChange={handleInputChange}
+                  placeholder="+1 (555) 123-4567"
+                  className="settings-input"
+                />
+                <small className="help-text">
+                  Contact phone number to display in email footer
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="organization_address_line">Organization Address</label>
+                <input
+                  type="text"
+                  id="organization_address_line"
+                  name="organization_address_line"
+                  value={formData.organization_address_line}
+                  onChange={handleInputChange}
+                  placeholder="123 Main St, City, State, ZIP"
+                  className="settings-input"
+                />
+                <small className="help-text">
+                  Full address to display in email footer
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label>Social Media Links</label>
+                <div className="social-links-container">
+                  {formData.social_links.map((link, index) => (
+                    <div key={index} className="social-link-row">
+                      <input
+                        type="text"
+                        placeholder="Platform (e.g., Facebook, Twitter, LinkedIn)"
+                        value={link.platform}
+                        onChange={(e) => handleSocialLinkChange(index, 'platform', e.target.value)}
+                        className="settings-input social-platform-input"
+                      />
+                      <input
+                        type="url"
+                        placeholder="https://www.example.com/yourprofile"
+                        value={link.url}
+                        onChange={(e) => handleSocialLinkChange(index, 'url', e.target.value)}
+                        className="settings-input social-url-input"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSocialLink(index)}
+                        className="btn btn-danger btn-small"
+                        title="Remove this social link"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleAddSocialLink}
+                    className="btn btn-secondary btn-add-social"
+                  >
+                    + Add Social Link
+                  </button>
+                </div>
+                <small className="help-text">
+                  Add social media links to display in email footer
                 </small>
               </div>
 

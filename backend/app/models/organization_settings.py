@@ -23,6 +23,14 @@ class OrganizationSettings(Base):
     smtp_from_email = Column(String, nullable=True, comment="Email address to send from")
     smtp_from_name = Column(String, nullable=True, default="RTLS System", comment="Display name for sent emails")
 
+    # Mail Signature Configuration
+    mail_signature_text = Column(String, nullable=True, comment="Custom email signature text")
+    mail_signature_logo = Column(String, nullable=True, comment="Path to mail signature logo file")
+    organization_website = Column(String, nullable=True, comment="Organization website URL")
+    organization_phone = Column(String, nullable=True, comment="Organization phone number")
+    organization_address_line = Column(String, nullable=True, comment="Organization address for email footer")
+    social_links = Column(String, nullable=True, comment="JSON string of social media links")
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

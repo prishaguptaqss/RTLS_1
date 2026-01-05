@@ -103,3 +103,106 @@
   color: #1e293b;
   font-weight: 600;
 }
+
+/* Mail Signature Configuration Styles */
+.settings-input[type="url"],
+.settings-input[type="tel"],
+.settings-input[type="text"],
+.settings-input[type="email"],
+textarea.settings-input {
+  max-width: 500px;
+}
+
+textarea.settings-input {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.social-links-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.social-link-row {
+  display: grid;
+  grid-template-columns: 200px 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.social-platform-input {
+  max-width: 200px;
+}
+
+.social-url-input {
+  max-width: 100%;
+}
+
+.btn-small {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  min-width: auto;
+  width: auto;
+}
+
+.btn-danger {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.btn-add-social {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+}
+
+/* Signature logo upload styles */
+.upload-status {
+  margin-top: 0.5rem;
+  color: #3b82f6;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.signature-logo-preview {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-radius: 6px;
+}
+
+.file-path-display {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #64748b;
+  word-break: break-all;
+}
+
+/* Responsive styles for social links */
+@media (max-width: 768px) {
+  .social-link-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .social-platform-input,
+  .social-url-input {
+    max-width: 100%;
+  }
+
+  .btn-small {
+    width: 100%;
+  }
+}
