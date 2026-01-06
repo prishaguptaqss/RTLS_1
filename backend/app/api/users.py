@@ -81,16 +81,25 @@ async def get_user_location_history(user_id: str, db: Session = Depends(get_db))
     """
     Get location history for a specific user.
 
-    Returns all location history records for tags assigned to this user,
-    with full building hierarchy information (Building > Floor > Room).
+    Returns all location history records for tags that were assigned to this user
+    during the time periods they were assigned, with full building hierarchy information.
+
+    NEW BEHAVIOR: Uses temporal assignment records to filter history by assignment periods.
+    User keeps ALL its history even after tag unassignment.
     """
+    import sqlalchemy as sa
+    from app.models.user_tag_assignment import UserTagAssignment
+
     # First, verify user exists
     user = db.query(UserModel).filter(UserModel.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Query location history with joins to get full building hierarchy
-    # Join: LocationHistory -> Tag -> Room -> Floor -> Building
+    # Query location history with temporal join through assignment periods
+    # Join: LocationHistory -> UserTagAssignment (temporal) -> Room -> Floor -> Building
+    # Logic: Include location records where:
+    #   - The tag was assigned to this user
+    #   - The location timestamp falls within the assignment period
     history_records = (
         db.query(
             LocationHistoryModel.id,
@@ -100,11 +109,24 @@ async def get_user_location_history(user_id: str, db: Session = Depends(get_db))
             LocationHistoryModel.entered_at,
             LocationHistoryModel.exited_at
         )
-        .join(TagModel, LocationHistoryModel.tag_id == TagModel.tag_id)
+        .join(
+            UserTagAssignment,
+            LocationHistoryModel.tag_id == UserTagAssignment.tag_id
+        )
         .outerjoin(RoomModel, LocationHistoryModel.room_id == RoomModel.id)
         .outerjoin(FloorModel, RoomModel.floor_id == FloorModel.id)
         .outerjoin(BuildingModel, FloorModel.building_id == BuildingModel.id)
-        .filter(TagModel.assigned_user_id == user_id)
+        .filter(
+            UserTagAssignment.user_id == user_id,
+            # CRITICAL: Temporal filter - location must fall within assignment period
+            LocationHistoryModel.entered_at >= UserTagAssignment.assigned_at,
+            # If unassigned_at is NULL (still assigned), include all future locations
+            # If unassigned_at is set, only include locations before unassignment
+            sa.or_(
+                UserTagAssignment.unassigned_at.is_(None),
+                LocationHistoryModel.entered_at < UserTagAssignment.unassigned_at
+            )
+        )
         .order_by(LocationHistoryModel.entered_at.desc())
         .all()
     )

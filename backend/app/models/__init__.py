@@ -17,6 +17,8 @@ from app.models.password_reset import PasswordResetToken
 from app.models.staff import Staff
 from app.models.role import Role
 from app.models.permission import Permission
+from app.models.entity_tag_assignment import EntityTagAssignment
+from app.models.user_tag_assignment import UserTagAssignment
 
 __all__ = [
     "User",
@@ -35,4 +37,6 @@ __all__ = [
     "Staff",
     "Role",
     "Permission",
+    "EntityTagAssignment",
+    "UserTagAssignment",
 ]

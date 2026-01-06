@@ -111,7 +111,20 @@ async def create_entity(
 
     # Assign tag if provided
     if entity.assigned_tag_id:
+        from datetime import datetime, timezone
+        from app.models.entity_tag_assignment import EntityTagAssignment
+
         tag.assigned_entity_id = db_entity.id
+
+        # Create assignment record
+        assignment = EntityTagAssignment(
+            entity_id=db_entity.id,
+            tag_id=tag.tag_id,
+            assigned_at=datetime.now(timezone.utc),
+            unassigned_at=None
+        )
+        db.add(assignment)
+
         db.commit()
         db.refresh(tag)
         db_entity.assigned_tag_id = tag.tag_id
@@ -180,14 +193,86 @@ async def update_entity(
             elif new_tag.assigned_user_id or new_tag.assigned_entity_id:
                 raise HTTPException(status_code=400, detail=f"Tag '{new_tag_id}' is already assigned")
             else:
+                from datetime import datetime, timezone
+                from app.models.entity_tag_assignment import EntityTagAssignment
+                from app.models.location_history import LocationHistory
+                from app.models.live_location import LiveLocation
+
+                reassignment_time = datetime.now(timezone.utc)
+
                 # Unassign current tag if exists
                 if current_tag:
+                    # Close the current assignment record
+                    current_assignment = db.query(EntityTagAssignment).filter(
+                        EntityTagAssignment.entity_id == entity.id,
+                        EntityTagAssignment.tag_id == current_tag.tag_id,
+                        EntityTagAssignment.unassigned_at.is_(None)
+                    ).first()
+                    if current_assignment:
+                        current_assignment.unassigned_at = reassignment_time
+
+                    # Close any open location history entry for the old tag
+                    open_location = db.query(LocationHistory).filter(
+                        LocationHistory.tag_id == current_tag.tag_id,
+                        LocationHistory.exited_at.is_(None)
+                    ).first()
+                    if open_location:
+                        open_location.exited_at = reassignment_time
+
+                    # Remove old tag from live location
+                    live_location = db.query(LiveLocation).filter(
+                        LiveLocation.tag_id == current_tag.tag_id
+                    ).first()
+                    if live_location:
+                        db.delete(live_location)
+
                     current_tag.assigned_entity_id = None
+
+                # Create new assignment record
+                new_assignment = EntityTagAssignment(
+                    entity_id=entity.id,
+                    tag_id=new_tag.tag_id,
+                    assigned_at=reassignment_time,
+                    unassigned_at=None
+                )
+                db.add(new_assignment)
+
                 # Assign new tag
                 new_tag.assigned_entity_id = entity.id
         else:
             # Unassigning tag (set to None/null)
             if current_tag:
+                from datetime import datetime, timezone
+                from app.models.entity_tag_assignment import EntityTagAssignment
+                from app.models.location_history import LocationHistory
+                from app.models.live_location import LiveLocation
+
+                unassignment_time = datetime.now(timezone.utc)
+
+                # Close the current assignment record
+                current_assignment = db.query(EntityTagAssignment).filter(
+                    EntityTagAssignment.entity_id == entity.id,
+                    EntityTagAssignment.tag_id == current_tag.tag_id,
+                    EntityTagAssignment.unassigned_at.is_(None)
+                ).first()
+                if current_assignment:
+                    current_assignment.unassigned_at = unassignment_time
+
+                # Close any open location history entry (set exited_at)
+                open_location = db.query(LocationHistory).filter(
+                    LocationHistory.tag_id == current_tag.tag_id,
+                    LocationHistory.exited_at.is_(None)
+                ).first()
+                if open_location:
+                    open_location.exited_at = unassignment_time
+
+                # Remove from live location
+                live_location = db.query(LiveLocation).filter(
+                    LiveLocation.tag_id == current_tag.tag_id
+                ).first()
+                if live_location:
+                    db.delete(live_location)
+
                 current_tag.assigned_entity_id = None
 
     # Update other entity fields
@@ -233,9 +318,15 @@ async def get_entity_location_history(
     """
     Get location history for a specific entity within the organization.
 
-    Returns all location history records for tags assigned to this entity,
-    with full building hierarchy information (Building > Floor > Room).
+    Returns all location history records for tags that were assigned to this entity
+    during the time periods they were assigned, with full building hierarchy information.
+
+    NEW BEHAVIOR: Uses temporal assignment records to filter history by assignment periods.
+    Entity keeps ALL its history even after tag unassignment.
     """
+    import sqlalchemy as sa
+    from app.models.entity_tag_assignment import EntityTagAssignment
+
     # First, verify entity exists within this organization
     entity = db.query(EntityModel).filter(
         EntityModel.entity_id == entity_id,
@@ -244,8 +335,11 @@ async def get_entity_location_history(
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found in this organization")
 
-    # Query location history with joins to get full building hierarchy
-    # Join: LocationHistory -> Tag -> Room -> Floor -> Building
+    # Query location history with temporal join through assignment periods
+    # Join: LocationHistory -> EntityTagAssignment (temporal) -> Room -> Floor -> Building
+    # Logic: Include location records where:
+    #   - The tag was assigned to this entity
+    #   - The location timestamp falls within the assignment period
     history_records = (
         db.query(
             LocationHistoryModel.id,
@@ -255,11 +349,24 @@ async def get_entity_location_history(
             LocationHistoryModel.entered_at,
             LocationHistoryModel.exited_at
         )
-        .join(TagModel, LocationHistoryModel.tag_id == TagModel.tag_id)
+        .join(
+            EntityTagAssignment,
+            LocationHistoryModel.tag_id == EntityTagAssignment.tag_id
+        )
         .outerjoin(RoomModel, LocationHistoryModel.room_id == RoomModel.id)
         .outerjoin(FloorModel, RoomModel.floor_id == FloorModel.id)
         .outerjoin(BuildingModel, FloorModel.building_id == BuildingModel.id)
-        .filter(TagModel.assigned_entity_id == entity.id)
+        .filter(
+            EntityTagAssignment.entity_id == entity.id,
+            # CRITICAL: Temporal filter - location must fall within assignment period
+            LocationHistoryModel.entered_at >= EntityTagAssignment.assigned_at,
+            # If unassigned_at is NULL (still assigned), include all future locations
+            # If unassigned_at is set, only include locations before unassignment
+            sa.or_(
+                EntityTagAssignment.unassigned_at.is_(None),
+                LocationHistoryModel.entered_at < EntityTagAssignment.unassigned_at
+            )
+        )
         .order_by(LocationHistoryModel.entered_at.desc())
         .all()
     )

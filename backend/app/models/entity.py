@@ -27,3 +27,4 @@ class Entity(Base):
     # Relationships
     organization = relationship("Organization", back_populates="entities")
     tags = relationship("Tag", back_populates="assigned_entity")
+    tag_assignments = relationship("EntityTagAssignment", back_populates="entity", cascade="all, delete-orphan")

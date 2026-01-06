@@ -26,6 +26,8 @@ from app.models import (
 from app.models.staff import Staff, staff_roles
 from app.models.role import Role
 from app.models.permission import Permission
+from app.models.entity_tag_assignment import EntityTagAssignment
+from app.models.user_tag_assignment import UserTagAssignment
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

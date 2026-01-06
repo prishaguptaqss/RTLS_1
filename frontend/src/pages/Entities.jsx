@@ -593,14 +593,13 @@ const Entities = () => {
                         </Table.Cell>
                         <Table.Cell>
                           <div className="action-buttons">
-                            {entity.assigned_tag_id &&
-                            (<button
+                            <button
                               onClick={() => openHistoryModal(entity)}
                               className="btn-icon btn-info"
                               title="View location history"
                             >
                               <FiClock size={16} />
-                            </button>)}
+                            </button>
                             {entity.assigned_tag_id && (
                               <button
                                 onClick={() => openUntrackModal(entity)}

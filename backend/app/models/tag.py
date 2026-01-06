@@ -71,6 +71,8 @@ class Tag(Base):
     assigned_entity = relationship("Entity", back_populates="tags")
     live_location = relationship("LiveLocation", back_populates="tag", uselist=False, cascade="all, delete-orphan")
     location_history = relationship("LocationHistory", back_populates="tag", cascade="all, delete-orphan")
+    entity_assignments = relationship("EntityTagAssignment", back_populates="tag", cascade="all, delete-orphan")
+    user_assignments = relationship("UserTagAssignment", back_populates="tag", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Tag(tag_id='{self.tag_id}', status='{self.status}', user={self.assigned_user_id}, entity={self.assigned_entity_id})>"
