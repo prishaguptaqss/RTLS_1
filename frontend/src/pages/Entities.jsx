@@ -528,69 +528,180 @@ const Entities = () => {
               )}
             </div>
           ) : (
-            <Table>
-              <Table.Header>
-                <Table.Row>
-                  <Table.Head>ID</Table.Head>
-                  <Table.Head>Name</Table.Head>
-                  <Table.Head>Type</Table.Head>
-                  <Table.Head>Tag</Table.Head>
-                  <Table.Head>Status</Table.Head>
-                  <Table.Head>Current Location</Table.Head>
-                  <Table.Head>Actions</Table.Head>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {filteredEntities.map((entity) => (
-                  <Table.Row key={entity.entity_id}>
-                    <Table.Cell><strong>{entity.entity_id}</strong></Table.Cell>
-                    <Table.Cell>{entity.name || '-'}</Table.Cell>
-                    <Table.Cell>{getTypeBadge(entity.type)}</Table.Cell>
-                    <Table.Cell>
-                      {entity.tag_name ? (
-                        <code>{entity.tag_name}</code>
-                      ) : (
-                        <span className="text-muted">Not assigned</span>
-                      )}
-                    </Table.Cell>
-                    <Table.Cell>{getTrackingStatusBadge(entity.tracking_status)}</Table.Cell>
-                    <Table.Cell>
-                      {entity.current_location || '-'}
-                    </Table.Cell>
-                    <Table.Cell>
-                      <div className="action-buttons">
-                        {entity.assigned_tag_id &&
-                        (<button
-                          onClick={() => openHistoryModal(entity)}
-                          className="btn-icon btn-info"
-                          title="View location history"
-                        >
-                          <FiClock size={16} />
-                        </button>)}
-                        {entity.assigned_tag_id && (
-                          <button
-                            onClick={() => openUntrackModal(entity)}
-                            className="btn-icon btn-warning"
-                            title="Untrack entity (unassign tag)"
-                          >
-                            <FiUserX size={16} />
-                          </button>
-                        )}
-                        <PermissionGate permission="ENTITY_EDIT">
-                          <button
-                            onClick={() => openEditModal(entity)}
-                            className="btn-icon btn-edit"
-                            title="Edit entity"
-                          >
-                            <FiEdit2 size={16} />
-                          </button>
-                        </PermissionGate>
-                      </div>
-                    </Table.Cell>
+            <>
+              <Table>
+                <Table.Header>
+                  <Table.Row>
+                    <Table.Head>ID</Table.Head>
+                    <Table.Head>Name</Table.Head>
+                    <Table.Head>Type</Table.Head>
+                    <Table.Head>Tag</Table.Head>
+                    <Table.Head>Status</Table.Head>
+                    <Table.Head>Current Location</Table.Head>
+                    <Table.Head>Actions</Table.Head>
                   </Table.Row>
-                ))}
-              </Table.Body>
-            </Table>
+                </Table.Header>
+                <Table.Body>
+                  {filteredEntities
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((entity) => (
+                      <Table.Row key={entity.entity_id}>
+                        <Table.Cell><strong>{entity.entity_id}</strong></Table.Cell>
+                        <Table.Cell>{entity.name || '-'}</Table.Cell>
+                        <Table.Cell>{getTypeBadge(entity.type)}</Table.Cell>
+                        <Table.Cell>
+                          {entity.tag_name ? (
+                            <code>{entity.tag_name}</code>
+                          ) : (
+                            <span className="text-muted">Not assigned</span>
+                          )}
+                        </Table.Cell>
+                        <Table.Cell>{getTrackingStatusBadge(entity.tracking_status)}</Table.Cell>
+                        <Table.Cell>
+                          {entity.current_location || '-'}
+                        </Table.Cell>
+                        <Table.Cell>
+                          <div className="action-buttons">
+                            {entity.assigned_tag_id &&
+                            (<button
+                              onClick={() => openHistoryModal(entity)}
+                              className="btn-icon btn-info"
+                              title="View location history"
+                            >
+                              <FiClock size={16} />
+                            </button>)}
+                            {entity.assigned_tag_id && (
+                              <button
+                                onClick={() => openUntrackModal(entity)}
+                                className="btn-icon btn-warning"
+                                title="Untrack entity (unassign tag)"
+                              >
+                                <FiUserX size={16} />
+                              </button>
+                            )}
+                            <PermissionGate permission="ENTITY_EDIT">
+                              <button
+                                onClick={() => openEditModal(entity)}
+                                className="btn-icon btn-edit"
+                                title="Edit entity"
+                              >
+                                <FiEdit2 size={16} />
+                              </button>
+                            </PermissionGate>
+                          </div>
+                        </Table.Cell>
+                      </Table.Row>
+                    ))}
+                </Table.Body>
+              </Table>
+
+              {/* Entities Pagination */}
+              {filteredEntities.length > 0 && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  marginTop: '1rem',
+                  padding: '1rem 0',
+                  borderTop: '1px solid #e5e7eb'
+                }}>
+                  {/* Record count */}
+                  <span style={{
+                    color: '#6b7280',
+                    fontSize: '0.875rem',
+                    fontWeight: '400'
+                  }}>
+                    {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredEntities.length)} of {filteredEntities.length}
+                  </span>
+
+                  {/* Navigation buttons */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem'
+                  }}>
+                    {/* First page */}
+                    <button
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      style={{
+                        padding: '0.375rem 0.5rem',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                        color: currentPage === 1 ? '#d1d5db' : '#6b7280',
+                        fontSize: '1rem'
+                      }}
+                      title="First page"
+                    >
+                      ⟪
+                    </button>
+
+                    {/* Previous page */}
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      style={{
+                        padding: '0.375rem 0.5rem',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                        color: currentPage === 1 ? '#d1d5db' : '#6b7280',
+                        fontSize: '1rem'
+                      }}
+                      title="Previous page"
+                    >
+                      ‹
+                    </button>
+
+                    {/* Page indicator */}
+                    <span style={{
+                      color: '#374151',
+                      fontSize: '0.875rem',
+                      fontWeight: '400',
+                      padding: '0 0.5rem'
+                    }}>
+                      Page {currentPage} of {Math.ceil(filteredEntities.length / itemsPerPage) || 1}
+                    </span>
+
+                    {/* Next page */}
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredEntities.length / itemsPerPage)))}
+                      disabled={currentPage === Math.ceil(filteredEntities.length / itemsPerPage)}
+                      style={{
+                        padding: '0.375rem 0.5rem',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: currentPage === Math.ceil(filteredEntities.length / itemsPerPage) ? 'not-allowed' : 'pointer',
+                        color: currentPage === Math.ceil(filteredEntities.length / itemsPerPage) ? '#d1d5db' : '#6b7280',
+                        fontSize: '1rem'
+                      }}
+                      title="Next page"
+                    >
+                      ›
+                    </button>
+
+                    {/* Last page */}
+                    <button
+                      onClick={() => setCurrentPage(Math.ceil(filteredEntities.length / itemsPerPage))}
+                      disabled={currentPage === Math.ceil(filteredEntities.length / itemsPerPage)}
+                      style={{
+                        padding: '0.375rem 0.5rem',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: currentPage === Math.ceil(filteredEntities.length / itemsPerPage) ? 'not-allowed' : 'pointer',
+                        color: currentPage === Math.ceil(filteredEntities.length / itemsPerPage) ? '#d1d5db' : '#6b7280',
+                        fontSize: '1rem'
+                      }}
+                      title="Last page"
+                    >
+                      ⟫
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </Card.Content>
       </Card>

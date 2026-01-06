@@ -200,24 +200,47 @@
 
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
   .modal-content {
-    width: 95%;
+    width: 100%;
     max-width: none;
-    margin: 1rem;
-    max-height: calc(100vh - 2rem);
+    margin: 0;
+    max-height: 95vh;
+    border-radius: 16px 16px 0 0;
+    animation: slideUpMobile 0.3s ease-out;
+  }
+
+  @keyframes slideUpMobile {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
   }
 
   .modal-header {
-    padding: 16px;
+    padding: 18px 16px;
   }
 
   .modal-title {
     font-size: 18px;
   }
 
+  .modal-close {
+    width: 40px;
+    height: 40px;
+  }
+
   .modal-body {
     padding: 16px;
     overflow-y: auto;
+    max-height: calc(95vh - 150px);
+    -webkit-overflow-scrolling: touch;
   }
 
   .modal-footer {
@@ -229,20 +252,37 @@
   .modal-footer .btn {
     width: 100%;
     justify-content: center;
+    min-height: 48px;
   }
 
   .form-group {
-    margin-bottom: 16px;
+    margin-bottom: 18px;
   }
 
   .form-group label {
-    font-size: 0.875rem;
+    font-size: 15px;
+    margin-bottom: 8px;
   }
 
   .form-group input,
-  .form-group select {
-    padding: 9px 12px;
-    font-size: 0.875rem;
+  .form-group select,
+  .form-group textarea {
+    padding: 12px 14px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 48px;
+    border-radius: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+
+  .form-group small {
+    font-size: 13px;
+    margin-top: 6px;
   }
 }
 

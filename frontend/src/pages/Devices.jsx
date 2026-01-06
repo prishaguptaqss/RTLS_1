@@ -54,6 +54,11 @@ const Devices = () => {
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Pagination state
+  const [anchorCurrentPage, setAnchorCurrentPage] = useState(1);
+  const [tagCurrentPage, setTagCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
   useEffect(() => {
     if (!orgLoading && currentOrganization) {
       loadAllData();
@@ -597,59 +602,170 @@ const Devices = () => {
                 <p>No anchors match your search criteria.</p>
               </div>
             ) : (
-              <Table>
-                <Table.Header>
-                  <Table.Row>
-                    <Table.Head>Anchor ID</Table.Head>
-                    <Table.Head>Name</Table.Head>
-                    <Table.Head>Location</Table.Head>
-                    <Table.Head>Status</Table.Head>
-                    <Table.Head>Actions</Table.Head>
-                  </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                  {getFilteredAnchors().map((anchor) => {
-                    const isActive = anchor.room_id !== null;
-                    const statusText = isActive ? 'active' : 'inactive';
-                    return (
-                      <Table.Row key={anchor.anchor_id}>
-                        <Table.Cell><code>{anchor.anchor_id}</code></Table.Cell>
-                        <Table.Cell>{anchor.anchor_name || <span className="text-muted">-</span>}</Table.Cell>
-                        <Table.Cell>
-                          {isActive ? getRoomLocationText(anchor.room_id) : '-'}
-                        </Table.Cell>
-                        <Table.Cell>
-                          <span className={`status-badge status-${statusText}`}>
-                            {statusText}
-                          </span>
-                        </Table.Cell>
-                        <Table.Cell>
-                          <div className="action-buttons">
-                            <PermissionGate permission="DEVICE_EDIT">
-                              <button
-                                onClick={() => openAnchorEditModal(anchor)}
-                                className="btn-icon btn-edit"
-                                title="Edit anchor"
-                              >
-                                <FiEdit2 size={16} />
-                              </button>
-                            </PermissionGate>
-                            <PermissionGate permission="DEVICE_DELETE">
-                              <button
-                                onClick={() => openAnchorDeleteModal(anchor)}
-                                className="btn-icon btn-delete"
-                                title="Delete anchor"
-                              >
-                                <FiTrash2 size={16} />
-                              </button>
-                            </PermissionGate>
-                          </div>
-                        </Table.Cell>
-                      </Table.Row>
-                    );
-                  })}
-                </Table.Body>
-              </Table>
+              <>
+                <Table>
+                  <Table.Header>
+                    <Table.Row>
+                      <Table.Head>Anchor ID</Table.Head>
+                      <Table.Head>Name</Table.Head>
+                      <Table.Head>Location</Table.Head>
+                      <Table.Head>Status</Table.Head>
+                      <Table.Head>Actions</Table.Head>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {getFilteredAnchors()
+                      .slice((anchorCurrentPage - 1) * itemsPerPage, anchorCurrentPage * itemsPerPage)
+                      .map((anchor) => {
+                        const isActive = anchor.room_id !== null;
+                        const statusText = isActive ? 'active' : 'inactive';
+                        return (
+                          <Table.Row key={anchor.anchor_id}>
+                            <Table.Cell><code>{anchor.anchor_id}</code></Table.Cell>
+                            <Table.Cell>{anchor.anchor_name || <span className="text-muted">-</span>}</Table.Cell>
+                            <Table.Cell>
+                              {isActive ? getRoomLocationText(anchor.room_id) : '-'}
+                            </Table.Cell>
+                            <Table.Cell>
+                              <span className={`status-badge status-${statusText}`}>
+                                {statusText}
+                              </span>
+                            </Table.Cell>
+                            <Table.Cell>
+                              <div className="action-buttons">
+                                <PermissionGate permission="DEVICE_EDIT">
+                                  <button
+                                    onClick={() => openAnchorEditModal(anchor)}
+                                    className="btn-icon btn-edit"
+                                    title="Edit anchor"
+                                  >
+                                    <FiEdit2 size={16} />
+                                  </button>
+                                </PermissionGate>
+                                <PermissionGate permission="DEVICE_DELETE">
+                                  <button
+                                    onClick={() => openAnchorDeleteModal(anchor)}
+                                    className="btn-icon btn-delete"
+                                    title="Delete anchor"
+                                  >
+                                    <FiTrash2 size={16} />
+                                  </button>
+                                </PermissionGate>
+                              </div>
+                            </Table.Cell>
+                          </Table.Row>
+                        );
+                      })}
+                  </Table.Body>
+                </Table>
+
+                {/* Anchor Pagination */}
+                {getFilteredAnchors().length > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    marginTop: '1rem',
+                    padding: '1rem 0',
+                    borderTop: '1px solid #e5e7eb'
+                  }}>
+                    {/* Record count */}
+                    <span style={{
+                      color: '#6b7280',
+                      fontSize: '0.875rem',
+                      fontWeight: '400'
+                    }}>
+                      {((anchorCurrentPage - 1) * itemsPerPage) + 1} to {Math.min(anchorCurrentPage * itemsPerPage, getFilteredAnchors().length)} of {getFilteredAnchors().length}
+                    </span>
+
+                    {/* Navigation buttons */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}>
+                      {/* First page */}
+                      <button
+                        onClick={() => setAnchorCurrentPage(1)}
+                        disabled={anchorCurrentPage === 1}
+                        style={{
+                          padding: '0.375rem 0.5rem',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: anchorCurrentPage === 1 ? 'not-allowed' : 'pointer',
+                          color: anchorCurrentPage === 1 ? '#d1d5db' : '#6b7280',
+                          fontSize: '1rem'
+                        }}
+                        title="First page"
+                      >
+                        ⟪
+                      </button>
+
+                      {/* Previous page */}
+                      <button
+                        onClick={() => setAnchorCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={anchorCurrentPage === 1}
+                        style={{
+                          padding: '0.375rem 0.5rem',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: anchorCurrentPage === 1 ? 'not-allowed' : 'pointer',
+                          color: anchorCurrentPage === 1 ? '#d1d5db' : '#6b7280',
+                          fontSize: '1rem'
+                        }}
+                        title="Previous page"
+                      >
+                        ‹
+                      </button>
+
+                      {/* Page indicator */}
+                      <span style={{
+                        color: '#374151',
+                        fontSize: '0.875rem',
+                        fontWeight: '400',
+                        padding: '0 0.5rem'
+                      }}>
+                        Page {anchorCurrentPage} of {Math.ceil(getFilteredAnchors().length / itemsPerPage) || 1}
+                      </span>
+
+                      {/* Next page */}
+                      <button
+                        onClick={() => setAnchorCurrentPage(prev => Math.min(prev + 1, Math.ceil(getFilteredAnchors().length / itemsPerPage)))}
+                        disabled={anchorCurrentPage === Math.ceil(getFilteredAnchors().length / itemsPerPage)}
+                        style={{
+                          padding: '0.375rem 0.5rem',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: anchorCurrentPage === Math.ceil(getFilteredAnchors().length / itemsPerPage) ? 'not-allowed' : 'pointer',
+                          color: anchorCurrentPage === Math.ceil(getFilteredAnchors().length / itemsPerPage) ? '#d1d5db' : '#6b7280',
+                          fontSize: '1rem'
+                        }}
+                        title="Next page"
+                      >
+                        ›
+                      </button>
+
+                      {/* Last page */}
+                      <button
+                        onClick={() => setAnchorCurrentPage(Math.ceil(getFilteredAnchors().length / itemsPerPage))}
+                        disabled={anchorCurrentPage === Math.ceil(getFilteredAnchors().length / itemsPerPage)}
+                        style={{
+                          padding: '0.375rem 0.5rem',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: anchorCurrentPage === Math.ceil(getFilteredAnchors().length / itemsPerPage) ? 'not-allowed' : 'pointer',
+                          color: anchorCurrentPage === Math.ceil(getFilteredAnchors().length / itemsPerPage) ? '#d1d5db' : '#6b7280',
+                          fontSize: '1rem'
+                        }}
+                        title="Last page"
+                      >
+                        ⟫
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </Card.Content>
         </Card>
@@ -691,56 +807,167 @@ const Devices = () => {
                 <p>No tags match your search criteria.</p>
               </div>
             ) : (
-              <Table>
-                <Table.Header>
-                  <Table.Row>
-                    <Table.Head>Tag ID</Table.Head>
-                    <Table.Head>Name</Table.Head>
-                    <Table.Head>Status</Table.Head>
-                    <Table.Head>Assigned To</Table.Head>
-                    <Table.Head>Actions</Table.Head>
-                  </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                  {getFilteredTags().map((tag) => {
-                    const assignment = getAssignmentStatus(tag);
-                    return (
-                      <Table.Row key={tag.tag_id}>
-                        <Table.Cell><code>{tag.tag_id}</code></Table.Cell>
-                        <Table.Cell>{tag.name || <span className="text-muted">-</span>}</Table.Cell>
-                        <Table.Cell>
-                          <span className={`status-badge status-${assignment.status}`}>
-                            {assignment.status}
-                          </span>
-                        </Table.Cell>
-                        <Table.Cell>{assignment.details}</Table.Cell>
-                        <Table.Cell>
-                          <div className="action-buttons">
-                            <PermissionGate permission="DEVICE_EDIT">
-                              <button
-                                onClick={() => openTagEditModal(tag)}
-                                className="btn-icon btn-edit"
-                                title="Edit tag"
-                              >
-                                <FiEdit2 size={16} />
-                              </button>
-                            </PermissionGate>
-                            <PermissionGate permission="DEVICE_DELETE">
-                              <button
-                                onClick={() => openTagDeleteModal(tag)}
-                                className="btn-icon btn-delete"
-                                title="Delete tag"
-                              >
-                                <FiTrash2 size={16} />
-                              </button>
-                            </PermissionGate>
-                          </div>
-                        </Table.Cell>
-                      </Table.Row>
-                    );
-                  })}
-                </Table.Body>
-              </Table>
+              <>
+                <Table>
+                  <Table.Header>
+                    <Table.Row>
+                      <Table.Head>Tag ID</Table.Head>
+                      <Table.Head>Name</Table.Head>
+                      <Table.Head>Status</Table.Head>
+                      <Table.Head>Assigned To</Table.Head>
+                      <Table.Head>Actions</Table.Head>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {getFilteredTags()
+                      .slice((tagCurrentPage - 1) * itemsPerPage, tagCurrentPage * itemsPerPage)
+                      .map((tag) => {
+                        const assignment = getAssignmentStatus(tag);
+                        return (
+                          <Table.Row key={tag.tag_id}>
+                            <Table.Cell><code>{tag.tag_id}</code></Table.Cell>
+                            <Table.Cell>{tag.name || <span className="text-muted">-</span>}</Table.Cell>
+                            <Table.Cell>
+                              <span className={`status-badge status-${assignment.status}`}>
+                                {assignment.status}
+                              </span>
+                            </Table.Cell>
+                            <Table.Cell>{assignment.details}</Table.Cell>
+                            <Table.Cell>
+                              <div className="action-buttons">
+                                <PermissionGate permission="DEVICE_EDIT">
+                                  <button
+                                    onClick={() => openTagEditModal(tag)}
+                                    className="btn-icon btn-edit"
+                                    title="Edit tag"
+                                  >
+                                    <FiEdit2 size={16} />
+                                  </button>
+                                </PermissionGate>
+                                <PermissionGate permission="DEVICE_DELETE">
+                                  <button
+                                    onClick={() => openTagDeleteModal(tag)}
+                                    className="btn-icon btn-delete"
+                                    title="Delete tag"
+                                  >
+                                    <FiTrash2 size={16} />
+                                  </button>
+                                </PermissionGate>
+                              </div>
+                            </Table.Cell>
+                          </Table.Row>
+                        );
+                      })}
+                  </Table.Body>
+                </Table>
+
+                {/* Tag Pagination */}
+                {getFilteredTags().length > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    marginTop: '1rem',
+                    padding: '1rem 0',
+                    borderTop: '1px solid #e5e7eb'
+                  }}>
+                    {/* Record count */}
+                    <span style={{
+                      color: '#6b7280',
+                      fontSize: '0.875rem',
+                      fontWeight: '400'
+                    }}>
+                      {((tagCurrentPage - 1) * itemsPerPage) + 1} to {Math.min(tagCurrentPage * itemsPerPage, getFilteredTags().length)} of {getFilteredTags().length}
+                    </span>
+
+                    {/* Navigation buttons */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}>
+                      {/* First page */}
+                      <button
+                        onClick={() => setTagCurrentPage(1)}
+                        disabled={tagCurrentPage === 1}
+                        style={{
+                          padding: '0.375rem 0.5rem',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: tagCurrentPage === 1 ? 'not-allowed' : 'pointer',
+                          color: tagCurrentPage === 1 ? '#d1d5db' : '#6b7280',
+                          fontSize: '1rem'
+                        }}
+                        title="First page"
+                      >
+                        ⟪
+                      </button>
+
+                      {/* Previous page */}
+                      <button
+                        onClick={() => setTagCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={tagCurrentPage === 1}
+                        style={{
+                          padding: '0.375rem 0.5rem',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: tagCurrentPage === 1 ? 'not-allowed' : 'pointer',
+                          color: tagCurrentPage === 1 ? '#d1d5db' : '#6b7280',
+                          fontSize: '1rem'
+                        }}
+                        title="Previous page"
+                      >
+                        ‹
+                      </button>
+
+                      {/* Page indicator */}
+                      <span style={{
+                        color: '#374151',
+                        fontSize: '0.875rem',
+                        fontWeight: '400',
+                        padding: '0 0.5rem'
+                      }}>
+                        Page {tagCurrentPage} of {Math.ceil(getFilteredTags().length / itemsPerPage) || 1}
+                      </span>
+
+                      {/* Next page */}
+                      <button
+                        onClick={() => setTagCurrentPage(prev => Math.min(prev + 1, Math.ceil(getFilteredTags().length / itemsPerPage)))}
+                        disabled={tagCurrentPage === Math.ceil(getFilteredTags().length / itemsPerPage)}
+                        style={{
+                          padding: '0.375rem 0.5rem',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: tagCurrentPage === Math.ceil(getFilteredTags().length / itemsPerPage) ? 'not-allowed' : 'pointer',
+                          color: tagCurrentPage === Math.ceil(getFilteredTags().length / itemsPerPage) ? '#d1d5db' : '#6b7280',
+                          fontSize: '1rem'
+                        }}
+                        title="Next page"
+                      >
+                        ›
+                      </button>
+
+                      {/* Last page */}
+                      <button
+                        onClick={() => setTagCurrentPage(Math.ceil(getFilteredTags().length / itemsPerPage))}
+                        disabled={tagCurrentPage === Math.ceil(getFilteredTags().length / itemsPerPage)}
+                        style={{
+                          padding: '0.375rem 0.5rem',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: tagCurrentPage === Math.ceil(getFilteredTags().length / itemsPerPage) ? 'not-allowed' : 'pointer',
+                          color: tagCurrentPage === Math.ceil(getFilteredTags().length / itemsPerPage) ? '#d1d5db' : '#6b7280',
+                          fontSize: '1rem'
+                        }}
+                        title="Last page"
+                      >
+                        ⟫
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </Card.Content>
         </Card>

@@ -179,6 +179,22 @@
     min-height: 44px;
   }
 
+  /* Icon buttons need adequate spacing */
+  .btn-icon {
+    min-width: 44px;
+    padding: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Action buttons container spacing */
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
   /* Prevent text selection on double-tap */
   button,
   .btn,
@@ -199,12 +215,41 @@
   /* Prevent horizontal overflow */
   body {
     overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  * {
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Improve image responsiveness */
   img {
     max-width: 100%;
     height: auto;
+    display: block;
+  }
+
+  /* Better scrolling for containers */
+  .table-container,
+  .scroll-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Show scroll hint on mobile */
+    &::-webkit-scrollbar {
+      height: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 3px;
+    }
+  }
+
+  /* Sticky table headers on mobile */
+  table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg-card);
   }
 }
 
