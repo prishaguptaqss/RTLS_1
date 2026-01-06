@@ -13,7 +13,7 @@ import {
 import { useOrganization } from '../contexts/OrganizationContext';
 import { useSearch } from '../contexts/SearchContext';
 import './Entities.css';
-import { FiEdit2, FiTrash2, FiClock, FiUserX } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiClock, FiUserX, FiUser, FiPackage } from "react-icons/fi";
 
 const Entities = () => {
   const { currentOrganization, loading: orgLoading } = useOrganization();
@@ -23,6 +23,7 @@ const Entities = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [typeFilter, setTypeFilter] = useState('');
+  const [activeTab, setActiveTab] = useState('person');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -416,8 +417,15 @@ const Entities = () => {
     );
   };
 
-  // Filter entities based on global search
+  // Check if there are any material-type entities
+  const hasMaterialEntities = entities.some(entity => entity.type === 'material');
+
+  // Filter entities based on active tab and global search
   const filteredEntities = entities.filter(entity => {
+    // Filter by active tab
+    if (entity.type !== activeTab) return false;
+
+    // Filter by search query
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -434,7 +442,6 @@ const Entities = () => {
       <div className="page-container">
         <div className="page-header">
           <h1 className="page-title">Entities</h1>
-          <p className="page-subtitle">Track persons and materials</p>
         </div>
         <Card>
           <Card.Content>
@@ -453,7 +460,6 @@ const Entities = () => {
       <div className="page-container">
         <div className="page-header">
           <h1 className="page-title">Entities</h1>
-          <p className="page-subtitle">Track persons and materials</p>
         </div>
         <Card>
           <Card.Content>
@@ -471,7 +477,6 @@ const Entities = () => {
       <div className="page-container">
         <div className="page-header">
           <h1 className="page-title">Entities</h1>
-          <p className="page-subtitle">Track persons and materials</p>
         </div>
         <Card>
           <Card.Content>
@@ -492,29 +497,55 @@ const Entities = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title">Entities</h1>
-          <p className="page-subtitle">Track persons and materials</p>
-        </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <div className="form-group" style={{ margin: 0, minWidth: '150px' }}>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="filter-select"
-            >
-              <option value="">All Types</option>
-              <option value="person">Person</option>
-              <option value="material">Material</option>
-            </select>
-          </div>
-          <PermissionGate permission="ENTITY_ADMIT">
-            <button onClick={openCreateModal} className="btn btn-primary">
-              + Add Entity
-            </button>
-          </PermissionGate>
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="tabs">
+        <button
+          className={`tab ${activeTab === 'person' ? 'active' : ''}`}
+          onClick={() => {
+            setActiveTab('person');
+            setCurrentPage(1);
+          }}
+        >
+          <FiUser size={18} />
+          Persons
+        </button>
+        {hasMaterialEntities && (
+          <button
+            className={`tab ${activeTab === 'material' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveTab('material');
+              setCurrentPage(1);
+            }}
+          >
+            <FiPackage size={18} />
+            Materials
+          </button>
+        )}
+      </div>
+
       <Card>
+        <Card.Header>
+          <div className="section-header">
+            <div>
+              <div className="section-title">
+                {activeTab === 'person' ? <FiUser size={20} /> : <FiPackage size={20} />}
+                <h2>{activeTab === 'person' ? 'Persons' : 'Materials'}</h2>
+              </div>
+              <p className="section-subtitle">
+                {filteredEntities.length} {activeTab === 'person' ? 'person' : 'material'}
+                {filteredEntities.length !== 1 ? 's' : ''} configured
+              </p>
+            </div>
+            <PermissionGate permission="ENTITY_ADMIT">
+              <button onClick={openCreateModal} className="btn btn-primary">
+                + Add Entity
+              </button>
+            </PermissionGate>
+          </div>
+        </Card.Header>
         <Card.Content>
           {filteredEntities.length === 0 ? (
             <div className="empty-state">
