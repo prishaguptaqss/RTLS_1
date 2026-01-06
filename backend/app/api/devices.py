@@ -11,6 +11,7 @@ from app.models.anchor import Anchor as AnchorModel
 from app.api.deps import get_db, get_current_organization, require_permission
 from app.models.organization import Organization
 from app.utils.permissions import Permission
+from app.utils.enums import AnchorStatus
 
 router = APIRouter()
 
@@ -51,7 +52,18 @@ async def create_device(
     if existing_device:
         raise HTTPException(status_code=400, detail=f"Anchor with anchor_id '{device.anchor_id}' already exists in this organization")
 
-    db_device = AnchorModel(**device.model_dump(), organization_id=organization.id)
+    # Auto-set status based on room assignment
+    device_data = device.model_dump()
+    if device_data.get('room_id'):
+        # If room is assigned, force status to active
+        device_data['status'] = AnchorStatus.active
+    else:
+        # If no room assigned, use provided status or default to inactive_in_store
+        if device_data.get('status') == AnchorStatus.active:
+            raise HTTPException(status_code=400, detail="Cannot set status to 'active' without assigning to a room")
+        # Keep provided status or use default from schema
+
+    db_device = AnchorModel(**device_data, organization_id=organization.id)
     db.add(db_device)
     db.commit()
     db.refresh(db_device)
@@ -75,6 +87,30 @@ async def update_device(device_id: str, device_update: AnchorUpdate, db: Session
         raise HTTPException(status_code=404, detail="Device not found")
 
     update_data = device_update.model_dump(exclude_unset=True)
+
+    # Auto-update status based on room assignment changes
+    if 'room_id' in update_data:
+        if update_data['room_id'] is not None:
+            # Assigning to room → force status to active
+            update_data['status'] = AnchorStatus.active
+        else:
+            # Unassigning from room → require status to be provided (inactive reason)
+            if 'status' not in update_data:
+                raise HTTPException(status_code=400, detail="Must provide status (inactive reason) when removing room assignment")
+            if update_data.get('status') == AnchorStatus.active:
+                raise HTTPException(status_code=400, detail="Cannot set status to 'active' without assigning to a room")
+            # Validate that status is one of the inactive reasons
+            if update_data['status'] not in [AnchorStatus.inactive_defective, AnchorStatus.inactive_in_store]:
+                raise HTTPException(status_code=400, detail="Status must be 'inactive_defective' or 'inactive_in_store' when not assigned to a room")
+    else:
+        # Not changing room assignment, validate status if provided
+        if 'status' in update_data:
+            if update_data['status'] == AnchorStatus.active and device.room_id is None:
+                raise HTTPException(status_code=400, detail="Cannot set status to 'active' without assigning to a room")
+            # Allow changing between inactive statuses when not assigned
+            if device.room_id is None and update_data['status'] not in [AnchorStatus.inactive_defective, AnchorStatus.inactive_in_store]:
+                raise HTTPException(status_code=400, detail="Status must be 'inactive_defective' or 'inactive_in_store' when not assigned to a room")
+
     for key, value in update_data.items():
         setattr(device, key, value)
 

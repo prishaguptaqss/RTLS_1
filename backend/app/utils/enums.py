@@ -19,7 +19,8 @@ class TagStatus(str, enum.Enum):
 class AnchorStatus(str, enum.Enum):
     """Anchor (ESP32 gateway) status enumeration."""
     active = "active"
-    offline = "offline"
+    inactive_defective = "inactive_defective"
+    inactive_in_store = "inactive_in_store"
 
 
 class EventType(str, enum.Enum):

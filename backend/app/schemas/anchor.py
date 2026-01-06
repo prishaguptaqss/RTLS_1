@@ -12,7 +12,7 @@ class AnchorBase(BaseModel):
     anchor_id: str
     anchor_name: Optional[str] = None
     room_id: Optional[int] = None
-    status: Optional[AnchorStatus] = AnchorStatus.active
+    status: Optional[AnchorStatus] = AnchorStatus.inactive_in_store
 
 
 class AnchorCreate(AnchorBase):

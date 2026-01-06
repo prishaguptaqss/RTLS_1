@@ -186,6 +186,26 @@
   font-weight: 500;
 }
 
+.status-badge.status-inactive-defective {
+  background-color: #fee2e2;
+  color: #991b1b;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid #fecaca;
+}
+
+.status-badge.status-inactive-in-store {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+}
+
 /* Responsive adjustments */
 @media (max-width: 1024px) {
   .devices-page {
