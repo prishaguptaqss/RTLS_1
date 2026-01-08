@@ -460,7 +460,7 @@ from flask import Flask, request, jsonify
 # Configuration Flask app for runtime threshold updates
 config_app = Flask(__name__)
 
-BROKER = "192.168.1.232"
+BROKER = "192.168.1.245"
 PORT = 1883
 TOPIC = "Hospital"
 COLLECT_SECONDS = 2.0  # 3, Scan window duration in seconds
@@ -469,11 +469,27 @@ MIN_SAMPLES = 2        # 3, minimum packets per gateway per window *************
 HYSTERESIS_DB = 5.0 # 6 ********************************
 EMA_ALPHA = 0.5  # 0.4 ******************smoothing factor (0.2–0.4 is good)
 
-BACKEND_URL = "http://192.168.1.204:3000/api/events/location-event"
-ORGANIZATION_ID = "ORG-002"  # SET THIS TO YOUR ORGANIZATION ID
- 
+BACKEND_URL = "http://192.168.1.103:3000/api/events/location-event"
+ORGANIZATION_ID = "1"  # DEPRECATED: Will be replaced by dynamic lookup
+EXPECTED_ORGANIZATION_ID = 1  # For validation (numeric, not string)
+ANCHOR_CACHE_TTL = 300  # 5 minutes in seconds
+ANCHOR_API_URL = "http://192.168.1.103:3000/api/devices"  # Base URL for anchor lookup
+ENABLE_ORGANIZATION_VALIDATION = True  # Set False to disable validation during testing
+
 _messages = []            # shared list of incoming records
 _lock = threading.Lock()  # protects _messages
+
+# Anchor cache: {anchor_id: {"organization_id": 1, "room_id": 3, "status": "active", "cached_at": timestamp}}
+anchor_cache = {}
+anchor_cache_lock = threading.Lock()
+
+# Cache statistics for monitoring
+cache_stats = {
+    "hits": 0,
+    "misses": 0,
+    "backend_errors": 0,
+    "validation_failures": 0
+}
  
 # persistent map: mac -> currently selected best gateway (string), Dictionary storing best gateway per tag at the moment.
 best_map = {}
@@ -503,14 +519,155 @@ def update_threshold():
     print(f"[CONFIG] Threshold updated to {LOSS_SECONDS} seconds")
     return jsonify({'success': True, 'threshold_seconds': LOSS_SECONDS})
 
+@config_app.route('/config/cache-stats', methods=['GET'])
+def get_cache_stats():
+    """Get anchor cache statistics."""
+    with anchor_cache_lock:
+        cache_size = len(anchor_cache)
+        cache_entries = [
+            {
+                "anchor_id": aid,
+                "organization_id": data.get("organization_id"),
+                "room_id": data.get("room_id"),
+                "age_seconds": int(time.time() - data["cached_at"]),
+                "not_found": data.get("not_found", False)
+            }
+            for aid, data in anchor_cache.items()
+        ]
+
+    return jsonify({
+        'cache_size': cache_size,
+        'cache_ttl': ANCHOR_CACHE_TTL,
+        'stats': cache_stats,
+        'entries': cache_entries
+    })
+
+@config_app.route('/config/cache-clear', methods=['POST'])
+def clear_cache():
+    """Clear anchor cache."""
+    with anchor_cache_lock:
+        size = len(anchor_cache)
+        anchor_cache.clear()
+        cache_stats["hits"] = 0
+        cache_stats["misses"] = 0
+        cache_stats["backend_errors"] = 0
+        cache_stats["validation_failures"] = 0
+    print(f"[CONFIG] Cache cleared ({size} entries removed)")
+    return jsonify({'success': True, 'cleared_entries': size})
+
+# ---------------- ANCHOR ORGANIZATION LOOKUP ----------------
+def get_anchor_organization(anchor_id):
+    """
+    Query backend to get organization_id for an anchor.
+    Uses cache with 5-minute TTL to minimize backend calls.
+
+    Returns: (organization_id, room_id, status) or (None, None, None) if not found
+    """
+    now = time.time()
+
+    # Check cache first
+    with anchor_cache_lock:
+        if anchor_id in anchor_cache:
+            cached_data = anchor_cache[anchor_id]
+            age = now - cached_data["cached_at"]
+
+            # Handle "not found" entries (1-minute TTL)
+            if cached_data.get("not_found"):
+                if age < 60:
+                    cache_stats["hits"] += 1
+                    return None, None, None
+                else:
+                    del anchor_cache[anchor_id]
+            # Handle valid entries (5-minute TTL)
+            elif age < ANCHOR_CACHE_TTL:
+                cache_stats["hits"] += 1
+                return cached_data["organization_id"], cached_data["room_id"], cached_data["status"]
+            else:
+                del anchor_cache[anchor_id]
+
+    # Cache miss - query backend
+    cache_stats["misses"] += 1
+
+    try:
+        url = f"{ANCHOR_API_URL}/{anchor_id}/organization"
+        response = requests.get(url, timeout=3)
+
+        if response.status_code == 200:
+            data = response.json()
+            org_id = data["organization_id"]
+            room_id = data.get("room_id")
+            status = data.get("status", "active")
+
+            # Cache successful lookup
+            with anchor_cache_lock:
+                anchor_cache[anchor_id] = {
+                    "organization_id": org_id,
+                    "room_id": room_id,
+                    "status": status,
+                    "cached_at": now
+                }
+
+            print(f"    [API] Anchor {anchor_id} -> org {org_id}, room {room_id}")
+            return org_id, room_id, status
+
+        elif response.status_code == 404:
+            # Cache "not found" with short TTL
+            with anchor_cache_lock:
+                anchor_cache[anchor_id] = {
+                    "not_found": True,
+                    "cached_at": now
+                }
+            print(f"    [API 404] Anchor {anchor_id} not found")
+            return None, None, None
+
+        else:
+            cache_stats["backend_errors"] += 1
+            print(f"    [API ERROR] {response.status_code}: {response.text}")
+            return None, None, None
+
+    except Exception as e:
+        cache_stats["backend_errors"] += 1
+        print(f"    [ERROR] Backend query failed: {e}")
+        return None, None, None
+
 # ---------------- BACKEND SENDER ----------------
 def send_location_event(event_type, tag_id, to_room=None, from_room=None, last_room=None):
+    """
+    Send location event to backend with dynamic organization validation.
+    """
+    # Determine which anchor to validate
+    anchor_to_validate = to_room or from_room or last_room
+
+    if ENABLE_ORGANIZATION_VALIDATION and anchor_to_validate:
+        # Lookup anchor organization
+        org_id, room_id, status = get_anchor_organization(anchor_to_validate)
+
+        # Check if anchor exists
+        if org_id is None:
+            print(f"    ⚠ Unknown anchor: {anchor_to_validate}, skipping event")
+            return False
+
+        # Validate organization matches expected
+        if org_id != EXPECTED_ORGANIZATION_ID:
+            cache_stats["validation_failures"] += 1
+            print(f"    ✗ Org mismatch: anchor {anchor_to_validate} is org {org_id}, expected {EXPECTED_ORGANIZATION_ID}")
+            return False
+
+        # Log warning for inactive anchors (but still send event)
+        if status in ["inactive_defective", "inactive_in_store"]:
+            print(f"    ⚠ Anchor {anchor_to_validate} is {status}")
+
+        validated_org_id = org_id
+    else:
+        # Validation disabled - use default
+        validated_org_id = ORGANIZATION_ID
+
+    # Build payload
     payload = {
         "event_type": event_type,
         "tag_id": tag_id,
         "timestamp": int(time.time())
     }
-
     if to_room:
         payload["to_room"] = to_room
     if from_room:
@@ -518,20 +675,23 @@ def send_location_event(event_type, tag_id, to_room=None, from_room=None, last_r
     if last_room:
         payload["last_room"] = last_room
 
-    # Add organization ID to headers
+    # Add validated organization ID to headers
     headers = {
         "Content-Type": "application/json",
-        "X-Organization-ID": str(ORGANIZATION_ID)
+        "X-Organization-ID": str(validated_org_id)
     }
 
     try:
         r = requests.post(BACKEND_URL, json=payload, headers=headers, timeout=3)
         if r.status_code == 200:
             print("    ✓ Backend updated")
+            return True
         else:
             print(f"    ✗ Backend error {r.status_code}: {r.text}")
+            return False
     except Exception as e:
         print(f"    ✗ Backend send failed: {e}")
+        return False
  
 def async_send(*args, **kwargs):
     threading.Thread(

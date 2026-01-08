@@ -1,8 +1,12 @@
 import './StatCard.css';
 
-const StatCard = ({ title, value, subtitle, icon: Icon }) => {
+const StatCard = ({ title, value, subtitle, icon: Icon, onClick }) => {
   return (
-    <div className="stat-card">
+    <div
+      className={`stat-card ${onClick ? 'stat-card-clickable' : ''}`}
+      onClick={onClick}
+      style={onClick ? { cursor: 'pointer' } : {}}
+    >
       <div className="stat-card-content">
         <h4 className="stat-card-title">{title}</h4>
         <p className="stat-card-value">{value}</p>

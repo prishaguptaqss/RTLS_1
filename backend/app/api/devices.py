@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
-from app.schemas.anchor import Anchor, AnchorCreate, AnchorUpdate
+from app.schemas.anchor import Anchor, AnchorCreate, AnchorUpdate, AnchorLookupResponse
 from app.models.anchor import Anchor as AnchorModel
 from app.api.deps import get_db, get_current_organization, require_permission
 from app.models.organization import Organization
@@ -77,6 +77,65 @@ async def get_device(device_id: str, db: Session = Depends(get_db)):
     if not device:
         raise HTTPException(status_code=404, detail="Device not found")
     return device
+
+
+@router.get("/{device_id}/organization", response_model=AnchorLookupResponse)
+async def get_device_organization(device_id: str, db: Session = Depends(get_db)):
+    """
+    Get organization information for an anchor by anchor_id.
+
+    This endpoint is used by test.py (MQTT processor) to dynamically determine
+    which organization an anchor belongs to based on the anchor_id received from MQTT.
+
+    No authentication required since anchor_id is a unique identifier and this is
+    used for internal service-to-service communication.
+
+    Args:
+        device_id: The anchor_id (e.g., "E2:D5:A0:F5:79:99" or "ANCHOR-A1")
+        db: Database session
+
+    Returns:
+        AnchorLookupResponse with organization_id, room info, and status
+
+    Raises:
+        HTTPException 404: If anchor not found
+
+    Example Response:
+        {
+            "anchor_id": "E2:D5:A0:F5:79:99",
+            "organization_id": 1,
+            "room_id": 45,
+            "room_name": "Room 101",
+            "status": "active"
+        }
+    """
+    # Case-insensitive lookup (BLE MAC addresses can come in various cases)
+    from sqlalchemy import func
+    anchor = db.query(AnchorModel).filter(
+        func.lower(AnchorModel.anchor_id) == func.lower(device_id)
+    ).first()
+
+    if not anchor:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Anchor with ID '{device_id}' not found"
+        )
+
+    # Get room name if anchor is assigned to a room
+    room_name = None
+    if anchor.room_id:
+        from app.models.room import Room
+        room = db.query(Room).filter(Room.id == anchor.room_id).first()
+        if room:
+            room_name = room.room_name
+
+    return AnchorLookupResponse(
+        anchor_id=anchor.anchor_id,
+        organization_id=anchor.organization_id,
+        room_id=anchor.room_id,
+        room_name=room_name,
+        status=anchor.status
+    )
 
 
 @router.put("/{device_id}", response_model=Anchor, dependencies=[Depends(require_permission(Permission.DEVICE_EDIT))])

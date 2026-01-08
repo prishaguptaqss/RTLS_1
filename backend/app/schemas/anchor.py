@@ -33,3 +33,14 @@ class Anchor(AnchorBase):
     last_seen: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AnchorLookupResponse(BaseModel):
+    """Schema for anchor organization lookup response (used by test.py)."""
+    anchor_id: str
+    organization_id: int
+    room_id: Optional[int] = None
+    room_name: Optional[str] = None
+    status: AnchorStatus
+
+    model_config = ConfigDict(from_attributes=True)

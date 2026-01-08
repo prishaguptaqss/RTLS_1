@@ -169,7 +169,7 @@ const Settings = () => {
       uploadFormData.append('file', file);
 
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/settings/upload-signature-logo', {
+      const response = await fetch('http://localhost:3000/api/settings/upload-signature-logo', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -475,7 +475,7 @@ const Settings = () => {
                 {formData.mail_signature_logo && (
                   <div className="signature-logo-preview">
                     <img
-                      src={`http://localhost:8000/${formData.mail_signature_logo}`}
+                      src={`http://localhost:3000/${formData.mail_signature_logo}`}
                       alt="Signature Logo Preview"
                       style={{ maxWidth: '200px', maxHeight: '100px', marginTop: '10px', border: '1px solid #ddd', padding: '5px' }}
                     />

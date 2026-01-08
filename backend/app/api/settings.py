@@ -75,6 +75,18 @@ async def get_settings(
             logger.warning(f"Failed to parse social_links JSON: {e}")
             social_links = None
 
+    # Validate logo file exists before returning path
+    validated_logo_path = None
+    if settings.mail_signature_logo:
+        logo_full_path = Path(settings.mail_signature_logo)
+        if logo_full_path.exists():
+            validated_logo_path = settings.mail_signature_logo
+        else:
+            logger.warning(f"Logo file not found: {settings.mail_signature_logo}, clearing from response")
+            # Optionally clear from DB as well
+            settings.mail_signature_logo = None
+            db.commit()
+
     return Settings(
         untracked_threshold_seconds=settings.untracked_threshold_seconds,
         smtp_host=settings.smtp_host,
@@ -84,7 +96,7 @@ async def get_settings(
         smtp_from_email=settings.smtp_from_email,
         smtp_from_name=settings.smtp_from_name,
         mail_signature_text=settings.mail_signature_text,
-        mail_signature_logo=settings.mail_signature_logo,
+        mail_signature_logo=validated_logo_path,
         organization_website=settings.organization_website,
         organization_phone=settings.organization_phone,
         organization_address_line=settings.organization_address_line,

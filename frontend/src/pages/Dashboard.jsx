@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
-import { Users, Building2, DoorOpen, Wifi } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Building2, DoorOpen, Wifi, Shield } from 'lucide-react';
 import StatCard from '../components/ui/StatCard';
 import Card from '../components/ui/Card';
 import {
-  fetchUsers,
+  fetchStaff,
   fetchEntities,
   fetchBuildings,
   fetchRooms,
   fetchTags,
-  fetchDevices
+  fetchDevices,
+  fetchRoles
 } from '../services/api';
 import './Dashboard.css';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     activeUsers: 0,
     totalEntities: 0,
@@ -22,6 +25,7 @@ const Dashboard = () => {
     totalRooms: 0,
     activeTags: 0,
     activeAnchors: 0,
+    totalRoles: 0,
   });
   const [loading, setLoading] = useState(true);
   const [systemStatus, setSystemStatus] = useState({
@@ -42,32 +46,34 @@ const Dashboard = () => {
       let backendConnected = false;
       let databaseConnected = false;
 
-      const [usersResult, entitiesResult, buildingsResult, roomsResult, tagsResult, anchorsResult] = await Promise.all([
-        fetchUsers().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
+      const [staffResult, entitiesResult, buildingsResult, roomsResult, tagsResult, anchorsResult, rolesResult] = await Promise.all([
+        fetchStaff().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
         fetchEntities().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
         fetchBuildings().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
         fetchRooms().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
         fetchTags().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
         fetchDevices().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
+        fetchRoles().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
       ]);
 
       // Check if backend is connected (at least one API call succeeded)
-      backendConnected = usersResult.success || entitiesResult.success || buildingsResult.success ||
+      backendConnected = staffResult.success || entitiesResult.success || buildingsResult.success ||
                         roomsResult.success || tagsResult.success || anchorsResult.success;
 
       // Database is connected if backend is connected (same connection)
       databaseConnected = backendConnected;
 
-      const users = usersResult.data;
+      const staff = staffResult.data?.staff || staffResult.data || [];
       const entities = entitiesResult.data;
       const buildings = buildingsResult.data;
       const rooms = roomsResult.data;
       const tags = tagsResult.data;
       const anchors = anchorsResult.data;
+      const roles = rolesResult.data?.roles || rolesResult.data || [];
 
-      // Count active users
-      const activeUsers = Array.isArray(users)
-        ? users.filter(user => user.status === 'active').length
+      // Count active staff (organization-specific, already filtered by backend)
+      const activeUsers = Array.isArray(staff)
+        ? staff.filter(user => user.is_active === true).length
         : 0;
 
       // Count entities by type
@@ -89,6 +95,9 @@ const Dashboard = () => {
         ? anchors.filter(anchor => anchor.status === 'active').length
         : 0;
 
+      // Count total roles (organization-specific, already filtered by backend)
+      const totalRoles = Array.isArray(roles) ? roles.length : 0;
+
       setStats({
         activeUsers,
         totalEntities,
@@ -98,6 +107,7 @@ const Dashboard = () => {
         totalRooms: Array.isArray(rooms) ? rooms.length : 0,
         activeTags,
         activeAnchors,
+        totalRoles,
       });
 
       // Update system status
@@ -118,8 +128,6 @@ const Dashboard = () => {
     }
   };
 
-  const totalActiveTracked = stats.activeUsers + stats.totalEntities;
-
   return (
     <div className="dashboard">
       <div className="page-header">
@@ -129,28 +137,46 @@ const Dashboard = () => {
 
       <div className="stats-grid">
         <StatCard
-          title="Users & Entities"
-          value={loading ? '...' : totalActiveTracked.toString()}
-          subtitle={`${stats.activeUsers} users, ${stats.totalEntities} entities`}
+          title="Active Users"
+          value={loading ? '...' : stats.activeUsers.toString()}
+          subtitle="Currently active users"
           icon={Users}
+          onClick={() => navigate('/staff')}
+        />
+        <StatCard
+          title="Entities"
+          value={loading ? '...' : stats.totalEntities.toString()}
+          subtitle={`${stats.personEntities} person, ${stats.materialEntities} material`}
+          icon={Users}
+          onClick={() => navigate('/entities')}
+        />
+        <StatCard
+          title="Roles"
+          value={loading ? '...' : stats.totalRoles.toString()}
+          subtitle="Access control roles"
+          icon={Shield}
+          onClick={() => navigate('/roles')}
         />
         <StatCard
           title="Buildings"
           value={loading ? '...' : stats.totalBuildings.toString()}
           subtitle="Monitored buildings"
           icon={Building2}
+          onClick={() => navigate('/locations')}
         />
         <StatCard
           title="Rooms"
           value={loading ? '...' : stats.totalRooms.toString()}
           subtitle="Tracked locations"
           icon={DoorOpen}
+          onClick={() => navigate('/locations')}
         />
         <StatCard
           title="Active Devices"
           value={loading ? '...' : (stats.activeTags + stats.activeAnchors).toString()}
-          subtitle={`${stats.activeTags} active tags, ${stats.activeAnchors} active anchors`}
+          subtitle={`${stats.activeTags} tags, ${stats.activeAnchors} anchors`}
           icon={Wifi}
+          onClick={() => navigate('/devices')}
         />
       </div>
 
@@ -193,17 +219,23 @@ const Dashboard = () => {
                   <span className="stat-value">{stats.activeUsers}</span>
                 </div>
                 <div className="stat-row">
+                  <span className="stat-label">Total Roles:</span>
+                  <span className="stat-value">{stats.totalRoles}</span>
+                </div>
+                <hr style={{ margin: '10px 0', border: '1px solid #e5e7eb' }} />
+                <div className="stat-row">
                   <span className="stat-label">Total Entities:</span>
                   <span className="stat-value">{stats.totalEntities}</span>
                 </div>
                 <div className="stat-row">
-                  <span className="stat-label">Person Entities:</span>
+                  <span className="stat-label">└─ Person:</span>
                   <span className="stat-value">{stats.personEntities}</span>
                 </div>
                 <div className="stat-row">
-                  <span className="stat-label">Material Entities:</span>
+                  <span className="stat-label">└─ Material:</span>
                   <span className="stat-value">{stats.materialEntities}</span>
                 </div>
+                <hr style={{ margin: '10px 0', border: '1px solid #e5e7eb' }} />
                 <div className="stat-row">
                   <span className="stat-label">Active Tags:</span>
                   <span className="stat-value">{stats.activeTags}</span>

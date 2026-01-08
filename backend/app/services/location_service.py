@@ -159,12 +159,12 @@ class LocationService:
             )
             db.add(live_loc)
 
-        # Close previous history entry
-        prev_history = db.query(LocationHistory).filter(
+        # Close ALL previous unclosed history entries (defensive: handles cases where multiple records are open)
+        prev_histories = db.query(LocationHistory).filter(
             LocationHistory.tag_id == event.tag_id,
             LocationHistory.exited_at.is_(None)
-        ).first()
-        if prev_history:
+        ).all()
+        for prev_history in prev_histories:
             prev_history.exited_at = timestamp
 
         # Insert new history entry
@@ -278,12 +278,12 @@ class LocationService:
             logger.warning(f"TAG_LOST event for unknown tag: {event.tag_id}")
             return {"status": "error", "message": "Tag not found"}
 
-        # Close open history entry
-        history = db.query(LocationHistory).filter(
+        # Close ALL open history entries (defensive: handles cases where multiple records are open)
+        histories = db.query(LocationHistory).filter(
             LocationHistory.tag_id == event.tag_id,
             LocationHistory.exited_at.is_(None)
-        ).first()
-        if history:
+        ).all()
+        for history in histories:
             history.exited_at = timestamp
 
         db.commit()

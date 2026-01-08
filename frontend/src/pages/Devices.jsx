@@ -212,7 +212,6 @@ const Devices = () => {
     try {
       setSubmitting(true);
       const anchorData = {
-        anchor_id: anchorFormData.anchor_id.trim(),
         anchor_name: anchorFormData.anchor_name.trim() || null,
         room_id: anchorFormData.room_id ? parseInt(anchorFormData.room_id) : null
       };
@@ -231,15 +230,7 @@ const Devices = () => {
     } catch (err) {
       console.error('Error updating anchor:', err);
       const errorDetail = err.response?.data?.detail || 'Failed to update anchor';
-
-      // Handle specific uniqueness errors
-      if (errorDetail.toLowerCase().includes('anchor_id') && errorDetail.toLowerCase().includes('already exists')) {
-        setFormErrors({ anchor_id: 'Anchor ID already exists. Please use a different ID.' });
-      } else if (errorDetail.toLowerCase().includes('duplicate') || errorDetail.toLowerCase().includes('unique')) {
-        setFormErrors({ anchor_id: 'Anchor ID already exists. Please use a different ID.' });
-      } else {
-        setFormErrors({ submit: errorDetail });
-      }
+      setFormErrors({ submit: errorDetail });
     } finally {
       setSubmitting(false);
     }
@@ -336,7 +327,6 @@ const Devices = () => {
     try {
       setSubmitting(true);
       const tagData = {
-        tag_id: tagFormData.tag_id.trim(),
         name: tagFormData.name.trim() || null,
         assigned_user_id: selectedTag.assigned_user_id,
         assigned_entity_id: selectedTag.assigned_entity_id,
@@ -352,12 +342,10 @@ const Devices = () => {
       const errorDetail = err.response?.data?.detail || 'Failed to update tag';
 
       // Handle specific uniqueness errors
-      if (errorDetail.toLowerCase().includes('tag_id') && errorDetail.toLowerCase().includes('already exists')) {
-        setFormErrors({ tag_id: 'Tag ID already exists. Please use a different ID.' });
-      } else if (errorDetail.toLowerCase().includes('name') && errorDetail.toLowerCase().includes('already exists')) {
+      if (errorDetail.toLowerCase().includes('name') && errorDetail.toLowerCase().includes('already exists')) {
         setFormErrors({ name: 'Tag name already exists. Please use a different name.' });
       } else if (errorDetail.toLowerCase().includes('duplicate') || errorDetail.toLowerCase().includes('unique')) {
-        setFormErrors({ tag_id: 'Tag ID already exists. Please use a different ID.' });
+        setFormErrors({ name: 'Tag name already exists. Please use a different name.' });
       } else {
         setFormErrors({ submit: errorDetail });
       }
@@ -1222,14 +1210,12 @@ const Devices = () => {
                 id="edit_tag_id"
                 name="tag_id"
                 value={tagFormData.tag_id}
-                onChange={(e) => setTagFormData({ ...tagFormData, tag_id: e.target.value })}
+                disabled
+                style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
                 placeholder="e.g., E0:C0:74:C6:AD:C8"
                 required
               />
-              {formErrors.tag_id && (
-                <small className="error-text">{formErrors.tag_id}</small>
-              )}
-              <small>BLE MAC address of the tag.</small>
+              <small>Tag ID cannot be changed after creation.</small>
             </div>
 
             <div className="form-group">
@@ -1322,14 +1308,12 @@ const Devices = () => {
                 id="edit_anchor_id"
                 name="anchor_id"
                 value={anchorFormData.anchor_id}
-                onChange={(e) => setAnchorFormData({ ...anchorFormData, anchor_id: e.target.value })}
+                disabled
+                style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
                 placeholder="e.g. ANCHOR-A1, ESP32-001"
                 required
               />
-              {formErrors.anchor_id && (
-                <small className="error-text">{formErrors.anchor_id}</small>
-              )}
-              <small>Unique identifier for this anchor device (unique across all organizations).</small>
+              <small>Anchor ID cannot be changed after creation.</small>
             </div>
 
             <div className="form-group">

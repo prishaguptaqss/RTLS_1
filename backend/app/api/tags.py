@@ -89,6 +89,9 @@ async def update_tag(
     db: Session = Depends(get_db)
 ):
     """Update tag within the organization."""
+    from app.models.entity_tag_assignment import EntityTagAssignment
+    from datetime import datetime
+
     tag = db.query(TagModel).filter(
         TagModel.tag_id == tag_id,
         TagModel.organization_id == organization.id
@@ -107,8 +110,56 @@ async def update_tag(
         if existing_name:
             raise HTTPException(status_code=400, detail=f"Tag with name '{update_data['name']}' already exists in this organization")
 
+    # Track entity assignment changes for temporal records
+    old_entity_id = tag.assigned_entity_id
+    new_entity_id = update_data.get('assigned_entity_id')
+
+    # Update tag fields
     for key, value in update_data.items():
         setattr(tag, key, value)
+
+    # Handle entity_tag_assignment temporal records
+    if 'assigned_entity_id' in update_data:
+        now = datetime.utcnow()
+
+        # Case 1: Unassigning from an entity (new_entity_id is None)
+        if old_entity_id is not None and new_entity_id is None:
+            # Close the current assignment by setting unassigned_at
+            current_assignment = db.query(EntityTagAssignment).filter(
+                EntityTagAssignment.tag_id == tag_id,
+                EntityTagAssignment.entity_id == old_entity_id,
+                EntityTagAssignment.unassigned_at.is_(None)
+            ).first()
+            if current_assignment:
+                current_assignment.unassigned_at = now
+
+        # Case 2: Assigning to a new entity
+        elif new_entity_id is not None:
+            # If previously assigned to a different entity, close that assignment
+            if old_entity_id is not None and old_entity_id != new_entity_id:
+                old_assignment = db.query(EntityTagAssignment).filter(
+                    EntityTagAssignment.tag_id == tag_id,
+                    EntityTagAssignment.entity_id == old_entity_id,
+                    EntityTagAssignment.unassigned_at.is_(None)
+                ).first()
+                if old_assignment:
+                    old_assignment.unassigned_at = now
+
+            # Create new assignment record (or reopen if reassigning to same entity)
+            existing_assignment = db.query(EntityTagAssignment).filter(
+                EntityTagAssignment.tag_id == tag_id,
+                EntityTagAssignment.entity_id == new_entity_id,
+                EntityTagAssignment.unassigned_at.is_(None)
+            ).first()
+
+            if not existing_assignment:
+                # Create new assignment record
+                new_assignment = EntityTagAssignment(
+                    entity_id=new_entity_id,
+                    tag_id=tag_id,
+                    assigned_at=now
+                )
+                db.add(new_assignment)
 
     db.commit()
     db.refresh(tag)
