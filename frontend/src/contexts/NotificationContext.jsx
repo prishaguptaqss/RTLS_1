@@ -18,17 +18,29 @@ export const NotificationProvider = ({ children }) => {
 
   // Fetch initial unread count
   const fetchUnreadCount = useCallback(async () => {
+    // Only fetch if we have an auth token
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      return;
+    }
+
     try {
       const data = await getUnreadCount();
       setUnreadCount(data.count);
     } catch (error) {
-      console.error('[NotificationContext] Failed to fetch unread count:', error);
+      // Only log if it's not a 401 (unauthorized) error
+      if (error.response?.status !== 401) {
+        console.error('[NotificationContext] Failed to fetch unread count:', error);
+      }
     }
   }, []);
 
-  // Initial fetch on mount
+  // Initial fetch on mount - only when authenticated
   useEffect(() => {
-    fetchUnreadCount();
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      fetchUnreadCount();
+    }
   }, [fetchUnreadCount]);
 
   // Listen for WebSocket MISSING_PERSON events

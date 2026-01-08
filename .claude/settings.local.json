@@ -48,7 +48,12 @@
       "Bash(ip route show:*)",
       "Bash(sudo ufw status:*)",
       "Bash(netstat:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(pip uninstall:*)",
+      "Bash(PGPASSWORD=rtls_password psql:*)",
+      "Bash(docker exec:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill -9)"
     ]
   }
 }
