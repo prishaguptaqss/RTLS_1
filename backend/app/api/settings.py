@@ -129,25 +129,15 @@ async def update_settings(
         settings = OrganizationSettings(organization_id=organization_id)
         db.add(settings)
 
+    # Track if threshold changed for Python service notification
+    threshold_changed = False
+    new_threshold = None
+
     # Update threshold if provided
     if settings_update.untracked_threshold_seconds is not None:
         new_threshold = settings_update.untracked_threshold_seconds
         settings.untracked_threshold_seconds = new_threshold
-
-        db.commit()
-        db.refresh(settings)
-
-        # Notify Python scanner service to reload settings for this organization
-        try:
-            response = requests.put(
-                f"{PYTHON_SERVICE_CONFIG_URL}/{organization_id}",
-                json={'threshold_seconds': new_threshold},
-                timeout=3
-            )
-            if response.status_code != 200:
-                logger.warning(f"Failed to update Python service threshold: {response.text}")
-        except requests.exceptions.RequestException as e:
-            logger.warning(f"Could not connect to Python service: {e}")
+        threshold_changed = True
 
     # Update email settings if provided (allow empty strings to clear values)
     if settings_update.smtp_host is not None:
@@ -183,8 +173,22 @@ async def update_settings(
         else:
             settings.social_links = None
 
+    # Commit all changes to database
     db.commit()
     db.refresh(settings)
+
+    # Notify Python scanner service AFTER successful database commit
+    if threshold_changed and new_threshold is not None:
+        try:
+            response = requests.put(
+                f"{PYTHON_SERVICE_CONFIG_URL}/{organization_id}",
+                json={'threshold_seconds': new_threshold},
+                timeout=3
+            )
+            if response.status_code != 200:
+                logger.warning(f"Failed to update Python service threshold: {response.text}")
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Could not connect to Python service: {e}")
 
     # Mask password in response
     masked_password = "********" if settings.smtp_password else None
