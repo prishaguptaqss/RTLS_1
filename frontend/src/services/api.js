@@ -393,4 +393,36 @@ export const fetchPermissionsGrouped = async () => {
   return api.get('/permissions/grouped');
 };
 
+// ==================== NOTIFICATIONS ====================
+
+// Notifications - List with filters and pagination
+export const getNotifications = async (params) => {
+  return api.get('/notifications', { params });
+};
+
+// Notifications - Get unread count
+export const getUnreadCount = async () => {
+  return api.get('/notifications/unread-count');
+};
+
+// Notifications - Mark notification as read
+export const markNotificationRead = async (id) => {
+  return api.put(`/notifications/${id}/mark-read`);
+};
+
+// Notifications - Mark notification as unread
+export const markNotificationUnread = async (id) => {
+  return api.put(`/notifications/${id}/mark-unread`);
+};
+
+// Notifications - Mark all notifications as read
+export const markAllNotificationsRead = async () => {
+  return api.put('/notifications/mark-all-read');
+};
+
+// Notifications - Delete notification
+export const deleteNotification = async (id) => {
+  return api.delete(`/notifications/${id}`);
+};
+
 export default api;

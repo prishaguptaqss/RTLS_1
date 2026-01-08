@@ -47,7 +47,8 @@
       "Bash(ip addr:*)",
       "Bash(ip route show:*)",
       "Bash(sudo ufw status:*)",
-      "Bash(netstat:*)"
+      "Bash(netstat:*)",
+      "Bash(grep:*)"
     ]
   }
 }

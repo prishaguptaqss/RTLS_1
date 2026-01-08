@@ -1,9 +1,12 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OrganizationProvider } from './contexts/OrganizationContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { SearchProvider } from './contexts/SearchContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { websocketService } from './services/websocket';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
@@ -22,14 +25,35 @@ import StaffManagement from './pages/StaffManagement';
 import RoleManagement from './pages/RoleManagement';
 import './App.css';
 
+// WebSocket initialization component
+function WebSocketInitializer({ children }) {
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      console.log('[App] User authenticated, connecting WebSocket...');
+      websocketService.connect();
+    }
+
+    return () => {
+      console.log('[App] Disconnecting WebSocket...');
+      websocketService.disconnect();
+    };
+  }, [user]);
+
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <ThemeProvider>
       <ToastProvider>
         <AuthProvider>
           <OrganizationProvider>
-            <SearchProvider>
-              <BrowserRouter>
+            <NotificationProvider>
+              <WebSocketInitializer>
+                <SearchProvider>
+                  <BrowserRouter>
             <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
@@ -132,9 +156,11 @@ function App() {
               </Routes>
             </BrowserRouter>
           </SearchProvider>
-        </OrganizationProvider>
-      </AuthProvider>
-    </ToastProvider>
+        </WebSocketInitializer>
+      </NotificationProvider>
+    </OrganizationProvider>
+  </AuthProvider>
+</ToastProvider>
     </ThemeProvider>
   );
 }

@@ -6,17 +6,21 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ChangePasswordModal from '../ChangePasswordModal';
 import ProfileModal from '../ProfileModal';
+import NotificationModal from '../NotificationModal';
+import { useNotifications } from '../../contexts/NotificationContext';
 import './Header.css';
 
 const Header = ({ toggleMobileMenu }) => {
   const { user, logout } = useAuth();
   const { searchQuery, setSearchQuery, clearSearch } = useSearch();
   const { theme, toggleTheme, isDark } = useTheme();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const settingsRef = useRef(null);
 
   // Get dynamic placeholder based on current route
@@ -150,9 +154,15 @@ const Header = ({ toggleMobileMenu }) => {
           )}
         </div>
 
-        <button className="header-icon-btn notification-btn" title="Notifications">
+        <button
+          className="header-icon-btn notification-btn"
+          title="Notifications"
+          onClick={() => setIsNotificationModalOpen(true)}
+        >
           <Bell size={20} />
-          <span className="notification-badge">3</span>
+          {unreadCount > 0 && (
+            <span className="notification-badge">{unreadCount}</span>
+          )}
         </button>
       </div>
 
@@ -166,6 +176,12 @@ const Header = ({ toggleMobileMenu }) => {
       <ProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
+      />
+
+      {/* Notification Modal */}
+      <NotificationModal
+        isOpen={isNotificationModalOpen}
+        onClose={() => setIsNotificationModalOpen(false)}
       />
     </header>
   );

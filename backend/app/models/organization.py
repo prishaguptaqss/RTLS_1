@@ -29,3 +29,4 @@ class Organization(Base):
     settings = relationship("OrganizationSettings", back_populates="organization", uselist=False, cascade="all, delete-orphan")
     staff_members = relationship("Staff", back_populates="organization", cascade="all, delete-orphan")
     roles = relationship("Role", back_populates="organization", cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="organization", cascade="all, delete-orphan")

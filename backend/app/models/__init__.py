@@ -19,6 +19,7 @@ from app.models.role import Role
 from app.models.permission import Permission
 from app.models.entity_tag_assignment import EntityTagAssignment
 from app.models.user_tag_assignment import UserTagAssignment
+from app.models.notification import Notification
 
 __all__ = [
     "User",
@@ -39,4 +40,5 @@ __all__ = [
     "Permission",
     "EntityTagAssignment",
     "UserTagAssignment",
+    "Notification",
 ]

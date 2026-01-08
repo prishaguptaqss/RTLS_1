@@ -34,3 +34,8 @@ class EntityType(str, enum.Enum):
     """Entity type enumeration."""
     person = "person"
     material = "material"
+
+
+class NotificationType(str, enum.Enum):
+    """Notification type enumeration."""
+    MISSING_PERSON = "MISSING_PERSON"
