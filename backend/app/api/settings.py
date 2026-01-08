@@ -132,10 +132,13 @@ async def update_settings(
     # Track if threshold changed for Python service notification
     threshold_changed = False
     new_threshold = None
+    old_threshold = settings.untracked_threshold_seconds
 
     # Update threshold if provided
     if settings_update.untracked_threshold_seconds is not None:
         new_threshold = settings_update.untracked_threshold_seconds
+        logger.info(f"Received threshold update request: {new_threshold} seconds (type: {type(new_threshold).__name__})")
+        logger.info(f"Old threshold was: {old_threshold} seconds")
         settings.untracked_threshold_seconds = new_threshold
         threshold_changed = True
 
@@ -177,8 +180,12 @@ async def update_settings(
     db.commit()
     db.refresh(settings)
 
+    logger.info(f"Settings updated for organization {organization_id}")
+    logger.info(f"Current untracked threshold: {settings.untracked_threshold_seconds} seconds")
+
     # Notify Python scanner service AFTER successful database commit
     if threshold_changed and new_threshold is not None:
+        logger.info(f"Threshold changed from {old_threshold} to {new_threshold} seconds for organization {organization_id}")
         try:
             response = requests.put(
                 f"{PYTHON_SERVICE_CONFIG_URL}/{organization_id}",
@@ -187,6 +194,8 @@ async def update_settings(
             )
             if response.status_code != 200:
                 logger.warning(f"Failed to update Python service threshold: {response.text}")
+            else:
+                logger.info(f"Successfully notified Python scanner service about new threshold: {new_threshold} seconds")
         except requests.exceptions.RequestException as e:
             logger.warning(f"Could not connect to Python service: {e}")
 
