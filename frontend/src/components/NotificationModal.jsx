@@ -45,7 +45,6 @@ const NotificationModal = ({ isOpen, onClose }) => {
       // Add optional filters
       if (searchQuery.trim()) {
         params.entity_name = searchQuery.trim();
-        params.room_number = searchQuery.trim();
       }
       if (dateFrom) {
         params.date_from = new Date(dateFrom).toISOString();
@@ -64,6 +63,24 @@ const NotificationModal = ({ isOpen, onClose }) => {
       setLoading(false);
     }
   };
+
+  // Debounced fetch for search query and date filters
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Reset to page 1 when search changes
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+      return; // Let the other useEffect handle the fetch
+    }
+
+    // Debounce search query
+    const debounceTimer = setTimeout(() => {
+      fetchNotifications();
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery, dateFrom, dateTo]);
 
   // Fetch on mount and when filters/page change
   useEffect(() => {
@@ -206,10 +223,9 @@ const NotificationModal = ({ isOpen, onClose }) => {
 
           <input
             type="text"
-            placeholder="Search entity name or room..."
+            placeholder="Search by name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleApplyFilters()}
             className="filter-input"
           />
 

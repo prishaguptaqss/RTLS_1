@@ -39,6 +39,7 @@ const Header = ({ toggleMobileMenu }) => {
   // Clear search when route changes
   useEffect(() => {
     clearSearch();
+
   }, [location.pathname, clearSearch]);
 
   // Close dropdown when clicking outside
