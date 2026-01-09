@@ -238,6 +238,10 @@ td {
   line-height: 1;
 }
 
+.create-user-form {
+  padding: 20px !important;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

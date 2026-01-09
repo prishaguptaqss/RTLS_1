@@ -298,7 +298,7 @@ const StaffManagement = () => {
               <button className="close-btn" onClick={handleCloseModal}>&times;</button>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="create-user-form" style={{ padding: '10px' }}>
               <div className="form-grid">
                 <div className="form-group">
                   <label>User ID *</label>
