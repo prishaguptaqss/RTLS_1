@@ -47,6 +47,8 @@ class MissingPersonDetector:
                 await self._check_missing_persons(db)
             except Exception as e:
                 logger.error(f"Error in missing person detection: {e}", exc_info=True)
+                # Rollback the failed transaction to allow subsequent queries
+                db.rollback()
 
             await asyncio.sleep(settings.MISSING_PERSON_CHECK_INTERVAL_SECONDS)
 

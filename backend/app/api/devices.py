@@ -37,6 +37,23 @@ async def list_unassigned_devices(
     ).all()
 
 
+@router.get("/available", response_model=List[Anchor], dependencies=[Depends(require_permission(Permission.DEVICE_VIEW))])
+async def list_available_devices(
+    organization: Organization = Depends(get_current_organization),
+    db: Session = Depends(get_db)
+):
+    """
+    List all available devices (anchors) that can be assigned to rooms.
+    This includes all anchors that are either unassigned or have status 'inactive_in_store'.
+    Used for populating anchor selection dropdowns when creating/editing rooms.
+    """
+    return db.query(AnchorModel).filter(
+        AnchorModel.organization_id == organization.id,
+        AnchorModel.room_id == None,
+        AnchorModel.status.in_([AnchorStatus.inactive_in_store, AnchorStatus.inactive_defective])
+    ).all()
+
+
 @router.post("/", response_model=Anchor, status_code=201, dependencies=[Depends(require_permission(Permission.DEVICE_CREATE))])
 async def create_device(
     device: AnchorCreate,

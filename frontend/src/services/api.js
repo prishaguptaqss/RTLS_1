@@ -194,6 +194,10 @@ export const deleteRoom = async (id) => {
   return api.delete(`/rooms/${id}`);
 };
 
+export const fetchRoomAnchors = async (roomId) => {
+  return api.get(`/rooms/${roomId}/anchors`);
+};
+
 // Buildings
 export const fetchBuildings = async (organizationId = null) => {
   const params = organizationId ? `?organization_id=${organizationId}` : '';
@@ -237,6 +241,10 @@ export const fetchDevices = async () => {
 
 export const fetchUnassignedDevices = async () => {
   return api.get('/devices/unassigned');
+};
+
+export const fetchAvailableDevices = async () => {
+  return api.get('/devices/available');
 };
 
 export const createDevice = async (deviceData) => {

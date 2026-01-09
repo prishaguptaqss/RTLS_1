@@ -2,7 +2,7 @@
 Pydantic schemas for Room model.
 """
 from pydantic import BaseModel, ConfigDict
-from typing import Optional
+from typing import Optional, List
 
 
 class RoomBase(BaseModel):
@@ -14,7 +14,8 @@ class RoomBase(BaseModel):
 
 class RoomCreate(RoomBase):
     """Schema for creating a new room."""
-    anchor_id: Optional[str] = None  # Optional anchor to assign to this room
+    anchor_id: Optional[str] = None  # Optional single anchor to assign (deprecated, use anchor_ids)
+    anchor_ids: Optional[List[str]] = None  # Optional list of anchor IDs to assign to this room
 
 
 class RoomUpdate(BaseModel):
@@ -22,7 +23,8 @@ class RoomUpdate(BaseModel):
     floor_id: Optional[int] = None
     room_name: Optional[str] = None
     room_type: Optional[str] = None
-    anchor_id: Optional[str] = None  # Update anchor assignment
+    anchor_id: Optional[str] = None  # Update single anchor assignment (deprecated, use anchor_ids)
+    anchor_ids: Optional[List[str]] = None  # Update list of anchor IDs to assign to this room
 
 
 class Room(RoomBase):

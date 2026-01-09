@@ -47,6 +47,7 @@ const Header = ({ toggleMobileMenu }) => {
     const handleClickOutside = (event) => {
       if (settingsRef.current && !settingsRef.current.contains(event.target)) {
         setIsSettingsOpen(false);
+        console.log()
       }
     };
 

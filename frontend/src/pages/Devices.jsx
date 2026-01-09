@@ -190,11 +190,14 @@ const Devices = () => {
 
   const openAnchorEditModal = (anchor) => {
     setSelectedAnchor(anchor);
+    // If anchor is currently active (assigned to room), default inactive_reason to 'inactive_in_store'
+    // Otherwise use the current status
+    const defaultInactiveReason = anchor.status === 'active' ? 'inactive_in_store' : (anchor.status || 'inactive_in_store');
     setAnchorFormData({
       anchor_id: anchor.anchor_id,
       anchor_name: anchor.anchor_name || '',
       room_id: anchor.room_id || '',
-      inactive_reason: anchor.status || 'inactive_in_store'
+      inactive_reason: defaultInactiveReason
     });
     setFormErrors({});
     setIsAnchorEditModalOpen(true);
@@ -218,7 +221,8 @@ const Devices = () => {
 
       // Only send status if anchor is not being assigned to a room
       if (!anchorFormData.room_id) {
-        anchorData.status = anchorFormData.inactive_reason;
+        // Use inactive_reason if provided, otherwise default to 'inactive_in_store'
+        anchorData.status = anchorFormData.inactive_reason || 'inactive_in_store';
       }
       // If room is being assigned, backend will auto-set status to 'active'
 

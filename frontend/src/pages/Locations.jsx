@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
-import Table from '../components/ui/Table';
 import Modal from '../components/ui/Modal';
 import {
   fetchBuildings,
@@ -14,7 +13,9 @@ import {
   fetchRooms,
   createRoom,
   updateRoom,
-  deleteRoom
+  deleteRoom,
+  fetchAvailableDevices,
+  fetchRoomAnchors
 } from '../services/api';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { useSearch } from '../contexts/SearchContext';
@@ -28,6 +29,8 @@ const Locations = () => {
   const [buildings, setBuildings] = useState([]);
   const [floors, setFloors] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [availableAnchors, setAvailableAnchors] = useState([]);
+  const [assignedAnchors, setAssignedAnchors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -47,7 +50,7 @@ const Locations = () => {
   // Form data
   const [buildingForm, setBuildingForm] = useState({ name: '' });
   const [floorForm, setFloorForm] = useState({ building_id: '', floor_number: '' });
-  const [roomForm, setRoomForm] = useState({ floor_id: '', room_name: '', room_type: '' });
+  const [roomForm, setRoomForm] = useState({ floor_id: '', room_name: '', room_type: '', anchor_id: '' });
 
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -66,14 +69,16 @@ const Locations = () => {
     try {
       setLoading(true);
       setError(null);
-      const [buildingsData, floorsData, roomsData] = await Promise.all([
+      const [buildingsData, floorsData, roomsData, anchorsData] = await Promise.all([
         fetchBuildings(), // Organization is in header, no need to pass ID
         fetchFloors(),
-        fetchRooms()
+        fetchRooms(),
+        fetchAvailableDevices()
       ]);
       setBuildings(buildingsData);
       setFloors(floorsData);
       setRooms(roomsData);
+      setAvailableAnchors(anchorsData);
     } catch (err) {
       console.error('Error loading data:', err);
       setError('Failed to load locations data');
@@ -178,17 +183,35 @@ const Locations = () => {
   };
 
   // Room handlers
-  const openRoomModal = (room = null, floorId = null) => {
+  const openRoomModal = async (room = null, floorId = null) => {
     if (room) {
       setSelectedRoom(room);
-      setRoomForm({
-        floor_id: room.floor_id,
-        room_name: room.room_name,
-        room_type: room.room_type || ''
-      });
+      // Load current anchors assigned to this room
+      try {
+        const roomAnchors = await fetchRoomAnchors(room.id);
+        setAssignedAnchors(roomAnchors);
+        // Get the first anchor (should only be one)
+        const assignedAnchorId = roomAnchors.length > 0 ? roomAnchors[0].anchor_id : '';
+        setRoomForm({
+          floor_id: room.floor_id,
+          room_name: room.room_name,
+          room_type: room.room_type || '',
+          anchor_id: assignedAnchorId
+        });
+      } catch (err) {
+        console.error('Error loading room anchors:', err);
+        setAssignedAnchors([]);
+        setRoomForm({
+          floor_id: room.floor_id,
+          room_name: room.room_name,
+          room_type: room.room_type || '',
+          anchor_id: ''
+        });
+      }
     } else {
       setSelectedRoom(null);
-      setRoomForm({ floor_id: floorId || '', room_name: '', room_type: '' });
+      setAssignedAnchors([]);
+      setRoomForm({ floor_id: floorId || '', room_name: '', room_type: '', anchor_id: '' });
     }
     setFormErrors({});
     setIsRoomModalOpen(true);
@@ -206,7 +229,8 @@ const Locations = () => {
       const roomData = {
         floor_id: parseInt(roomForm.floor_id),
         room_name: roomForm.room_name.trim(),
-        room_type: roomForm.room_type.trim() || null
+        room_type: roomForm.room_type.trim() || null,
+        anchor_id: roomForm.anchor_id || null
       };
 
       if (selectedRoom) {
@@ -217,8 +241,9 @@ const Locations = () => {
 
       await loadAllData();
       setIsRoomModalOpen(false);
-      setRoomForm({ floor_id: '', room_name: '', room_type: '' });
+      setRoomForm({ floor_id: '', room_name: '', room_type: '', anchor_id: '' });
       setSelectedRoom(null);
+      setAssignedAnchors([]);
     } catch (err) {
       console.error('Error saving room:', err);
       setFormErrors({ submit: err.response?.data?.detail || 'Failed to save room' });
@@ -705,6 +730,35 @@ const Locations = () => {
                 onChange={(e) => setRoomForm({ ...roomForm, room_type: e.target.value })}
                 placeholder="e.g., ICU, Ward, ER"
               />
+            </div>
+            <div className="form-group">
+              <label htmlFor="room_anchor">Assign Anchor (Optional)</label>
+              <select
+                id="room_anchor"
+                value={roomForm.anchor_id}
+                onChange={(e) => setRoomForm({ ...roomForm, anchor_id: e.target.value })}
+                disabled={submitting}
+              >
+                <option value="">-- No Anchor Assigned --</option>
+                {/* Currently assigned anchor (if editing) */}
+                {assignedAnchors.length > 0 && assignedAnchors.map(anchor => (
+                  <option key={anchor.anchor_id} value={anchor.anchor_id}>
+                    {anchor.anchor_name || anchor.anchor_id} - Active (Currently Assigned)
+                  </option>
+                ))}
+                {/* Available anchors (only in store status) */}
+                {availableAnchors
+                  .filter(anchor => anchor.status === 'inactive_in_store')
+                  .map(anchor => (
+                    <option key={anchor.anchor_id} value={anchor.anchor_id}>
+                      {anchor.anchor_name || anchor.anchor_id} - In Store
+                    </option>
+                  ))
+                }
+              </select>
+              <small className="help-text">
+                Only one anchor can be assigned per room. Available: {availableAnchors.filter(a => a.status === 'inactive_in_store').length}
+              </small>
             </div>
           </Modal.Body>
           <Modal.Footer>
