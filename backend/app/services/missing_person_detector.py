@@ -10,6 +10,7 @@ from app.models.tag import Tag
 from app.models.live_location import LiveLocation
 from app.models.entity import Entity
 from app.models.notification import Notification
+from app.models.organization_settings import OrganizationSettings
 from app.utils.enums import TagStatus, NotificationType
 from app.services.websocket_manager import websocket_manager
 from app.config import settings
@@ -52,11 +53,11 @@ class MissingPersonDetector:
     async def _check_missing_persons(self, db: Session):
         """
         Check for missing persons and broadcast alerts.
+        Uses per-organization untracked threshold from organization_settings.
 
         Args:
             db: Database session
         """
-        threshold = timedelta(seconds=settings.MISSING_PERSON_THRESHOLD_SECONDS)
         current_time = datetime.now(timezone.utc)
 
         # Query active tags
@@ -65,6 +66,14 @@ class MissingPersonDetector:
         logger.debug(f"Checking {len(active_tags)} active tags for missing persons")
 
         for tag in active_tags:
+            # Get organization-specific threshold
+            org_settings = db.query(OrganizationSettings).filter(
+                OrganizationSettings.organization_id == tag.organization_id
+            ).first()
+
+            # Use per-organization threshold, or fall back to global default
+            threshold_seconds = org_settings.untracked_threshold_seconds if org_settings else settings.MISSING_PERSON_THRESHOLD_SECONDS
+            threshold = timedelta(seconds=threshold_seconds)
             if not tag.last_seen:
                 continue
 
@@ -104,8 +113,8 @@ class MissingPersonDetector:
                         entity_type = entity.type
                         entity_internal_id = entity.id
 
-                # Calculate severity based on missing duration
-                severity = self._calculate_severity(int(time_since_seen.total_seconds()))
+                # Calculate severity based on missing duration (using org-specific threshold)
+                severity = self._calculate_severity(int(time_since_seen.total_seconds()), threshold_seconds)
 
                 # Persist notification to database
                 notification = Notification(
@@ -150,21 +159,20 @@ class MissingPersonDetector:
                     f"severity: {severity})"
                 )
 
-    def _calculate_severity(self, missing_duration_seconds: int) -> str:
+    def _calculate_severity(self, missing_duration_seconds: int, threshold_seconds: int) -> str:
         """
         Calculate severity based on missing duration.
 
         Args:
             missing_duration_seconds: Duration in seconds since last seen
+            threshold_seconds: Organization-specific threshold in seconds
 
         Returns:
             Severity level: low, medium, high, or critical
         """
-        threshold = settings.MISSING_PERSON_THRESHOLD_SECONDS
-
-        if missing_duration_seconds < threshold * 1.5:
+        if missing_duration_seconds < threshold_seconds * 1.5:
             return "medium"
-        elif missing_duration_seconds < threshold * 3:
+        elif missing_duration_seconds < threshold_seconds * 3:
             return "high"
         else:
             return "critical"

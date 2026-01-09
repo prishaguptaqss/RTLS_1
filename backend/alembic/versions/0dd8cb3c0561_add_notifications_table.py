@@ -22,6 +22,15 @@ def upgrade() -> None:
     # Create notifications table using raw SQL to avoid enum recreation issues
     connection = op.get_bind()
 
+    # Create notificationtype enum if it doesn't exist
+    connection.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE notificationtype AS ENUM ('MISSING_PERSON', 'TAG_LOST', 'LOW_BATTERY', 'SYSTEM_ALERT');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """))
+
     connection.execute(sa.text("""
         CREATE TABLE notifications (
             id SERIAL PRIMARY KEY,

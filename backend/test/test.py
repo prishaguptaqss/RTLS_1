@@ -507,7 +507,7 @@ def get_threshold():
 
 @config_app.route('/config/threshold', methods=['PUT'])
 def update_threshold():
-    """Update LOSS_SECONDS threshold at runtime."""
+    """Update LOSS_SECONDS threshold at runtime (legacy endpoint without org_id)."""
     global LOSS_SECONDS
     data = request.json
     new_threshold = float(data.get('threshold_seconds', LOSS_SECONDS))
@@ -518,6 +518,25 @@ def update_threshold():
     LOSS_SECONDS = new_threshold
     print(f"[CONFIG] Threshold updated to {LOSS_SECONDS} seconds")
     return jsonify({'success': True, 'threshold_seconds': LOSS_SECONDS})
+
+@config_app.route('/config/threshold/<int:organization_id>', methods=['PUT'])
+def update_threshold_for_org(organization_id):
+    """Update LOSS_SECONDS threshold at runtime for specific organization."""
+    global LOSS_SECONDS
+    data = request.json
+    new_threshold = float(data.get('threshold_seconds', LOSS_SECONDS))
+
+    if new_threshold < 5 or new_threshold > 3600:
+        return jsonify({'error': 'Threshold must be between 5 and 3600 seconds'}), 400
+
+    # Validate organization ID matches expected
+    if organization_id != EXPECTED_ORGANIZATION_ID:
+        print(f"[CONFIG] Warning: Threshold update for org {organization_id}, but service is configured for org {EXPECTED_ORGANIZATION_ID}")
+        # Still allow update but log warning
+
+    LOSS_SECONDS = new_threshold
+    print(f"[CONFIG] Threshold updated to {LOSS_SECONDS} seconds for organization {organization_id}")
+    return jsonify({'success': True, 'threshold_seconds': LOSS_SECONDS, 'organization_id': organization_id})
 
 @config_app.route('/config/cache-stats', methods=['GET'])
 def get_cache_stats():
