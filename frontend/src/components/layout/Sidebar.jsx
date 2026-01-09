@@ -42,7 +42,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, isMobileMenuOpen, closeMobileMenu
     },
     {
       icon: Users,
-      label: 'Entities',
+      label: 'Patients',
       path: '/entities',
       permission: 'ENTITY_VIEW'
     },

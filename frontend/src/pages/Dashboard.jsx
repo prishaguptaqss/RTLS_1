@@ -151,7 +151,7 @@ const Dashboard = () => {
 
         <PermissionGate permission="ENTITY_VIEW">
           <StatCard
-            title="Entities"
+            title="Patients"
             value={loading ? '...' : stats.totalEntities.toString()}
             subtitle={`${stats.personEntities} person, ${stats.materialEntities} material`}
             icon={Users}
@@ -255,7 +255,7 @@ const Dashboard = () => {
                   </div>
                   <hr style={{ margin: '10px 0', border: '1px solid #e5e7eb' }} />
                   <div className="stat-row">
-                    <span className="stat-label">Total Entities:</span>
+                    <span className="stat-label">Total Patients:</span>
                     <span className="stat-value">{stats.totalEntities}</span>
                   </div>
                   <div className="stat-row">

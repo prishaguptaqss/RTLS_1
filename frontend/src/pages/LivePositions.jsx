@@ -93,7 +93,7 @@ const LivePositions = () => {
     <div className="live-positions">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Entity Tracking</h1>
+          <h1 className="page-title">Patient Tracking</h1>
         </div>
       </div>
 
@@ -188,10 +188,10 @@ const LivePositions = () => {
 
         <Card.Content className="table-content">
           {loading ? (
-            <div className="loading-state">Loading entities...</div>
+            <div className="loading-state">Loading patients...</div>
           ) : filteredEntities.length === 0 ? (
             <div className="empty-state">
-              {searchQuery.trim() ? 'No matching entities found' : `No ${activeTab} entities`}
+              {searchQuery.trim() ? 'No matching patients found' : `No ${activeTab} patients`}
             </div>
           ) : (
             <Table>

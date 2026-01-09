@@ -59,10 +59,10 @@ const Entities = () => {
       console.error('Error loading entities:', err);
       // Check if it's a permission error (403 Forbidden)
       if (err.response?.status === 403) {
-        setError('You do not have permission to view entities. Please contact your administrator.');
+        setError('You do not have permission to view patients. Please contact your administrator.');
       } else {
-        const errorMsg = err.response?.data?.detail || err.message || 'Failed to load entities';
-        setError(`Failed to load entities: ${errorMsg}`);
+        const errorMsg = err.response?.data?.detail || err.message || 'Failed to load patients';
+        setError(`Failed to load patients: ${errorMsg}`);
       }
     } finally {
       setLoading(false);
@@ -84,14 +84,14 @@ const Entities = () => {
 
     if (isCreate) {
       if (!formData.entity_id.trim()) {
-        errors.entity_id = 'Entity ID is required';
+        errors.entity_id = 'Patient ID is required';
       } else if (!/^[A-Za-z0-9_-]+$/.test(formData.entity_id)) {
-        errors.entity_id = 'Entity ID can only contain letters, numbers, hyphens, and underscores';
+        errors.entity_id = 'Patient ID can only contain letters, numbers, hyphens, and underscores';
       }
     }
 
     if (!formData.type) {
-      errors.type = 'Entity type is required';
+      errors.type = 'Patient type is required';
     }
 
     // Name is optional
@@ -125,11 +125,11 @@ const Entities = () => {
       resetForm();
     } catch (err) {
       console.error('Error creating entity:', err);
-      const errorDetail = err.response?.data?.detail || err.message || 'Failed to create entity';
+      const errorDetail = err.response?.data?.detail || err.message || 'Failed to create patient';
 
       // Handle specific uniqueness errors
       if (errorDetail.toLowerCase().includes('entity_id') && errorDetail.toLowerCase().includes('already exists')) {
-        setFormErrors({ entity_id: 'Entity ID already exists in this organization.' });
+        setFormErrors({ entity_id: 'Patient ID already exists in this organization.' });
       } else if (errorDetail.toLowerCase().includes('organization')) {
         setFormErrors({ submit: 'Organization error: ' + errorDetail });
       } else {
@@ -158,7 +158,7 @@ const Entities = () => {
       setSelectedEntity(null);
     } catch (err) {
       console.error('Error updating entity:', err);
-      const errorDetail = err.response?.data?.detail || 'Failed to update entity';
+      const errorDetail = err.response?.data?.detail || 'Failed to update patient';
       setFormErrors({ submit: errorDetail });
     } finally {
       setSubmitting(false);
@@ -222,7 +222,7 @@ const Entities = () => {
       setSelectedEntity(null);
     } catch (err) {
       console.error('Error untracking entity:', err);
-      alert('Failed to untrack entity');
+      alert('Failed to untrack patient');
     } finally {
       setSubmitting(false);
     }
@@ -441,7 +441,7 @@ const Entities = () => {
     return (
       <div className="page-container">
         <div className="page-header">
-          <h1 className="page-title">Entities</h1>
+          <h1 className="page-title">Patients</h1>
         </div>
         <Card>
           <Card.Content>
@@ -459,7 +459,7 @@ const Entities = () => {
     return (
       <div className="page-container">
         <div className="page-header">
-          <h1 className="page-title">Entities</h1>
+          <h1 className="page-title">Patients</h1>
         </div>
         <Card>
           <Card.Content>
@@ -476,7 +476,7 @@ const Entities = () => {
     return (
       <div className="page-container">
         <div className="page-header">
-          <h1 className="page-title">Entities</h1>
+          <h1 className="page-title">Patients</h1>
         </div>
         <Card>
           <Card.Content>
@@ -496,7 +496,7 @@ const Entities = () => {
     <div className="page-container">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Entities</h1>
+          <h1 className="page-title">Patients</h1>
         </div>
       </div>
 
@@ -541,7 +541,7 @@ const Entities = () => {
             </div>
             <PermissionGate permission="ENTITY_ADMIT">
               <button onClick={openCreateModal} className="btn btn-primary">
-                + Add Entity
+                + Add Patient
               </button>
             </PermissionGate>
           </div>
@@ -549,11 +549,11 @@ const Entities = () => {
         <Card.Content>
           {filteredEntities.length === 0 ? (
             <div className="empty-state">
-              <p>{searchQuery.trim() ? 'No matching entities found.' : 'No entities found. Add your first entity to get started.'}</p>
+              <p>{searchQuery.trim() ? 'No matching patients found.' : 'No patients found. Add your first patient to get started.'}</p>
               {!searchQuery.trim() && (
                 <PermissionGate permission="ENTITY_ADMIT">
                   <button onClick={openCreateModal} className="btn btn-primary">
-                    + Add Entity
+                    + Add Patient
                   </button>
                 </PermissionGate>
               )}
@@ -604,7 +604,7 @@ const Entities = () => {
                               <button
                                 onClick={() => openUntrackModal(entity)}
                                 className="btn-icon btn-warning"
-                                title="Untrack entity (unassign tag)"
+                                title="Untrack patient (unassign tag)"
                               >
                                 <FiUserX size={16} />
                               </button>
@@ -613,7 +613,7 @@ const Entities = () => {
                               <button
                                 onClick={() => openEditModal(entity)}
                                 className="btn-icon btn-edit"
-                                title="Edit entity"
+                                title="Edit patient"
                               >
                                 <FiEdit2 size={16} />
                               </button>
@@ -739,7 +739,7 @@ const Entities = () => {
       {/* Create Entity Modal */}
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
         <Modal.Header onClose={() => setIsCreateModalOpen(false)}>
-          Add New Entity
+          Add New Patient
         </Modal.Header>
         <form onSubmit={handleCreateEntity}>
           <Modal.Body>
@@ -749,7 +749,7 @@ const Entities = () => {
 
             <div className="form-group">
               <label htmlFor="entity_id">
-                Entity ID <span className="required">*</span>
+                Patient ID <span className="required">*</span>
               </label>
               <input
                 type="text"
@@ -757,14 +757,14 @@ const Entities = () => {
                 name="entity_id"
                 value={formData.entity_id}
                 onChange={handleInputChange}
-                placeholder="e.g., ENT-001, MAT-123"
+                placeholder="e.g., PAT-001, MAT-123"
                 className={formErrors.entity_id ? 'input-error' : ''}
                 required
               />
               {formErrors.entity_id && (
                 <small className="error-text">{formErrors.entity_id}</small>
               )}
-              <small>Unique identifier for this entity</small>
+              <small>Unique identifier for this patient</small>
             </div>
 
             <div className="form-group">
@@ -785,7 +785,7 @@ const Entities = () => {
               {formErrors.type && (
                 <small className="error-text">{formErrors.type}</small>
               )}
-              <small>Select entity type</small>
+              <small>Select patient type</small>
             </div>
 
             <div className="form-group">
@@ -796,13 +796,13 @@ const Entities = () => {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="Enter entity name (optional)"
+                placeholder="Enter patient name (optional)"
                 className={formErrors.name ? 'input-error' : ''}
               />
               {formErrors.name && (
                 <small className="error-text">{formErrors.name}</small>
               )}
-              <small>Optional - Descriptive name for this entity</small>
+              <small>Optional - Descriptive name for this patient</small>
             </div>
 
             <div className="form-group">
@@ -837,7 +837,7 @@ const Entities = () => {
               className="btn btn-primary"
               disabled={submitting}
             >
-              {submitting ? 'Creating...' : 'Create Entity'}
+              {submitting ? 'Creating...' : 'Create Patient'}
             </button>
           </Modal.Footer>
         </form>
@@ -846,7 +846,7 @@ const Entities = () => {
       {/* Edit Entity Modal */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         <Modal.Header onClose={() => setIsEditModalOpen(false)}>
-          Edit Entity
+          Edit Patient
         </Modal.Header>
         <form onSubmit={handleUpdateEntity}>
           <Modal.Body>
@@ -855,7 +855,7 @@ const Entities = () => {
             )}
 
             <div className="form-group">
-              <label htmlFor="edit-entity_id">Entity ID</label>
+              <label htmlFor="edit-entity_id">Patient ID</label>
               <input
                 type="text"
                 id="edit-entity_id"
@@ -864,7 +864,7 @@ const Entities = () => {
                 disabled
                 style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
               />
-              <small>Entity ID cannot be changed after creation</small>
+              <small>Patient ID cannot be changed after creation</small>
             </div>
 
             <div className="form-group">
@@ -895,13 +895,13 @@ const Entities = () => {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="Enter entity name (optional)"
+                placeholder="Enter patient name (optional)"
                 className={formErrors.name ? 'input-error' : ''}
               />
               {formErrors.name && (
                 <small className="error-text">{formErrors.name}</small>
               )}
-              <small>Optional - Descriptive name for this entity</small>
+              <small>Optional - Descriptive name for this patient</small>
             </div>
 
             <div className="form-group">
@@ -942,7 +942,7 @@ const Entities = () => {
               className="btn btn-primary"
               disabled={submitting}
             >
-              {submitting ? 'Updating...' : 'Update Entity'}
+              {submitting ? 'Updating...' : 'Update Patient'}
             </button>
           </Modal.Footer>
         </form>
@@ -967,7 +967,7 @@ const Entities = () => {
             <div className="loading-state">Loading location history...</div>
           ) : locationHistory.length === 0 ? (
             <div className="empty-state">
-              <p>No location history found for this entity.</p>
+              <p>No location history found for this patient.</p>
             </div>
           ) : (
             <>
@@ -1159,10 +1159,10 @@ const Entities = () => {
       {/* Untrack Entity Modal */}
       <Modal isOpen={isUntrackModalOpen} onClose={() => setIsUntrackModalOpen(false)}>
         <Modal.Header onClose={() => setIsUntrackModalOpen(false)}>
-          Unassign tag from Entity
+          Unassign tag from Patient
         </Modal.Header>
         <Modal.Body>
-          <p>Are you sure you want to stop tracking this entity?</p>
+          <p>Are you sure you want to stop tracking this patient?</p>
           {selectedEntity && (
             <div className="delete-entity-info">
               <strong>{selectedEntity.name || selectedEntity.entity_id}</strong> ({selectedEntity.entity_id})
@@ -1174,7 +1174,7 @@ const Entities = () => {
             </div>
           )}
           <p className="warning-text" style={{ marginTop: '1rem' }}>
-            This will unassign the tag from this entity. The tag will become available for assignment to other entities.
+            This will unassign the tag from this patient. The tag will become available for assignment to other patients.
           </p>
         </Modal.Body>
         <Modal.Footer>

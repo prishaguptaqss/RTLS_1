@@ -27,9 +27,9 @@ const Header = ({ toggleMobileMenu }) => {
   const getSearchPlaceholder = () => {
     const path = location.pathname;
     if (path === '/devices') return 'Search anchors/tags by ID, name, location, or patient...';
-    if (path === '/entities') return 'Search entities by ID or name...';
+    if (path === '/entities') return 'Search patients by ID or name...';
     if (path === '/organizations') return 'Search organizations...';
-    if (path === '/live-positions') return 'Search by entity ID or name...';
+    if (path === '/live-positions') return 'Search by patient ID or name...';
     if (path === '/roles') return 'Search roles by name...';
     if (path === '/locations') return 'Search locations by building, floor, or room...';
     if (path.startsWith('/staff')) return 'Search users by name or email...';

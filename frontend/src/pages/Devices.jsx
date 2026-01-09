@@ -1157,21 +1157,21 @@ const Devices = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="assigned_entity_id">Assign to Entity (Optional)</label>
+              <label htmlFor="assigned_entity_id">Assign to Patient (Optional)</label>
               <select
                 id="assigned_entity_id"
                 name="assigned_entity_id"
                 value={tagFormData.assigned_entity_id}
                 onChange={(e) => setTagFormData({ ...tagFormData, assigned_entity_id: e.target.value })}
               >
-                <option value="">No entity assigned</option>
+                <option value="">No patient assigned</option>
                 {getUnassignedEntities().map((entity) => (
                   <option key={entity.id} value={entity.id}>
                     {entity.name} (ID: {entity.entity_id})
                   </option>
                 ))}
               </select>
-              <small>Select which entity this tag will be assigned to. Only unassigned active entities are shown.</small>
+              <small>Select which patient this tag will be assigned to. Only unassigned active patients are shown.</small>
             </div>
           </Modal.Body>
           <Modal.Footer>

@@ -190,7 +190,7 @@ const RoleManagement = () => {
     const names = {
       dashboard: 'Dashboard',
       building: 'Buildings',
-      entity: 'Entities',
+      entity: 'Patients',
       device: 'Devices',
       live_position: 'Live Positions',
       live_tracking: 'Live Tracking',
