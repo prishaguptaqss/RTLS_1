@@ -190,6 +190,42 @@ textarea.settings-input {
   word-break: break-all;
 }
 
+/* Password input with toggle eye icon */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 500px;
+}
+
+.password-input-wrapper .settings-input {
+  width: 100%;
+  max-width: 100%;
+  padding-right: 48px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: color 0.2s;
+}
+
+.password-toggle-btn:hover {
+  color: #3b82f6;
+}
+
+.password-toggle-btn:focus {
+  outline: none;
+}
+
 /* Responsive styles for social links */
 @media (max-width: 768px) {
   .social-link-row {

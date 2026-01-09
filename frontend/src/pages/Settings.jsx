@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../components/ui/Card';
+import { Eye, EyeOff } from 'lucide-react';
 import { fetchSettings, updateSettings } from '../services/api';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,6 +17,7 @@ const Settings = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     untracked_threshold_seconds: 30,
     smtp_host: '',
@@ -88,8 +90,10 @@ const Settings = () => {
       updateData.smtp_host = formData.smtp_host || '';
       updateData.smtp_port = formData.smtp_port ? parseInt(formData.smtp_port) : null;
       updateData.smtp_username = formData.smtp_username || '';
-      if (formData.smtp_password && formData.smtp_password !== '********') {
-        updateData.smtp_password = formData.smtp_password;
+      // Handle password: send empty string to clear, or new password to update
+      // Don't send if it's still the masked value (user didn't change it)
+      if (formData.smtp_password !== '********') {
+        updateData.smtp_password = formData.smtp_password || '';
       }
       updateData.smtp_from_email = formData.smtp_from_email || '';
       updateData.smtp_from_name = formData.smtp_from_name || '';
@@ -391,15 +395,25 @@ const Settings = () => {
 
               <div className="form-group">
                 <label htmlFor="smtp_password">SMTP Password/App Password</label>
-                <input
-                  type="password"
-                  id="smtp_password"
-                  name="smtp_password"
-                  value={formData.smtp_password}
-                  onChange={handleInputChange}
-                  placeholder="Enter password to update"
-                  className="settings-input"
-                />
+                <div className="password-input-wrapper">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="smtp_password"
+                    name="smtp_password"
+                    value={formData.smtp_password}
+                    onChange={handleInputChange}
+                    placeholder="Enter password to update"
+                    className="settings-input"
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 <small className="help-text">
                   For Gmail, use an <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer">App Password</a>. Leave blank to keep existing password.
                 </small>

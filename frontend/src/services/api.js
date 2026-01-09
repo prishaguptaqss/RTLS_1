@@ -293,8 +293,9 @@ export const logout = async () => {
 // ==================== PASSWORD RESET ====================
 
 // Password Reset - Forgot Password (send OTP)
+// Note: Increased timeout because email sending can take longer
 export const forgotPassword = async (email) => {
-  return api.post('/password-reset/forgot-password', { email });
+  return api.post('/password-reset/forgot-password', { email }, { timeout: 30000 });
 };
 
 // Password Reset - Verify OTP
@@ -303,13 +304,15 @@ export const verifyOTP = async (email, otp) => {
 };
 
 // Password Reset - Reset Password
+// Note: Increased timeout because email sending can take longer
 export const resetPassword = async (email, otp, new_password) => {
-  return api.post('/password-reset/reset-password', { email, otp, new_password });
+  return api.post('/password-reset/reset-password', { email, otp, new_password }, { timeout: 30000 });
 };
 
 // Password Reset - Resend OTP
+// Note: Increased timeout because email sending can take longer
 export const resendOTP = async (email) => {
-  return api.post('/password-reset/resend-otp', { email });
+  return api.post('/password-reset/resend-otp', { email }, { timeout: 30000 });
 };
 
 // ==================== STAFF MANAGEMENT ====================
@@ -325,8 +328,9 @@ export const fetchStaffById = async (id) => {
 };
 
 // Staff - Create
+// Note: Increased timeout because email sending can take longer
 export const createStaff = async (staffData) => {
-  return api.post('/staff', staffData);
+  return api.post('/staff', staffData, { timeout: 30000 }); // 30 seconds for email sending
 };
 
 // Staff - Update
