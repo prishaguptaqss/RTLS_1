@@ -190,14 +190,11 @@ const Devices = () => {
 
   const openAnchorEditModal = (anchor) => {
     setSelectedAnchor(anchor);
-    // If anchor is currently active (assigned to room), default inactive_reason to 'inactive_in_store'
-    // Otherwise use the current status
-    const defaultInactiveReason = anchor.status === 'active' ? 'inactive_in_store' : (anchor.status || 'inactive_in_store');
     setAnchorFormData({
       anchor_id: anchor.anchor_id,
       anchor_name: anchor.anchor_name || '',
       room_id: anchor.room_id || '',
-      inactive_reason: defaultInactiveReason
+      inactive_reason: anchor.status || 'inactive_in_store'
     });
     setFormErrors({});
     setIsAnchorEditModalOpen(true);
@@ -214,17 +211,14 @@ const Devices = () => {
 
     try {
       setSubmitting(true);
+      const selectedStatus = anchorFormData.inactive_reason || 'inactive_in_store';
+
       const anchorData = {
         anchor_name: anchorFormData.anchor_name.trim() || null,
-        room_id: anchorFormData.room_id ? parseInt(anchorFormData.room_id) : null
+        // If status is not active, clear the room assignment
+        room_id: selectedStatus === 'active' && anchorFormData.room_id ? parseInt(anchorFormData.room_id) : null,
+        status: selectedStatus
       };
-
-      // Only send status if anchor is not being assigned to a room
-      if (!anchorFormData.room_id) {
-        // Use inactive_reason if provided, otherwise default to 'inactive_in_store'
-        anchorData.status = anchorFormData.inactive_reason || 'inactive_in_store';
-      }
-      // If room is being assigned, backend will auto-set status to 'active'
 
       await updateDevice(selectedAnchor.anchor_id, anchorData);
       await loadAnchors();
@@ -1332,12 +1326,43 @@ const Devices = () => {
             </div>
 
             <div className="form-group">
+              <label htmlFor="edit_inactive_reason">
+                Status <span className="required">*</span>
+              </label>
+              <select
+                id="edit_inactive_reason"
+                name="inactive_reason"
+                value={anchorFormData.inactive_reason}
+                onChange={(e) => {
+                  const newStatus = e.target.value;
+                  setAnchorFormData({
+                    ...anchorFormData,
+                    inactive_reason: newStatus,
+                    // Clear room assignment if status is not active
+                    room_id: newStatus !== 'active' ? '' : anchorFormData.room_id
+                  });
+                }}
+              >
+                <option value="active">Active</option>
+                <option value="inactive_in_store">In Store (Not Yet Installed)</option>
+                <option value="inactive_defective">Defective</option>
+              </select>
+              <small>
+                {anchorFormData.inactive_reason !== 'active'
+                  ? "Inactive anchors cannot be assigned to rooms. Room assignment will be cleared."
+                  : "Select the status for this anchor."}
+              </small>
+            </div>
+
+            <div className="form-group">
               <label htmlFor="edit_room_id">Assign to Room (Optional)</label>
               <select
                 id="edit_room_id"
                 name="room_id"
                 value={anchorFormData.room_id}
                 onChange={(e) => setAnchorFormData({ ...anchorFormData, room_id: e.target.value })}
+                disabled={anchorFormData.inactive_reason !== 'active'}
+                style={anchorFormData.inactive_reason !== 'active' ? { backgroundColor: '#f3f4f6', cursor: 'not-allowed' } : {}}
               >
                 <option value="">No room assigned</option>
                 {selectedAnchor && getAvailableRoomsForEdit(selectedAnchor.room_id).map((room) => {
@@ -1353,34 +1378,12 @@ const Devices = () => {
                   );
                 })}
               </select>
-              <small>Select which room this anchor will be placed in. Only unassigned rooms are shown.</small>
+              {/* <small>
+                {anchorFormData.inactive_reason !== 'active'
+                  ? "Room assignment is only available for active anchors."
+                  : "Select which room this anchor will be placed in. Only unassigned rooms are shown."}
+              </small> */}
             </div>
-
-            {!anchorFormData.room_id ? (
-              <div className="form-group">
-                <label htmlFor="edit_inactive_reason">
-                  Status <span className="required">*</span>
-                </label>
-                <select
-                  id="edit_inactive_reason"
-                  name="inactive_reason"
-                  value={anchorFormData.inactive_reason}
-                  onChange={(e) => setAnchorFormData({ ...anchorFormData, inactive_reason: e.target.value })}
-                >
-                  <option value="inactive_in_store">In Store (Not Yet Installed)</option>
-                  <option value="inactive_defective">Defective</option>
-                </select>
-                <small>Select the reason why this anchor is not assigned to a room.</small>
-              </div>
-            ) : (
-              <div className="form-group">
-                <label>Status</label>
-                <div style={{ padding: '0.5rem', backgroundColor: '#d4edda', color: '#155724', borderRadius: '4px', border: '1px solid #c3e6cb' }}>
-                  Active (Assigned to room)
-                </div>
-                <small>Status is automatically set to active when anchor is assigned to a room.</small>
-              </div>
-            )}
           </Modal.Body>
           <Modal.Footer>
             <button

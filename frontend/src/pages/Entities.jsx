@@ -893,7 +893,6 @@ const Entities = () => {
                 disabled
                 style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
               />
-              <small>Patient ID cannot be changed after creation</small>
             </div>
 
             <div className="form-group">
@@ -910,7 +909,6 @@ const Entities = () => {
               {formErrors.name && (
                 <small className="error-text">{formErrors.name}</small>
               )}
-              <small>Optional - Descriptive name for this patient</small>
             </div>
 
             <div className="form-group">
@@ -929,7 +927,7 @@ const Entities = () => {
               {formErrors.age && (
                 <small className="error-text">{formErrors.age}</small>
               )}
-              <small>Patient age (0-150 years)</small>
+              {/* <small>Patient age (0-150 years)</small> */}
             </div>
 
             <div className="form-group">
@@ -946,7 +944,7 @@ const Entities = () => {
               {formErrors.email && (
                 <small className="error-text">{formErrors.email}</small>
               )}
-              <small>Contact email address (optional)</small>
+              {/* <small>Contact email address (optional)</small> */}
             </div>
 
             <div className="form-group">
@@ -963,7 +961,7 @@ const Entities = () => {
               {formErrors.phone && (
                 <small className="error-text">{formErrors.phone}</small>
               )}
-              <small>Contact phone number (optional)</small>
+              {/* <small>Contact phone number (optional)</small> */}
             </div>
 
             <div className="form-group">
@@ -987,7 +985,7 @@ const Entities = () => {
                   </option>
                 ))}
               </select>
-              <small>Optional - Change or remove tag assignment</small>
+              {/* <small>Optional - Change or remove tag assignment</small> */}
             </div>
           </Modal.Body>
           <Modal.Footer>
