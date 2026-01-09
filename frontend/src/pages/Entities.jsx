@@ -630,9 +630,8 @@ const Entities = () => {
                   justifyContent: 'flex-end',
                   alignItems: 'center',
                   gap: '1rem',
-                  marginTop: '1rem',
-                  padding: '1rem 0',
-                  borderTop: '1px solid #e5e7eb'
+                  marginTop: '0.3rem',
+                  padding: '0.3rem 0'
                 }}>
                   {/* Record count */}
                   <span style={{
@@ -762,7 +761,7 @@ const Entities = () => {
               {formErrors.entity_id && (
                 <small className="error-text">{formErrors.entity_id}</small>
               )}
-              <small>Unique identifier for this patient</small>
+              {/* <small>Unique identifier for this patient</small> */}
             </div>
 
             <div className="form-group">
@@ -779,7 +778,7 @@ const Entities = () => {
               {formErrors.name && (
                 <small className="error-text">{formErrors.name}</small>
               )}
-              <small>Optional - Descriptive name for this patient</small>
+              {/* <small>Optional - Descriptive name for this patient</small> */}
             </div>
 
             <div className="form-group">
@@ -798,7 +797,7 @@ const Entities = () => {
               {formErrors.age && (
                 <small className="error-text">{formErrors.age}</small>
               )}
-              <small>Patient age (0-150 years)</small>
+              {/* <small>Patient age (0-150 years)</small> */}
             </div>
 
             <div className="form-group">
@@ -815,7 +814,7 @@ const Entities = () => {
               {formErrors.email && (
                 <small className="error-text">{formErrors.email}</small>
               )}
-              <small>Contact email address (optional)</small>
+              {/* <small>Contact email address (optional)</small> */}
             </div>
 
             <div className="form-group">
@@ -832,7 +831,7 @@ const Entities = () => {
               {formErrors.phone && (
                 <small className="error-text">{formErrors.phone}</small>
               )}
-              <small>Contact phone number (optional)</small>
+              {/* <small>Contact phone number (optional)</small> */}
             </div>
 
             <div className="form-group">
@@ -850,7 +849,7 @@ const Entities = () => {
                   </option>
                 ))}
               </select>
-              <small>Optional - Assign a BLE tag for location tracking</small>
+              {/* <small>Optional - Assign a BLE tag for location tracking</small> */}
             </div>
           </Modal.Body>
           <Modal.Footer>

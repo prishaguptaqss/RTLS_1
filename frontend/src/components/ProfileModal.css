@@ -1,15 +1,15 @@
 .profile-modal-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 4px 0;
+  gap: 16px;
+  padding: 0;
 }
 
 /* Profile Picture Section */
 .profile-picture-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .profile-picture-label {
@@ -22,7 +22,7 @@
 .profile-picture-upload {
   position: relative;
   width: 100%;
-  min-height: 180px;
+  min-height: 160px;
   border: 2px dashed var(--border-color);
   border-radius: 8px;
   background-color: var(--bg-secondary);
@@ -39,8 +39,8 @@
 
 .profile-picture-preview {
   position: relative;
-  width: 140px;
-  height: 140px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   overflow: hidden;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -85,14 +85,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-top: 20px;
-  padding-top: 20px 15px;
+  padding: 12px;
   width: 100%;
 }
 
 .placeholder-icon {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background-color: var(--bg-secondary);
   display: flex;
@@ -102,8 +101,8 @@
 }
 
 .placeholder-icon svg {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
 }
 
 .placeholder-text {
@@ -112,7 +111,7 @@
   align-items: center;
   gap: 6px;
   color: var(--text-secondary);
-  padding: 20px 20px !important;
+  padding: 12px 12px;
   font-size: 13px;
 }
 
@@ -126,8 +125,8 @@
 }
 
 .upload-btn {
-  margin-top: 2px;
-  padding: 6px 20px;
+  margin-top: 8px;
+  padding: 6px 18px;
   background-color: var(--primary);
   color: white;
   border: none;
@@ -156,7 +155,7 @@
 .placeholder-hint {
   font-size: 10px;
   color: var(--text-light);
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .file-input-hidden {
@@ -165,7 +164,7 @@
 
 .change-picture-btn {
   align-self: center;
-  padding: 7px 20px;
+  padding: 6px 18px;
   background-color: var(--primary);
   color: white;
   border: none;
@@ -193,14 +192,14 @@
 
 /* Profile Info Section */
 .profile-info-section {
-  padding-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid var(--border-color);
 }
 
 .profile-info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 .profile-info-item {
@@ -225,7 +224,6 @@
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  min-height: 36px;
   display: flex;
   align-items: center;
 }

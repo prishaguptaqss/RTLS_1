@@ -635,7 +635,7 @@ const Devices = () => {
                       .slice((anchorCurrentPage - 1) * itemsPerPage, anchorCurrentPage * itemsPerPage)
                       .map((anchor) => {
                         const getStatusDisplay = (status) => {
-                          switch(status) {
+                          switch (status) {
                             case 'active':
                               return { text: 'Active', class: 'status-active' };
                             case 'inactive_defective':
@@ -697,9 +697,8 @@ const Devices = () => {
                     justifyContent: 'flex-end',
                     alignItems: 'center',
                     gap: '1rem',
-                    marginTop: '1rem',
-                    padding: '1rem 0',
-                    borderTop: '1px solid #e5e7eb'
+                    marginTop: '0.5rem',
+                    padding: '0.5rem 0'
                   }}>
                     {/* Record count */}
                     <span style={{
@@ -899,9 +898,8 @@ const Devices = () => {
                     justifyContent: 'flex-end',
                     alignItems: 'center',
                     gap: '1rem',
-                    marginTop: '1rem',
-                    padding: '1rem 0',
-                    borderTop: '1px solid #e5e7eb'
+                    marginTop: '0.5rem',
+                    padding: '0.5rem 0'
                   }}>
                     {/* Record count */}
                     <span style={{

@@ -392,6 +392,11 @@
   }
 }
 
+/* Modal form - remove extra padding */
+.modal-content form {
+  padding: 0 !important;
+}
+
 /* Patient Details Modal */
 .patient-details {
   display: flex;

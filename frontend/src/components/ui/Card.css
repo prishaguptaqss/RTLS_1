@@ -12,13 +12,13 @@
 }
 
 .card-header {
-  padding: 20px 24px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--border-light);
   background: var(--bg-card);
 }
 
 .card-content {
-  padding: 24px;
+  padding: 16px 20px;
 }
 
 .card-title {
@@ -31,11 +31,11 @@
 /* Mobile Responsiveness */
 @media (max-width: 1024px) {
   .card-header {
-    padding: 18px 20px;
+    padding: 10px 18px;
   }
 
   .card-content {
-    padding: 20px;
+    padding: 14px 18px;
   }
 
   .card-title {
@@ -49,11 +49,11 @@
   }
 
   .card-header {
-    padding: 16px;
+    padding: 10px 16px;
   }
 
   .card-content {
-    padding: 16px;
+    padding: 12px 16px;
   }
 
   .card-title {
@@ -67,11 +67,11 @@
   }
 
   .card-header {
-    padding: 14px;
+    padding: 8px 14px;
   }
 
   .card-content {
-    padding: 14px;
+    padding: 10px 14px;
   }
 
   .card-title {
