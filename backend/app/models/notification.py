@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Boolean, Enum as SQLEn
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
-from app.utils.enums import NotificationType, EntityType
+from app.utils.enums import NotificationType
 
 
 class Notification(Base):
@@ -32,7 +32,7 @@ class Notification(Base):
         comment="Notification type"
     )
 
-    # Entity/Tag information
+    # Patient/Tag information
     tag_id = Column(
         String,
         ForeignKey("tags.tag_id", ondelete="SET NULL"),
@@ -40,17 +40,16 @@ class Notification(Base):
         index=True,
         comment="Associated tag ID"
     )
-    entity_id = Column(
-        Integer,
-        ForeignKey("entities.id", ondelete="SET NULL"),
+    patient_id = Column(
+        String,
+        ForeignKey("patients.patient_id", ondelete="SET NULL"),
         nullable=True,
         index=True,
-        comment="Associated entity internal ID"
+        comment="Associated patient ID"
     )
-    entity_name = Column(String, nullable=True, comment="Entity name (denormalized for historical display)")
-    entity_type = Column(SQLEnum(EntityType), nullable=True, comment="Entity type: person or material")
+    patient_name = Column(String, nullable=True, comment="Patient name (denormalized for historical display)")
 
-    # User information (if tag was assigned to user instead of entity)
+    # User information (if tag was assigned to user instead of patient)
     user_id = Column(
         String,
         ForeignKey("users.user_id", ondelete="SET NULL"),
@@ -81,5 +80,5 @@ class Notification(Base):
     # Relationships
     organization = relationship("Organization", back_populates="notifications")
     tag = relationship("Tag")
-    entity = relationship("Entity")
+    patient = relationship("Patient")
     user = relationship("User")

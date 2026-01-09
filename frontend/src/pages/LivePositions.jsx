@@ -3,13 +3,13 @@ import { Users, DoorOpen, Clock, Search, AlertTriangle } from 'lucide-react';
 import Card from '../components/ui/Card';
 import StatCard from '../components/ui/StatCard';
 import Table from '../components/ui/Table';
-import { fetchEntities } from '../services/api';
+import { fetchPatients } from '../services/api';
 import { useSearch } from '../contexts/SearchContext';
 import './LivePositions.css';
 
 const LivePositions = () => {
   const { searchQuery } = useSearch();
-  const [entities, setEntities] = useState([]);
+  const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('tracked'); // 'tracked' or 'untracked'
@@ -20,21 +20,21 @@ const LivePositions = () => {
   });
 
   useEffect(() => {
-    loadEntities();
+    loadPatients();
     // Auto-refresh every 5 seconds
-    const interval = setInterval(loadEntities, 5000);
+    const interval = setInterval(loadPatients, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  const loadEntities = async () => {
+  const loadPatients = async () => {
     try {
-      const data = await fetchEntities();
-      // Only get entities with assigned tags
-      const entitiesWithTags = (data || []).filter(e => e.assigned_tag_id);
-      setEntities(entitiesWithTags);
+      const data = await fetchPatients();
+      // Only get patients with assigned tags
+      const patientsWithTags = (data || []).filter(p => p.assigned_tag_id);
+      setPatients(patientsWithTags);
 
-      const tracked = entitiesWithTags.filter(e => e.tracking_status === 'tracked').length;
-      const untracked = entitiesWithTags.filter(e => e.tracking_status === 'untracked').length;
+      const tracked = patientsWithTags.filter(p => p.tracking_status === 'tracked').length;
+      const untracked = patientsWithTags.filter(p => p.tracking_status === 'untracked').length;
 
       setStats({
         trackedCount: tracked,
@@ -42,25 +42,25 @@ const LivePositions = () => {
         lastUpdate: new Date()
       });
     } catch (error) {
-      console.error('Failed to fetch entities:', error);
+      console.error('Failed to fetch patients:', error);
     } finally {
       setLoading(false);
     }
   };
 
   // Filter by active tab
-  const tabFilteredEntities = entities.filter(e => e.tracking_status === activeTab);
+  const tabFilteredPatients = patients.filter(p => p.tracking_status === activeTab);
 
   // Then filter by search
-  const filteredEntities = tabFilteredEntities.filter(entity => {
+  const filteredPatients = tabFilteredPatients.filter(patient => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     return (
-      entity.name?.toLowerCase().includes(query) ||
-      entity.entity_id?.toLowerCase().includes(query) ||
-      entity.assigned_tag_id?.toLowerCase().includes(query) ||
-      entity.tag_name?.toLowerCase().includes(query) ||
-      entity.current_location?.toLowerCase().includes(query)
+      patient.patient_name?.toLowerCase().includes(query) ||
+      patient.patient_id?.toLowerCase().includes(query) ||
+      patient.assigned_tag_id?.toLowerCase().includes(query) ||
+      patient.tag_name?.toLowerCase().includes(query) ||
+      patient.current_location?.toLowerCase().includes(query)
     );
   });
 
@@ -93,7 +93,7 @@ const LivePositions = () => {
     <div className="live-positions">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Entity Tracking</h1>
+          <h1 className="page-title">Patient Tracking</h1>
         </div>
       </div>
 
@@ -152,14 +152,14 @@ const LivePositions = () => {
         <Card.Header>
           <div className="card-header-content">
             <div>
-              <Card.Title>Entity Positions</Card.Title>
-              {/* <p className="table-subtitle">Showing {filteredEntities.length} of {tabFilteredEntities.length} entities</p> */}
+              <Card.Title>Patient Positions</Card.Title>
+              {/* <p className="table-subtitle">Showing {filteredPatients.length} of {tabFilteredPatients.length} patients</p> */}
             </div>
             {/* <div className="search-box">
               <Search size={18} />
               <input
                 type="text"
-                placeholder="Search entity, tag, or location..."
+                placeholder="Search patient, tag, or location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-box-input"
@@ -188,16 +188,16 @@ const LivePositions = () => {
 
         <Card.Content className="table-content">
           {loading ? (
-            <div className="loading-state">Loading entities...</div>
-          ) : filteredEntities.length === 0 ? (
+            <div className="loading-state">Loading patients...</div>
+          ) : filteredPatients.length === 0 ? (
             <div className="empty-state">
-              {searchQuery.trim() ? 'No matching entities found' : `No ${activeTab} entities`}
+              {searchQuery.trim() ? 'No matching patients found' : `No ${activeTab} patients`}
             </div>
           ) : (
             <Table>
               <Table.Header>
                 <Table.Row>
-                  <Table.Head>Entity ID</Table.Head>
+                  <Table.Head>Patient ID</Table.Head>
                   <Table.Head>Name</Table.Head>
                   <Table.Head>Tag</Table.Head>
                   <Table.Head>{activeTab === 'tracked' ? 'Current Location' : 'Last Location'}</Table.Head>
@@ -205,32 +205,32 @@ const LivePositions = () => {
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {filteredEntities.map((entity) => (
-                  <Table.Row key={entity.entity_id}>
+                {filteredPatients.map((patient) => (
+                  <Table.Row key={patient.patient_id}>
                     <Table.Cell>
-                      <strong>{entity.entity_id}</strong>
+                      <strong>{patient.patient_id}</strong>
                     </Table.Cell>
                     <Table.Cell>
                       <div className="user-cell">
                         <div className="user-avatar">
-                          {entity.name?.charAt(0).toUpperCase() || 'E'}
+                          {patient.patient_name?.charAt(0).toUpperCase() || 'P'}
                         </div>
-                        <span>{entity.name || 'Unknown'}</span>
+                        <span>{patient.patient_name || 'Unknown'}</span>
                       </div>
                     </Table.Cell>
                     <Table.Cell>
-                      {entity.tag_name ? (
-                        <span>{entity.tag_name}</span>
+                      {patient.tag_name ? (
+                        <span>{patient.tag_name}</span>
                       ) : (
-                        <code className="serial-code">{entity.assigned_tag_id}</code>
+                        <code className="serial-code">{patient.assigned_tag_id}</code>
                       )}
                     </Table.Cell>
                     <Table.Cell>
-                      {entity.current_location || <span className="text-muted">Unknown</span>}
+                      {patient.current_location || <span className="text-muted">Unknown</span>}
                     </Table.Cell>
                     {/* {activeTab === 'untracked' && (
                       <Table.Cell>
-                        <span className="warning-text">{formatTimeAgo(entity.last_seen)}</span>
+                        <span className="warning-text">{formatTimeAgo(patient.last_seen)}</span>
                       </Table.Cell>
                     )} */}
                   </Table.Row>

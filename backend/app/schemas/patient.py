@@ -4,23 +4,21 @@ Pydantic schemas for Patient model.
 from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 from typing import Optional
 from datetime import datetime
-from app.utils.enums import PatientStatus
 
 
 class PatientBase(BaseModel):
     """Base schema with common patient fields."""
     patient_id: str
-    name: str
-    age: int
-    email: Optional[EmailStr] = None
-    mobile_number: Optional[str] = None
-    status: Optional[PatientStatus] = PatientStatus.admitted
+    patient_name: str
+    patient_age: Optional[int] = None
+    patient_email: Optional[EmailStr] = None
+    patient_phone: Optional[str] = None
 
-    @field_validator('age')
+    @field_validator('patient_age')
     @classmethod
     def validate_age(cls, v):
         """Validate that age is within reasonable bounds."""
-        if v < 0 or v > 150:
+        if v is not None and (v < 0 or v > 150):
             raise ValueError('Age must be between 0 and 150')
         return v
 
@@ -28,7 +26,7 @@ class PatientBase(BaseModel):
 class PatientCreate(PatientBase):
     """Schema for creating a new patient.
 
-    patient_id must be provided and be unique.
+    patient_id must be provided and be unique within the organization.
     Example formats: 'PAT-001', 'PATIENT-12345'
     assigned_tag_id is optional and can be set during creation.
     """
@@ -41,13 +39,13 @@ class PatientUpdate(BaseModel):
     NOTE: patient_id cannot be changed after creation.
     assigned_tag_id can be updated to change tag assignment.
     """
-    name: Optional[str] = None
-    age: Optional[int] = None
-    email: Optional[EmailStr] = None
-    mobile_number: Optional[str] = None
+    patient_name: Optional[str] = None
+    patient_age: Optional[int] = None
+    patient_email: Optional[EmailStr] = None
+    patient_phone: Optional[str] = None
     assigned_tag_id: Optional[str] = None
 
-    @field_validator('age')
+    @field_validator('patient_age')
     @classmethod
     def validate_age(cls, v):
         """Validate that age is within reasonable bounds."""
@@ -58,9 +56,7 @@ class PatientUpdate(BaseModel):
 
 class Patient(PatientBase):
     """Schema for reading a patient (includes database fields)."""
-    id: int
-    admission_time: datetime
-    discharge_time: Optional[datetime] = None
+    organization_id: int
     created_at: datetime
     assigned_tag_id: Optional[str] = None
     tag_name: Optional[str] = None  # Name of the assigned tag (if any)
@@ -69,8 +65,3 @@ class Patient(PatientBase):
     last_seen: Optional[datetime] = None   # When tag was last detected
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class PatientDischarge(BaseModel):
-    """Schema for discharging a patient."""
-    discharge_notes: Optional[str] = None

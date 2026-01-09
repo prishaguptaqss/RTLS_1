@@ -44,7 +44,7 @@ const NotificationModal = ({ isOpen, onClose }) => {
 
       // Add optional filters
       if (searchQuery.trim()) {
-        params.entity_name = searchQuery.trim();
+        params.patient_name = searchQuery.trim();
       }
       if (dateFrom) {
         params.date_from = new Date(dateFrom).toISOString();
@@ -143,8 +143,8 @@ const NotificationModal = ({ isOpen, onClose }) => {
 
   // Render notification item
   const renderNotification = (notification) => {
-    const displayName = notification.entity_name || notification.user_name || 'Unknown';
-    const entityId = notification.entity_id;
+    const displayName = notification.patient_name || notification.user_name || 'Unknown';
+    const patientId = notification.patient_id;
     const severityClass = `severity-${notification.severity || 'medium'}`;
 
     return (
@@ -172,9 +172,9 @@ const NotificationModal = ({ isOpen, onClose }) => {
             <div>
               <strong>Name:</strong> {displayName}
             </div>
-            {entityId && (
+            {patientId && (
               <div>
-                <strong>ID:</strong> {entityId}
+                <strong>ID:</strong> {patientId}
               </div>
             )}
             <div>

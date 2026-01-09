@@ -5,7 +5,7 @@ import StatCard from '../components/ui/StatCard';
 import Card from '../components/ui/Card';
 import {
   fetchStaff,
-  fetchEntities,
+  fetchPatients,
   fetchBuildings,
   fetchRooms,
   fetchTags,
@@ -18,9 +18,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     activeUsers: 0,
-    totalEntities: 0,
-    personEntities: 0,
-    materialEntities: 0,
+    totalPatients: 0,
     totalBuildings: 0,
     totalRooms: 0,
     activeTags: 0,
@@ -46,9 +44,9 @@ const Dashboard = () => {
       let backendConnected = false;
       let databaseConnected = false;
 
-      const [staffResult, entitiesResult, buildingsResult, roomsResult, tagsResult, anchorsResult, rolesResult] = await Promise.all([
+      const [staffResult, patientsResult, buildingsResult, roomsResult, tagsResult, anchorsResult, rolesResult] = await Promise.all([
         fetchStaff().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
-        fetchEntities().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
+        fetchPatients().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
         fetchBuildings().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
         fetchRooms().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
         fetchTags().then(data => ({ success: true, data })).catch(() => ({ success: false, data: [] })),
@@ -57,14 +55,14 @@ const Dashboard = () => {
       ]);
 
       // Check if backend is connected (at least one API call succeeded)
-      backendConnected = staffResult.success || entitiesResult.success || buildingsResult.success ||
+      backendConnected = staffResult.success || patientsResult.success || buildingsResult.success ||
                         roomsResult.success || tagsResult.success || anchorsResult.success;
 
       // Database is connected if backend is connected (same connection)
       databaseConnected = backendConnected;
 
       const staff = staffResult.data?.staff || staffResult.data || [];
-      const entities = entitiesResult.data;
+      const patients = patientsResult.data;
       const buildings = buildingsResult.data;
       const rooms = roomsResult.data;
       const tags = tagsResult.data;
@@ -76,14 +74,8 @@ const Dashboard = () => {
         ? staff.filter(user => user.is_active === true).length
         : 0;
 
-      // Count entities by type
-      const totalEntities = Array.isArray(entities) ? entities.length : 0;
-      const personEntities = Array.isArray(entities)
-        ? entities.filter(entity => entity.type === 'person').length
-        : 0;
-      const materialEntities = Array.isArray(entities)
-        ? entities.filter(entity => entity.type === 'material').length
-        : 0;
+      // Count patients
+      const totalPatients = Array.isArray(patients) ? patients.length : 0;
 
       // Count active tags (tags that have status 'active')
       const activeTags = Array.isArray(tags)
@@ -100,9 +92,7 @@ const Dashboard = () => {
 
       setStats({
         activeUsers,
-        totalEntities,
-        personEntities,
-        materialEntities,
+        totalPatients,
         totalBuildings: Array.isArray(buildings) ? buildings.length : 0,
         totalRooms: Array.isArray(rooms) ? rooms.length : 0,
         activeTags,
@@ -144,11 +134,11 @@ const Dashboard = () => {
           onClick={() => navigate('/staff')}
         />
         <StatCard
-          title="Entities"
-          value={loading ? '...' : stats.totalEntities.toString()}
-          subtitle={`${stats.personEntities} person, ${stats.materialEntities} material`}
+          title="Patients"
+          value={loading ? '...' : stats.totalPatients.toString()}
+          subtitle="Total patients"
           icon={Users}
-          onClick={() => navigate('/entities')}
+          onClick={() => navigate('/patients')}
         />
         <StatCard
           title="Roles"

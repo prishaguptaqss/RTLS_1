@@ -15,7 +15,7 @@ from app.database import engine, Base, SessionLocal
 from app.api import (
     users,
     organizations,
-    entities,
+    patients,
     buildings,
     floors,
     rooms,
@@ -111,8 +111,8 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="RTLS Entity Tracking API",
-    description="Real-Time Location System for tracking persons and materials across organizations",
+    title="RTLS Patient Tracking API",
+    description="Real-Time Location System for tracking patients across organizations",
     version="2.0.0",
     lifespan=lifespan
 )
@@ -143,7 +143,7 @@ app.include_router(permissions.router, prefix="/api", tags=["Permissions"])
 # Core functionality
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(organizations.router, prefix="/api/organizations", tags=["Organizations"])
-app.include_router(entities.router, prefix="/api/entities", tags=["Entities"])
+app.include_router(patients.router, prefix="/api/patients", tags=["Patients"])
 app.include_router(buildings.router, prefix="/api/buildings", tags=["Buildings"])
 app.include_router(floors.router, prefix="/api/floors", tags=["Floors"])
 app.include_router(rooms.router, prefix="/api/rooms", tags=["Rooms"])
@@ -173,7 +173,7 @@ async def health_check():
 async def root():
     """Root endpoint with API information."""
     return {
-        "name": "RTLS Entity Tracking API",
+        "name": "RTLS Patient Tracking API",
         "version": "2.0.0",
         "docs_url": "/docs",
         "health_url": "/health"

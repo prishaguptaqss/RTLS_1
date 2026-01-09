@@ -11,7 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Organizations from './pages/Organizations';
-import Entities from './pages/Entities';
+import Patients from './pages/Patients';
 import Locations from './pages/Locations';
 import Devices from './pages/Devices';
 import LivePositions from './pages/LivePositions';
@@ -87,10 +87,10 @@ function App() {
                 }
               />
               <Route
-                path="entities"
+                path="patients"
                 element={
-                  <ProtectedRoute requiredPermission="ENTITY_VIEW">
-                    <Entities />
+                  <ProtectedRoute requiredPermission="PATIENT_VIEW">
+                    <Patients />
                   </ProtectedRoute>
                 }
               />

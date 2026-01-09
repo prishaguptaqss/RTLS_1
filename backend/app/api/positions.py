@@ -34,19 +34,19 @@ async def get_live_positions(
     Note: Includes tags with assigned users OR entities and status='active'.
     CRITICAL: Only returns data for the current organization.
     """
-    # Import Entity model
-    from app.models.entity import Entity
+    # Import Patient model
+    from app.models.patient import Patient
 
-    # Query active tags with live locations, users, entities, and room hierarchy
+    # Query active tags with live locations, users, patients, and room hierarchy
     # CRITICAL: Filter by organization_id to ensure data isolation
     query = db.query(
-        Tag, LiveLocation, User, Entity, Room, Floor, Building
+        Tag, LiveLocation, User, Patient, Room, Floor, Building
     ).join(
         LiveLocation, Tag.tag_id == LiveLocation.tag_id
     ).outerjoin(
         User, Tag.assigned_user_id == User.user_id
     ).outerjoin(
-        Entity, Tag.assigned_entity_id == Entity.id
+        Patient, Tag.assigned_patient_id == Patient.patient_id
     ).outerjoin(
         Room, LiveLocation.room_id == Room.id
     ).outerjoin(
@@ -61,17 +61,17 @@ async def get_live_positions(
     positions = []
     unique_rooms = set()
 
-    for tag, live_loc, user, entity, room, floor, building in query:
-        # Include tags assigned to either user OR entity
+    for tag, live_loc, user, patient, room, floor, building in query:
+        # Include tags assigned to either user OR patient
         person_id = None
         person_name = None
 
         if user:
             person_id = user.user_id
             person_name = user.name
-        elif entity:
-            person_id = entity.entity_id
-            person_name = entity.name
+        elif patient:
+            person_id = patient.patient_id
+            person_name = patient.patient_name
         else:
             # Skip unassigned tags
             continue

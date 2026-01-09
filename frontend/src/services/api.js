@@ -141,26 +141,25 @@ export const deleteOrganization = async (id) => {
   return api.delete(`/organizations/${id}`);
 };
 
-// Entities (replaces Patients)
-export const fetchEntities = async (type = null) => {
-  const params = type ? `?type=${type}` : '';
-  return api.get(`/entities${params}`);
+// Patients
+export const fetchPatients = async () => {
+  return api.get('/patients');
 };
 
-export const createEntity = async (entityData) => {
-  return api.post('/entities', entityData);
+export const createPatient = async (patientData) => {
+  return api.post('/patients', patientData);
 };
 
-export const updateEntity = async (entityId, entityData) => {
-  return api.put(`/entities/${entityId}`, entityData);
+export const updatePatient = async (patientId, patientData) => {
+  return api.put(`/patients/${patientId}`, patientData);
 };
 
-export const deleteEntity = async (entityId) => {
-  return api.delete(`/entities/${entityId}`);
+export const deletePatient = async (patientId) => {
+  return api.delete(`/patients/${patientId}`);
 };
 
-export const fetchEntityLocationHistory = async (entityId) => {
-  return api.get(`/entities/${entityId}/location-history`);
+export const fetchPatientLocationHistory = async (patientId) => {
+  return api.get(`/patients/${patientId}/location-history`);
 };
 
 export const fetchAvailableTags = async () => {

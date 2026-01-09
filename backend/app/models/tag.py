@@ -11,7 +11,7 @@ class Tag(Base):
     """
     Tag table - stores BLE beacon information.
 
-    Each tag (BLE beacon) can be assigned to one user OR one entity (mutually exclusive).
+    Each tag (BLE beacon) can be assigned to one user OR one patient (mutually exclusive).
     The tag_id is the BLE MAC address (e.g., "E0:C0:74:C6:AD:C8").
     """
     __tablename__ = "tags"
@@ -38,11 +38,11 @@ class Tag(Base):
         nullable=True,
         comment="Foreign key to users table (nullable for unassigned tags)"
     )
-    assigned_entity_id = Column(
-        Integer,
-        ForeignKey("entities.id", ondelete="SET NULL"),
+    assigned_patient_id = Column(
+        String,
+        ForeignKey("patients.patient_id", ondelete="SET NULL"),
         nullable=True,
-        comment="Foreign key to entities table (nullable for unassigned tags)"
+        comment="Foreign key to patients table (nullable for unassigned tags)"
     )
     status = Column(
         Enum(TagStatus),
@@ -56,23 +56,23 @@ class Tag(Base):
         comment="Last time tag was detected (updated on every event)"
     )
 
-    # Constraint to ensure tag can only be assigned to user OR entity, not both
+    # Constraint to ensure tag can only be assigned to user OR patient, not both
     __table_args__ = (
         CheckConstraint(
-            '(assigned_user_id IS NULL OR assigned_entity_id IS NULL)',
+            '(assigned_user_id IS NULL OR assigned_patient_id IS NULL)',
             name='check_single_assignment'
         ),
     )
 
     # Relationships
-    # SET NULL: if user/entity is deleted, tag becomes unassigned (not deleted)
+    # SET NULL: if user/patient is deleted, tag becomes unassigned (not deleted)
     organization = relationship("Organization", back_populates="tags")
     assigned_user = relationship("User", back_populates="tags")
-    assigned_entity = relationship("Entity", back_populates="tags")
+    assigned_patient = relationship("Patient", back_populates="tags")
     live_location = relationship("LiveLocation", back_populates="tag", uselist=False, cascade="all, delete-orphan")
     location_history = relationship("LocationHistory", back_populates="tag", cascade="all, delete-orphan")
-    entity_assignments = relationship("EntityTagAssignment", back_populates="tag", cascade="all, delete-orphan")
+    patient_assignments = relationship("PatientTagAssignment", back_populates="tag", cascade="all, delete-orphan")
     user_assignments = relationship("UserTagAssignment", back_populates="tag", cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<Tag(tag_id='{self.tag_id}', status='{self.status}', user={self.assigned_user_id}, entity={self.assigned_entity_id})>"
+        return f"<Tag(tag_id='{self.tag_id}', status='{self.status}', user={self.assigned_user_id}, patient={self.assigned_patient_id})>"

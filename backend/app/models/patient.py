@@ -1,53 +1,33 @@
 """
-Patient model - represents hospital patients being tracked.
+Patient model for RTLS system - replaces Entity model.
 """
-from sqlalchemy import Column, Integer, String, Enum, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from app.database import Base
-from app.utils.enums import PatientStatus
 
 
 class Patient(Base):
-    """
-    Patient table - stores information about hospital patients.
-
-    Each patient can be assigned a BLE tag for location tracking during their stay.
-    Tracks admission and discharge times.
-    """
+    """Patient model for tracking patients in the facility."""
     __tablename__ = "patients"
 
-    id = Column(Integer, primary_key=True, autoincrement=True, comment="Internal database ID")
-    patient_id = Column(String, unique=True, nullable=False, index=True, comment="Hospital patient identifier (e.g., 'PAT-001')")
-    name = Column(String, nullable=False, comment="Full name of the patient")
-    age = Column(Integer, nullable=False, comment="Patient age")
-    email = Column(String, nullable=True, comment="Email address (optional)")
-    mobile_number = Column(String, nullable=True, comment="Mobile phone number (optional)")
-    admission_time = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False,
-        comment="Timestamp when patient was admitted"
-    )
-    discharge_time = Column(
-        DateTime(timezone=True),
-        nullable=True,
-        comment="Timestamp when patient was discharged (NULL if still admitted)"
-    )
-    status = Column(
-        Enum(PatientStatus),
-        default=PatientStatus.admitted,
-        nullable=False,
-        comment="Patient status (admitted/discharged)"
-    )
-    created_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        comment="Record creation timestamp"
+    patient_id = Column(String, primary_key=True, comment="Unique patient identifier (globally unique)")
+    patient_name = Column(String, nullable=False, comment="Patient's full name")
+    patient_age = Column(Integer, nullable=True, comment="Patient's age")
+    patient_email = Column(String, nullable=True, comment="Patient's email address")
+    patient_phone = Column(String, nullable=True, comment="Patient's phone number")
+    organization_id = Column(Integer, ForeignKey('organizations.id', ondelete='CASCADE'), nullable=False, comment="Organization this patient belongs to")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Composite unique constraint: patient_id must be unique within organization
+    __table_args__ = (
+        UniqueConstraint('patient_id', 'organization_id', name='uq_patient_id_org'),
     )
 
     # Relationships
+    organization = relationship("Organization", back_populates="patients")
     tags = relationship("Tag", back_populates="assigned_patient")
+    tag_assignments = relationship("PatientTagAssignment", back_populates="patient", cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<Patient(patient_id='{self.patient_id}', name='{self.name}', status='{self.status}')>"
+        return f"<Patient(patient_id='{self.patient_id}', patient_name='{self.patient_name}', organization_id={self.organization_id})>"

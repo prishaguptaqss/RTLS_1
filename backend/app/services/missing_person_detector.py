@@ -8,7 +8,7 @@ import logging
 
 from app.models.tag import Tag
 from app.models.live_location import LiveLocation
-from app.models.entity import Entity
+from app.models.patient import Patient
 from app.models.notification import Notification
 from app.models.organization_settings import OrganizationSettings
 from app.utils.enums import TagStatus, NotificationType
@@ -99,19 +99,15 @@ class MissingPersonDetector:
                 if live_loc and live_loc.room:
                     last_room = live_loc.room.room_name
 
-                # Load entity details if tag is assigned to an entity
-                entity_name = None
-                entity_id_value = None
-                entity_type = None
-                entity_internal_id = None
+                # Load patient details if tag is assigned to a patient
+                patient_name = None
+                patient_id_value = None
 
-                if tag.assigned_entity_id:
-                    entity = db.query(Entity).filter(Entity.id == tag.assigned_entity_id).first()
-                    if entity:
-                        entity_name = entity.name
-                        entity_id_value = entity.entity_id
-                        entity_type = entity.type
-                        entity_internal_id = entity.id
+                if tag.assigned_patient_id:
+                    patient = db.query(Patient).filter(Patient.patient_id == tag.assigned_patient_id).first()
+                    if patient:
+                        patient_name = patient.patient_name
+                        patient_id_value = patient.patient_id
 
                 # Calculate severity based on missing duration (using org-specific threshold)
                 severity = self._calculate_severity(int(time_since_seen.total_seconds()), threshold_seconds)
@@ -121,9 +117,8 @@ class MissingPersonDetector:
                     organization_id=tag.organization_id,
                     type=NotificationType.MISSING_PERSON,
                     tag_id=tag.tag_id,
-                    entity_id=entity_internal_id,
-                    entity_name=entity_name,
-                    entity_type=entity_type,
+                    patient_id=patient_id_value,
+                    patient_name=patient_name,
                     user_id=tag.assigned_user_id,
                     user_name=tag.assigned_user.name if tag.assigned_user else None,
                     last_room=last_room,
@@ -141,9 +136,8 @@ class MissingPersonDetector:
                     "type": "MISSING_PERSON",
                     "notification_id": notification.id,
                     "tag_id": tag.tag_id,
-                    "entity_name": entity_name,
-                    "entity_id": entity_id_value,
-                    "entity_type": entity_type.value if entity_type else None,
+                    "patient_name": patient_name,
+                    "patient_id": patient_id_value,
                     "user_name": tag.assigned_user.name if tag.assigned_user else None,
                     "last_room": last_room,
                     "last_seen": int(tag.last_seen.timestamp()),
@@ -154,7 +148,7 @@ class MissingPersonDetector:
 
                 logger.warning(
                     f"Missing person alert: {tag.tag_id} "
-                    f"(entity: {entity_name or 'N/A'}, "
+                    f"(patient: {patient_name or 'N/A'}, "
                     f"last seen {time_since_seen.total_seconds():.0f}s ago in {last_room}, "
                     f"severity: {severity})"
                 )

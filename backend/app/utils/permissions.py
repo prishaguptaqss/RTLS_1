@@ -11,7 +11,7 @@ class PermissionModule(str, Enum):
     """Modules in the application."""
     DASHBOARD = "dashboard"
     BUILDING = "building"
-    ENTITY = "entity"
+    PATIENT = "patient"
     DEVICE = "device"
     LIVE_POSITION = "live_position"
     LIVE_TRACKING = "live_tracking"
@@ -39,12 +39,12 @@ class Permission(str, Enum):
     ROOM_EDIT = "ROOM_EDIT"
     ROOM_DELETE = "ROOM_DELETE"
 
-    # Entity Management (Patients/Materials)
-    ENTITY_VIEW = "ENTITY_VIEW"
-    ENTITY_ADMIT = "ENTITY_ADMIT"
-    ENTITY_EDIT = "ENTITY_EDIT"
-    ENTITY_DISCHARGE = "ENTITY_DISCHARGE"
-    ENTITY_DELETE = "ENTITY_DELETE"
+    # Patient Management
+    PATIENT_VIEW = "PATIENT_VIEW"
+    PATIENT_ADMIT = "PATIENT_ADMIT"
+    PATIENT_EDIT = "PATIENT_EDIT"
+    PATIENT_DISCHARGE = "PATIENT_DISCHARGE"
+    PATIENT_DELETE = "PATIENT_DELETE"
 
     # Device Management
     DEVICE_VIEW = "DEVICE_VIEW"
@@ -152,36 +152,36 @@ PERMISSION_DEFINITIONS: List[Dict[str, str]] = [
         "description": "Delete rooms"
     },
 
-    # Entities
+    # Patients
     {
-        "code": Permission.ENTITY_VIEW,
-        "name": "View Entities",
-        "module": PermissionModule.ENTITY,
-        "description": "View entities (patients/materials)"
+        "code": Permission.PATIENT_VIEW,
+        "name": "View Patients",
+        "module": PermissionModule.PATIENT,
+        "description": "View patients"
     },
     {
-        "code": Permission.ENTITY_ADMIT,
-        "name": "Add Entity",
-        "module": PermissionModule.ENTITY,
-        "description": "Add new entities to the system"
+        "code": Permission.PATIENT_ADMIT,
+        "name": "Add Patient",
+        "module": PermissionModule.PATIENT,
+        "description": "Add new patients to the system"
     },
     {
-        "code": Permission.ENTITY_EDIT,
-        "name": "Edit Entity",
-        "module": PermissionModule.ENTITY,
-        "description": "Edit entity information"
+        "code": Permission.PATIENT_EDIT,
+        "name": "Edit Patient",
+        "module": PermissionModule.PATIENT,
+        "description": "Edit patient information"
     },
     {
-        "code": Permission.ENTITY_DISCHARGE,
-        "name": "Remove Entity",
-        "module": PermissionModule.ENTITY,
-        "description": "Remove or deactivate entities from tracking"
+        "code": Permission.PATIENT_DISCHARGE,
+        "name": "Remove Patient",
+        "module": PermissionModule.PATIENT,
+        "description": "Remove or deactivate patients from tracking"
     },
     {
-        "code": Permission.ENTITY_DELETE,
-        "name": "Delete Entity",
-        "module": PermissionModule.ENTITY,
-        "description": "Delete entities"
+        "code": Permission.PATIENT_DELETE,
+        "name": "Delete Patient",
+        "module": PermissionModule.PATIENT,
+        "description": "Delete patients"
     },
 
     # Devices
@@ -334,13 +334,13 @@ PERMISSION_HIERARCHY: Dict[str, Dict] = {
             Permission.ROOM_DELETE,
         ]
     },
-    "Entities": {
-        "parent": Permission.ENTITY_VIEW,
+    "Patients": {
+        "parent": Permission.PATIENT_VIEW,
         "children": [
-            Permission.ENTITY_ADMIT,
-            Permission.ENTITY_EDIT,
-            Permission.ENTITY_DISCHARGE,
-            Permission.ENTITY_DELETE,
+            Permission.PATIENT_ADMIT,
+            Permission.PATIENT_EDIT,
+            Permission.PATIENT_DISCHARGE,
+            Permission.PATIENT_DELETE,
         ]
     },
     "Devices": {

@@ -29,13 +29,13 @@ async def list_available_tags(
 ):
     """List all available (unassigned) tags within the organization.
 
-    Returns tags where both assigned_user_id and assigned_entity_id are NULL
+    Returns tags where both assigned_user_id and assigned_patient_id are NULL
     and status is 'active'.
     """
     return db.query(TagModel).filter(
         TagModel.organization_id == organization.id,
         TagModel.assigned_user_id == None,
-        TagModel.assigned_entity_id == None,
+        TagModel.assigned_patient_id == None,
         TagModel.status == "active"
     ).all()
 
@@ -89,7 +89,7 @@ async def update_tag(
     db: Session = Depends(get_db)
 ):
     """Update tag within the organization."""
-    from app.models.entity_tag_assignment import EntityTagAssignment
+    from app.models.patient_tag_assignment import PatientTagAssignment
     from datetime import datetime
 
     tag = db.query(TagModel).filter(
@@ -110,52 +110,53 @@ async def update_tag(
         if existing_name:
             raise HTTPException(status_code=400, detail=f"Tag with name '{update_data['name']}' already exists in this organization")
 
-    # Track entity assignment changes for temporal records
-    old_entity_id = tag.assigned_entity_id
-    new_entity_id = update_data.get('assigned_entity_id')
+    # Track patient assignment changes for temporal records
+    old_patient_id = tag.assigned_patient_id
+    new_patient_id = update_data.get('assigned_patient_id')
 
     # Update tag fields
     for key, value in update_data.items():
         setattr(tag, key, value)
 
-    # Handle entity_tag_assignment temporal records
-    if 'assigned_entity_id' in update_data:
+    # Handle patient_tag_assignment temporal records
+    if 'assigned_patient_id' in update_data:
         now = datetime.utcnow()
 
-        # Case 1: Unassigning from an entity (new_entity_id is None)
-        if old_entity_id is not None and new_entity_id is None:
+        # Case 1: Unassigning from a patient (new_patient_id is None)
+        if old_patient_id is not None and new_patient_id is None:
             # Close the current assignment by setting unassigned_at
-            current_assignment = db.query(EntityTagAssignment).filter(
-                EntityTagAssignment.tag_id == tag_id,
-                EntityTagAssignment.entity_id == old_entity_id,
-                EntityTagAssignment.unassigned_at.is_(None)
+            current_assignment = db.query(PatientTagAssignment).filter(
+                PatientTagAssignment.tag_id == tag_id,
+                PatientTagAssignment.patient_id == old_patient_id,
+                PatientTagAssignment.unassigned_at.is_(None)
             ).first()
             if current_assignment:
                 current_assignment.unassigned_at = now
 
-        # Case 2: Assigning to a new entity
-        elif new_entity_id is not None:
-            # If previously assigned to a different entity, close that assignment
-            if old_entity_id is not None and old_entity_id != new_entity_id:
-                old_assignment = db.query(EntityTagAssignment).filter(
-                    EntityTagAssignment.tag_id == tag_id,
-                    EntityTagAssignment.entity_id == old_entity_id,
-                    EntityTagAssignment.unassigned_at.is_(None)
+        # Case 2: Assigning to a new patient
+        elif new_patient_id is not None:
+            # If previously assigned to a different patient, close that assignment
+            if old_patient_id is not None and old_patient_id != new_patient_id:
+                old_assignment = db.query(PatientTagAssignment).filter(
+                    PatientTagAssignment.tag_id == tag_id,
+                    PatientTagAssignment.patient_id == old_patient_id,
+                    PatientTagAssignment.unassigned_at.is_(None)
                 ).first()
                 if old_assignment:
                     old_assignment.unassigned_at = now
 
-            # Create new assignment record (or reopen if reassigning to same entity)
-            existing_assignment = db.query(EntityTagAssignment).filter(
-                EntityTagAssignment.tag_id == tag_id,
-                EntityTagAssignment.entity_id == new_entity_id,
-                EntityTagAssignment.unassigned_at.is_(None)
+            # Create new assignment record (or reopen if reassigning to same patient)
+            existing_assignment = db.query(PatientTagAssignment).filter(
+                PatientTagAssignment.tag_id == tag_id,
+                PatientTagAssignment.patient_id == new_patient_id,
+                PatientTagAssignment.unassigned_at.is_(None)
             ).first()
 
             if not existing_assignment:
                 # Create new assignment record
-                new_assignment = EntityTagAssignment(
-                    entity_id=new_entity_id,
+                new_assignment = PatientTagAssignment(
+                    id=f"{new_patient_id}_{tag_id}_{int(now.timestamp())}",
+                    patient_id=new_patient_id,
                     tag_id=tag_id,
                     assigned_at=now
                 )

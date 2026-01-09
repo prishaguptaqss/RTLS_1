@@ -4,15 +4,14 @@ Pydantic schemas for Notification model.
 from pydantic import BaseModel, ConfigDict, computed_field
 from datetime import datetime
 from typing import Optional, List
-from app.utils.enums import NotificationType, EntityType
+from app.utils.enums import NotificationType
 
 
 class NotificationBase(BaseModel):
     """Base notification schema with common fields."""
     type: NotificationType
     tag_id: Optional[str] = None
-    entity_name: Optional[str] = None
-    entity_type: Optional[EntityType] = None
+    patient_name: Optional[str] = None
     user_name: Optional[str] = None
     last_room: Optional[str] = None
     last_seen: Optional[datetime] = None
@@ -23,7 +22,7 @@ class NotificationBase(BaseModel):
 class NotificationCreate(NotificationBase):
     """Schema for creating a new notification (internal use)."""
     organization_id: int
-    entity_id: Optional[int] = None
+    patient_id: Optional[str] = None
     user_id: Optional[str] = None
 
 
@@ -36,7 +35,7 @@ class NotificationResponse(NotificationBase):
     """Complete notification schema returned by API."""
     id: int
     organization_id: int
-    entity_id: Optional[int] = None
+    patient_id: Optional[str] = None
     user_id: Optional[str] = None
     is_read: bool
     created_at: datetime
@@ -47,8 +46,8 @@ class NotificationResponse(NotificationBase):
     @computed_field
     @property
     def display_name(self) -> str:
-        """Get the display name for the notification (entity or user name)."""
-        return self.entity_name or self.user_name or "Unknown"
+        """Get the display name for the notification (patient or user name)."""
+        return self.patient_name or self.user_name or "Unknown"
 
 
 class NotificationList(BaseModel):

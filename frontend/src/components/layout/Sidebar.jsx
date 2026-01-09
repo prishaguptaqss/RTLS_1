@@ -42,9 +42,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar, isMobileMenuOpen, closeMobileMenu
     },
     {
       icon: Users,
-      label: 'Entities',
-      path: '/entities',
-      permission: 'ENTITY_VIEW'
+      label: 'Patients',
+      path: '/patients',
+      permission: 'PATIENT_VIEW'
     },
     {
       icon: Building2,
