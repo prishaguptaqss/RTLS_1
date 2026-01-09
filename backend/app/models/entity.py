@@ -1,7 +1,7 @@
 """
 Entity model for RTLS system - replaces Patient model.
 """
-from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLEnum, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime, Enum as SQLEnum, ForeignKey, UniqueConstraint, CheckConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -17,11 +17,15 @@ class Entity(Base):
     organization_id = Column(Integer, ForeignKey('organizations.id', ondelete='CASCADE'), nullable=False, comment="Organization this entity belongs to")
     type = Column(SQLEnum(EntityType), nullable=False, comment="Entity type: person or material")
     name = Column(String, nullable=True, comment="Optional entity name")
+    age = Column(Integer, nullable=True, comment="Patient age")
+    email = Column(String, nullable=True, comment="Patient email address")
+    phone = Column(String, nullable=True, comment="Patient phone number")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Composite unique constraint: entity_id must be unique within organization
     __table_args__ = (
         UniqueConstraint('entity_id', 'organization_id', name='uq_entity_id_org'),
+        CheckConstraint('age >= 0 AND age <= 150', name='check_age_range'),
     )
 
     # Relationships

@@ -202,6 +202,15 @@
   background: var(--info-bg);
 }
 
+.btn-icon.btn-view {
+  color: var(--primary);
+}
+
+.btn-icon.btn-view:hover {
+  color: var(--primary);
+  background: var(--badge-blue-bg);
+}
+
 /* .btn-icon.btn-warning {
   color: var(--warning);
 } */
@@ -380,5 +389,59 @@
 
   .location-text {
     font-size: 0.8125rem;
+  }
+}
+
+/* Patient Details Modal */
+.patient-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-row {
+  display: flex;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-row label {
+  font-weight: 600;
+  min-width: 150px;
+  color: #374151;
+}
+
+.detail-row span {
+  color: #6b7280;
+  flex: 1;
+}
+
+.detail-row code {
+  background-color: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.875rem;
+  color: #1f2937;
+}
+
+/* Mobile responsive for patient details */
+@media (max-width: 768px) {
+  .detail-row {
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem 0;
+  }
+
+  .detail-row label {
+    min-width: unset;
+    font-size: 0.875rem;
+  }
+
+  .detail-row span {
+    font-size: 0.875rem;
   }
 }

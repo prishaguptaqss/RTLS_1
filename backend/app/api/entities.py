@@ -104,6 +104,9 @@ async def create_entity(
 
     # Create entity (exclude assigned_tag_id from model creation)
     entity_data = entity.model_dump(exclude={'assigned_tag_id'})
+    # Force type to patient
+    from app.utils.enums import EntityType
+    entity_data['type'] = EntityType.patient
     db_entity = EntityModel(**entity_data, organization_id=organization.id)
     db.add(db_entity)
     db.commit()

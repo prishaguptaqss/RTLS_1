@@ -13,7 +13,7 @@ import {
 import { useOrganization } from '../contexts/OrganizationContext';
 import { useSearch } from '../contexts/SearchContext';
 import './Entities.css';
-import { FiEdit2, FiTrash2, FiClock, FiUserX, FiUser, FiPackage } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiClock, FiUserX, FiUser, FiPackage, FiEye } from "react-icons/fi";
 
 const Entities = () => {
   const { currentOrganization, loading: orgLoading } = useOrganization();
@@ -22,10 +22,9 @@ const Entities = () => {
   const [availableTags, setAvailableTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [typeFilter, setTypeFilter] = useState('');
-  const [activeTab, setActiveTab] = useState('person');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isUntrackModalOpen, setIsUntrackModalOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState(null);
@@ -35,8 +34,11 @@ const Entities = () => {
   const [itemsPerPage] = useState(10);
   const [formData, setFormData] = useState({
     entity_id: '',
-    type: 'person',
+    type: 'patient',
     name: '',
+    age: null,
+    email: '',
+    phone: '',
     assigned_tag_id: ''
   });
   const [formErrors, setFormErrors] = useState({});
@@ -47,13 +49,13 @@ const Entities = () => {
     if (!orgLoading && currentOrganization) {
       loadEntities();
     }
-  }, [typeFilter, orgLoading, currentOrganization]);
+  }, [orgLoading, currentOrganization]);
 
   const loadEntities = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchEntities(typeFilter || null);
+      const data = await fetchEntities(null); // Load all patients (no type filter)
       setEntities(data);
     } catch (err) {
       console.error('Error loading entities:', err);
@@ -90,11 +92,20 @@ const Entities = () => {
       }
     }
 
-    if (!formData.type) {
-      errors.type = 'Patient type is required';
+    // Validate age
+    if (formData.age !== null && formData.age !== '') {
+      const age = parseInt(formData.age);
+      if (isNaN(age) || age < 0 || age > 150) {
+        errors.age = 'Age must be between 0 and 150';
+      }
     }
 
-    // Name is optional
+    // Validate email format (basic)
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Invalid email format';
+    }
+
+    // Name and phone are optional
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -117,6 +128,9 @@ const Entities = () => {
         entity_id: formData.entity_id.trim(),
         type: formData.type,
         name: formData.name.trim() || null,
+        age: formData.age ? parseInt(formData.age) : null,
+        email: formData.email?.trim() || null,
+        phone: formData.phone?.trim() || null,
         assigned_tag_id: formData.assigned_tag_id || null
       };
       await createEntity(entityData);
@@ -148,7 +162,9 @@ const Entities = () => {
       setSubmitting(true);
       const entityData = {
         name: formData.name.trim() || null,
-        type: formData.type,
+        age: formData.age ? parseInt(formData.age) : null,
+        email: formData.email?.trim() || null,
+        phone: formData.phone?.trim() || null,
         assigned_tag_id: formData.assigned_tag_id || null
       };
       await updateEntity(selectedEntity.entity_id, entityData);
@@ -180,10 +196,18 @@ const Entities = () => {
       entity_id: entity.entity_id,
       name: entity.name || '',
       type: entity.type,
+      age: entity.age || null,
+      email: entity.email || '',
+      phone: entity.phone || '',
       assigned_tag_id: entity.assigned_tag_id || ''
     });
     setFormErrors({});
     setIsEditModalOpen(true);
+  };
+
+  const openViewModal = (entity) => {
+    setSelectedEntity(entity);
+    setIsViewModalOpen(true);
   };
 
   const openHistoryModal = async (entity) => {
@@ -232,7 +256,10 @@ const Entities = () => {
     setFormData({
       entity_id: '',
       name: '',
-      type: 'person',
+      type: 'patient',
+      age: null,
+      email: '',
+      phone: '',
       assigned_tag_id: ''
     });
     setFormErrors({});
@@ -417,22 +444,15 @@ const Entities = () => {
     );
   };
 
-  // Check if there are any material-type entities
-  const hasMaterialEntities = entities.some(entity => entity.type === 'material');
-
-  // Filter entities based on active tab and global search
+  // Filter entities based on global search only (no type filtering)
   const filteredEntities = entities.filter(entity => {
-    // Filter by active tab
-    if (entity.type !== activeTab) return false;
-
     // Filter by search query
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     return (
       entity.entity_id?.toLowerCase().includes(query) ||
       entity.name?.toLowerCase().includes(query) ||
-      entity.tag_name?.toLowerCase().includes(query) ||
-      entity.type?.toLowerCase().includes(query)
+      entity.tag_name?.toLowerCase().includes(query)
     );
   });
 
@@ -500,43 +520,16 @@ const Entities = () => {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="tabs">
-        <button
-          className={`tab ${activeTab === 'person' ? 'active' : ''}`}
-          onClick={() => {
-            setActiveTab('person');
-            setCurrentPage(1);
-          }}
-        >
-          <FiUser size={18} />
-          Persons
-        </button>
-        {hasMaterialEntities && (
-          <button
-            className={`tab ${activeTab === 'material' ? 'active' : ''}`}
-            onClick={() => {
-              setActiveTab('material');
-              setCurrentPage(1);
-            }}
-          >
-            <FiPackage size={18} />
-            Materials
-          </button>
-        )}
-      </div>
-
       <Card>
         <Card.Header>
           <div className="section-header">
             <div>
               <div className="section-title">
-                {activeTab === 'person' ? <FiUser size={20} /> : <FiPackage size={20} />}
-                <h2>{activeTab === 'person' ? 'Persons' : 'Materials'}</h2>
+                <FiUser size={20} />
+                <h2>Patients</h2>
               </div>
               <p className="section-subtitle">
-                {filteredEntities.length} {activeTab === 'person' ? 'person' : 'material'}
-                {filteredEntities.length !== 1 ? 's' : ''} configured
+                {filteredEntities.length} patient{filteredEntities.length !== 1 ? 's' : ''} configured
               </p>
             </div>
             <PermissionGate permission="ENTITY_ADMIT">
@@ -565,7 +558,6 @@ const Entities = () => {
                   <Table.Row>
                     <Table.Head>ID</Table.Head>
                     <Table.Head>Name</Table.Head>
-                    <Table.Head>Type</Table.Head>
                     <Table.Head>Tag</Table.Head>
                     <Table.Head>Status</Table.Head>
                     <Table.Head>Current Location</Table.Head>
@@ -579,7 +571,6 @@ const Entities = () => {
                       <Table.Row key={entity.entity_id}>
                         <Table.Cell><strong>{entity.entity_id}</strong></Table.Cell>
                         <Table.Cell>{entity.name || '-'}</Table.Cell>
-                        <Table.Cell>{getTypeBadge(entity.type)}</Table.Cell>
                         <Table.Cell>
                           {entity.tag_name ? (
                             <code>{entity.tag_name}</code>
@@ -593,6 +584,13 @@ const Entities = () => {
                         </Table.Cell>
                         <Table.Cell>
                           <div className="action-buttons">
+                            <button
+                              onClick={() => openViewModal(entity)}
+                              className="btn-icon btn-view"
+                              title="View patient details"
+                            >
+                              <FiEye size={16} />
+                            </button>
                             <button
                               onClick={() => openHistoryModal(entity)}
                               className="btn-icon btn-info"
@@ -768,27 +766,6 @@ const Entities = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="type">
-                Type <span className="required">*</span>
-              </label>
-              <select
-                id="type"
-                name="type"
-                value={formData.type}
-                onChange={handleInputChange}
-                className={formErrors.type ? 'input-error' : ''}
-                required
-              >
-                <option value="person">Person</option>
-                <option value="material">Material</option>
-              </select>
-              {formErrors.type && (
-                <small className="error-text">{formErrors.type}</small>
-              )}
-              <small>Select patient type</small>
-            </div>
-
-            <div className="form-group">
               <label htmlFor="name">Name</label>
               <input
                 type="text"
@@ -803,6 +780,59 @@ const Entities = () => {
                 <small className="error-text">{formErrors.name}</small>
               )}
               <small>Optional - Descriptive name for this patient</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="age">Age</label>
+              <input
+                type="number"
+                id="age"
+                name="age"
+                value={formData.age || ''}
+                onChange={handleInputChange}
+                placeholder="e.g., 25"
+                min="0"
+                max="150"
+                className={formErrors.age ? 'input-error' : ''}
+              />
+              {formErrors.age && (
+                <small className="error-text">{formErrors.age}</small>
+              )}
+              <small>Patient age (0-150 years)</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email || ''}
+                onChange={handleInputChange}
+                placeholder="patient@example.com"
+                className={formErrors.email ? 'input-error' : ''}
+              />
+              {formErrors.email && (
+                <small className="error-text">{formErrors.email}</small>
+              )}
+              <small>Contact email address (optional)</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="phone">Phone Number</label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={formData.phone || ''}
+                onChange={handleInputChange}
+                placeholder="e.g., +1234567890"
+                className={formErrors.phone ? 'input-error' : ''}
+              />
+              {formErrors.phone && (
+                <small className="error-text">{formErrors.phone}</small>
+              )}
+              <small>Contact phone number (optional)</small>
             </div>
 
             <div className="form-group">
@@ -868,26 +898,6 @@ const Entities = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="edit-type">
-                Type <span className="required">*</span>
-              </label>
-              <select
-                id="edit-type"
-                name="type"
-                value={formData.type}
-                onChange={handleInputChange}
-                className={formErrors.type ? 'input-error' : ''}
-                required
-              >
-                <option value="person">Person</option>
-                <option value="material">Material</option>
-              </select>
-              {formErrors.type && (
-                <small className="error-text">{formErrors.type}</small>
-              )}
-            </div>
-
-            <div className="form-group">
               <label htmlFor="edit-name">Name</label>
               <input
                 type="text"
@@ -902,6 +912,59 @@ const Entities = () => {
                 <small className="error-text">{formErrors.name}</small>
               )}
               <small>Optional - Descriptive name for this patient</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit-age">Age</label>
+              <input
+                type="number"
+                id="edit-age"
+                name="age"
+                value={formData.age || ''}
+                onChange={handleInputChange}
+                placeholder="e.g., 25"
+                min="0"
+                max="150"
+                className={formErrors.age ? 'input-error' : ''}
+              />
+              {formErrors.age && (
+                <small className="error-text">{formErrors.age}</small>
+              )}
+              <small>Patient age (0-150 years)</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit-email">Email</label>
+              <input
+                type="email"
+                id="edit-email"
+                name="email"
+                value={formData.email || ''}
+                onChange={handleInputChange}
+                placeholder="patient@example.com"
+                className={formErrors.email ? 'input-error' : ''}
+              />
+              {formErrors.email && (
+                <small className="error-text">{formErrors.email}</small>
+              )}
+              <small>Contact email address (optional)</small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit-phone">Phone Number</label>
+              <input
+                type="tel"
+                id="edit-phone"
+                name="phone"
+                value={formData.phone || ''}
+                onChange={handleInputChange}
+                placeholder="e.g., +1234567890"
+                className={formErrors.phone ? 'input-error' : ''}
+              />
+              {formErrors.phone && (
+                <small className="error-text">{formErrors.phone}</small>
+              )}
+              <small>Contact phone number (optional)</small>
             </div>
 
             <div className="form-group">
@@ -1153,6 +1216,71 @@ const Entities = () => {
               Close
             </button>
           </div>
+        </Modal.Footer>
+      </Modal>
+
+      {/* View Patient Details Modal */}
+      <Modal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)}>
+        <Modal.Header onClose={() => setIsViewModalOpen(false)}>
+          Patient Details
+        </Modal.Header>
+        <Modal.Body>
+          {selectedEntity && (
+            <div className="patient-details">
+              <div className="detail-row">
+                <label>Patient ID:</label>
+                <span>{selectedEntity.entity_id}</span>
+              </div>
+              <div className="detail-row">
+                <label>Name:</label>
+                <span>{selectedEntity.name || '-'}</span>
+              </div>
+              <div className="detail-row">
+                <label>Age:</label>
+                <span>{selectedEntity.age || '-'}</span>
+              </div>
+              <div className="detail-row">
+                <label>Email:</label>
+                <span>{selectedEntity.email || '-'}</span>
+              </div>
+              <div className="detail-row">
+                <label>Phone:</label>
+                <span>{selectedEntity.phone || '-'}</span>
+              </div>
+              <div className="detail-row">
+                <label>Assigned Tag:</label>
+                <span>
+                  {selectedEntity.tag_name ? (
+                    <code>{selectedEntity.tag_name}</code>
+                  ) : selectedEntity.assigned_tag_id ? (
+                    <code>{selectedEntity.assigned_tag_id}</code>
+                  ) : (
+                    'Not assigned'
+                  )}
+                </span>
+              </div>
+              <div className="detail-row">
+                <label>Tracking Status:</label>
+                <span>{getTrackingStatusBadge(selectedEntity.tracking_status)}</span>
+              </div>
+              <div className="detail-row">
+                <label>Current Location:</label>
+                <span>{selectedEntity.current_location || 'Unknown'}</span>
+              </div>
+              <div className="detail-row">
+                <label>Created At:</label>
+                <span>{selectedEntity.created_at ? new Date(selectedEntity.created_at).toLocaleString() : '-'}</span>
+              </div>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            onClick={() => setIsViewModalOpen(false)}
+            className="btn btn-secondary"
+          >
+            Close
+          </button>
         </Modal.Footer>
       </Modal>
 

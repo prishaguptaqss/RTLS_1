@@ -32,7 +32,8 @@ class EventType(str, enum.Enum):
 
 class EntityType(str, enum.Enum):
     """Entity type enumeration."""
-    person = "person"
+    patient = "patient"  # Primary type for patient management
+    person = "person"    # Legacy - for backward compatibility
     material = "material"
 
 

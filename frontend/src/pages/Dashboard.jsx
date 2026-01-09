@@ -153,7 +153,7 @@ const Dashboard = () => {
           <StatCard
             title="Patients"
             value={loading ? '...' : stats.totalEntities.toString()}
-            subtitle={`${stats.personEntities} person, ${stats.materialEntities} material`}
+            subtitle="Total registered patients"
             icon={Users}
             onClick={() => navigate('/entities')}
           />
@@ -212,7 +212,7 @@ const Dashboard = () => {
 
       <PermissionGate permission="DASHBOARD_VIEW">
         <div className="dashboard-grid">
-          <Card>
+          {/* <Card>
             <Card.Header>
               <Card.Title>System Status</Card.Title>
             </Card.Header>
@@ -234,9 +234,9 @@ const Dashboard = () => {
                 <span>{systemStatus.database ? 'Database connected' : 'Database not connected'}</span>
               </div>
             </Card.Content>
-          </Card>
+          </Card> */}
 
-          <Card>
+          {/* <Card>
             <Card.Header>
               <Card.Title>Quick Stats</Card.Title>
             </Card.Header>
@@ -258,14 +258,6 @@ const Dashboard = () => {
                     <span className="stat-label">Total Patients:</span>
                     <span className="stat-value">{stats.totalEntities}</span>
                   </div>
-                  <div className="stat-row">
-                    <span className="stat-label">└─ Person:</span>
-                    <span className="stat-value">{stats.personEntities}</span>
-                  </div>
-                  <div className="stat-row">
-                    <span className="stat-label">└─ Material:</span>
-                    <span className="stat-value">{stats.materialEntities}</span>
-                  </div>
                   <hr style={{ margin: '10px 0', border: '1px solid #e5e7eb' }} />
                   <div className="stat-row">
                     <span className="stat-label">Active Tags:</span>
@@ -278,7 +270,7 @@ const Dashboard = () => {
                 </div>
               )}
             </Card.Content>
-          </Card>
+          </Card> */}
         </div>
       </PermissionGate>
     </div>
