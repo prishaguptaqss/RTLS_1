@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Users, Building2, DoorOpen, Wifi, Shield } from 'lucide-react';
 import StatCard from '../components/ui/StatCard';
 import Card from '../components/ui/Card';
+import PermissionGate from '../components/PermissionGate';
+import { useAuth } from '../contexts/AuthContext';
 import {
   fetchStaff,
   fetchEntities,
@@ -16,6 +18,7 @@ import './Dashboard.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { hasAnyPermission } = useAuth();
   const [stats, setStats] = useState({
     activeUsers: 0,
     totalEntities: 0,
@@ -136,119 +139,148 @@ const Dashboard = () => {
       </div>
 
       <div className="stats-grid">
-        <StatCard
-          title="Active Users"
-          value={loading ? '...' : stats.activeUsers.toString()}
-          subtitle="Currently active users"
-          icon={Users}
-          onClick={() => navigate('/staff')}
-        />
-        <StatCard
-          title="Entities"
-          value={loading ? '...' : stats.totalEntities.toString()}
-          subtitle={`${stats.personEntities} person, ${stats.materialEntities} material`}
-          icon={Users}
-          onClick={() => navigate('/entities')}
-        />
-        <StatCard
-          title="Roles"
-          value={loading ? '...' : stats.totalRoles.toString()}
-          subtitle="Access control roles"
-          icon={Shield}
-          onClick={() => navigate('/roles')}
-        />
-        <StatCard
-          title="Buildings"
-          value={loading ? '...' : stats.totalBuildings.toString()}
-          subtitle="Monitored buildings"
-          icon={Building2}
-          onClick={() => navigate('/locations')}
-        />
-        <StatCard
-          title="Rooms"
-          value={loading ? '...' : stats.totalRooms.toString()}
-          subtitle="Tracked locations"
-          icon={DoorOpen}
-          onClick={() => navigate('/locations')}
-        />
-        <StatCard
-          title="Active Devices"
-          value={loading ? '...' : (stats.activeTags + stats.activeAnchors).toString()}
-          subtitle={`${stats.activeTags} tags, ${stats.activeAnchors} anchors`}
-          icon={Wifi}
-          onClick={() => navigate('/devices')}
-        />
+        <PermissionGate permission="STAFF_VIEW">
+          <StatCard
+            title="Active Users"
+            value={loading ? '...' : stats.activeUsers.toString()}
+            subtitle="Currently active users"
+            icon={Users}
+            onClick={() => navigate('/staff')}
+          />
+        </PermissionGate>
+
+        <PermissionGate permission="ENTITY_VIEW">
+          <StatCard
+            title="Entities"
+            value={loading ? '...' : stats.totalEntities.toString()}
+            subtitle={`${stats.personEntities} person, ${stats.materialEntities} material`}
+            icon={Users}
+            onClick={() => navigate('/entities')}
+          />
+        </PermissionGate>
+
+        <PermissionGate permission="ROLE_VIEW">
+          <StatCard
+            title="Roles"
+            value={loading ? '...' : stats.totalRoles.toString()}
+            subtitle="Access control roles"
+            icon={Shield}
+            onClick={() => navigate('/roles')}
+          />
+        </PermissionGate>
+
+        <PermissionGate permission="BUILDING_VIEW">
+          <StatCard
+            title="Buildings"
+            value={loading ? '...' : stats.totalBuildings.toString()}
+            subtitle="Monitored buildings"
+            icon={Building2}
+            onClick={() => navigate('/locations')}
+          />
+        </PermissionGate>
+
+        <PermissionGate permission="BUILDING_VIEW">
+          <StatCard
+            title="Rooms"
+            value={loading ? '...' : stats.totalRooms.toString()}
+            subtitle="Tracked locations"
+            icon={DoorOpen}
+            onClick={() => navigate('/locations')}
+          />
+        </PermissionGate>
+
+        <PermissionGate permission="DEVICE_VIEW">
+          <StatCard
+            title="Active Devices"
+            value={loading ? '...' : (stats.activeTags + stats.activeAnchors).toString()}
+            subtitle={`${stats.activeTags} tags, ${stats.activeAnchors} anchors`}
+            icon={Wifi}
+            onClick={() => navigate('/devices')}
+          />
+        </PermissionGate>
       </div>
 
-      <div className="dashboard-grid">
+      {!hasAnyPermission(['STAFF_VIEW', 'ENTITY_VIEW', 'ROLE_VIEW', 'BUILDING_VIEW', 'DEVICE_VIEW', 'DASHBOARD_VIEW']) && !loading && (
         <Card>
-          <Card.Header>
-            <Card.Title>System Status</Card.Title>
-          </Card.Header>
           <Card.Content>
-            <div className="status-item">
-              <span className={`status-indicator ${systemStatus.backend ? 'active' : 'inactive'}`}></span>
-              <span>{systemStatus.backend ? 'Backend connected' : 'Backend not connected'}</span>
-            </div>
-            <div className="status-item">
-              <span className={`status-indicator ${systemStatus.anchors ? 'active' : 'inactive'}`}></span>
-              <span>
-                {systemStatus.anchors
-                  ? `${stats.activeAnchors} BLE anchor${stats.activeAnchors !== 1 ? 's' : ''} online`
-                  : 'No BLE anchors online'}
-              </span>
-            </div>
-            <div className="status-item">
-              <span className={`status-indicator ${systemStatus.database ? 'active' : 'inactive'}`}></span>
-              <span>{systemStatus.database ? 'Database connected' : 'Database not connected'}</span>
-            </div>
+            <p style={{ textAlign: 'center', padding: '20px', color: '#6b7280' }}>
+              You don't have permissions to view dashboard statistics. Please contact your administrator to request access.
+            </p>
           </Card.Content>
         </Card>
+      )}
 
-        <Card>
-          <Card.Header>
-            <Card.Title>Quick Stats</Card.Title>
-          </Card.Header>
-          <Card.Content>
-            {loading ? (
-              <p className="placeholder-text">Loading statistics...</p>
-            ) : (
-              <div className="quick-stats">
-                <div className="stat-row">
-                  <span className="stat-label">Active Users:</span>
-                  <span className="stat-value">{stats.activeUsers}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">Total Roles:</span>
-                  <span className="stat-value">{stats.totalRoles}</span>
-                </div>
-                <hr style={{ margin: '10px 0', border: '1px solid #e5e7eb' }} />
-                <div className="stat-row">
-                  <span className="stat-label">Total Entities:</span>
-                  <span className="stat-value">{stats.totalEntities}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">└─ Person:</span>
-                  <span className="stat-value">{stats.personEntities}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">└─ Material:</span>
-                  <span className="stat-value">{stats.materialEntities}</span>
-                </div>
-                <hr style={{ margin: '10px 0', border: '1px solid #e5e7eb' }} />
-                <div className="stat-row">
-                  <span className="stat-label">Active Tags:</span>
-                  <span className="stat-value">{stats.activeTags}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">Active Anchors:</span>
-                  <span className="stat-value">{stats.activeAnchors}</span>
-                </div>
+      <PermissionGate permission="DASHBOARD_VIEW">
+        <div className="dashboard-grid">
+          <Card>
+            <Card.Header>
+              <Card.Title>System Status</Card.Title>
+            </Card.Header>
+            <Card.Content>
+              <div className="status-item">
+                <span className={`status-indicator ${systemStatus.backend ? 'active' : 'inactive'}`}></span>
+                <span>{systemStatus.backend ? 'Backend connected' : 'Backend not connected'}</span>
               </div>
-            )}
-          </Card.Content>
-        </Card>
-      </div>
+              <div className="status-item">
+                <span className={`status-indicator ${systemStatus.anchors ? 'active' : 'inactive'}`}></span>
+                <span>
+                  {systemStatus.anchors
+                    ? `${stats.activeAnchors} BLE anchor${stats.activeAnchors !== 1 ? 's' : ''} online`
+                    : 'No BLE anchors online'}
+                </span>
+              </div>
+              <div className="status-item">
+                <span className={`status-indicator ${systemStatus.database ? 'active' : 'inactive'}`}></span>
+                <span>{systemStatus.database ? 'Database connected' : 'Database not connected'}</span>
+              </div>
+            </Card.Content>
+          </Card>
+
+          <Card>
+            <Card.Header>
+              <Card.Title>Quick Stats</Card.Title>
+            </Card.Header>
+            <Card.Content>
+              {loading ? (
+                <p className="placeholder-text">Loading statistics...</p>
+              ) : (
+                <div className="quick-stats">
+                  <div className="stat-row">
+                    <span className="stat-label">Active Users:</span>
+                    <span className="stat-value">{stats.activeUsers}</span>
+                  </div>
+                  <div className="stat-row">
+                    <span className="stat-label">Total Roles:</span>
+                    <span className="stat-value">{stats.totalRoles}</span>
+                  </div>
+                  <hr style={{ margin: '10px 0', border: '1px solid #e5e7eb' }} />
+                  <div className="stat-row">
+                    <span className="stat-label">Total Entities:</span>
+                    <span className="stat-value">{stats.totalEntities}</span>
+                  </div>
+                  <div className="stat-row">
+                    <span className="stat-label">└─ Person:</span>
+                    <span className="stat-value">{stats.personEntities}</span>
+                  </div>
+                  <div className="stat-row">
+                    <span className="stat-label">└─ Material:</span>
+                    <span className="stat-value">{stats.materialEntities}</span>
+                  </div>
+                  <hr style={{ margin: '10px 0', border: '1px solid #e5e7eb' }} />
+                  <div className="stat-row">
+                    <span className="stat-label">Active Tags:</span>
+                    <span className="stat-value">{stats.activeTags}</span>
+                  </div>
+                  <div className="stat-row">
+                    <span className="stat-label">Active Anchors:</span>
+                    <span className="stat-value">{stats.activeAnchors}</span>
+                  </div>
+                </div>
+              )}
+            </Card.Content>
+          </Card>
+        </div>
+      </PermissionGate>
     </div>
   );
 };

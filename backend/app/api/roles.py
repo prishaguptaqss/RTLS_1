@@ -5,6 +5,7 @@ Handles CRUD operations for roles and their permissions.
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import List
 from app.api.deps import get_db, get_current_staff, get_current_organization, require_permission, require_admin
 from app.models.staff import Staff
@@ -118,8 +119,24 @@ def create_role(
         new_role.permissions = permissions
 
     db.add(new_role)
-    db.commit()
-    db.refresh(new_role)
+
+    try:
+        db.commit()
+        db.refresh(new_role)
+    except IntegrityError as e:
+        db.rollback()
+        # Check if it's a duplicate key error
+        if "duplicate key value violates unique constraint" in str(e.orig):
+            if "ix_roles_name" in str(e.orig):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"The '{role_data.name}' role already exists"
+                )
+        # Re-raise if it's a different integrity error
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to create role due to database constraint violation"
+        )
 
     return new_role
 
@@ -181,8 +198,23 @@ def update_role(
         ).all()
         role.permissions = permissions
 
-    db.commit()
-    db.refresh(role)
+    try:
+        db.commit()
+        db.refresh(role)
+    except IntegrityError as e:
+        db.rollback()
+        # Check if it's a duplicate key error
+        if "duplicate key value violates unique constraint" in str(e.orig):
+            if "ix_roles_name" in str(e.orig):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"The '{role_data.name}' role already exists"
+                )
+        # Re-raise if it's a different integrity error
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to update role due to database constraint violation"
+        )
 
     return role
 

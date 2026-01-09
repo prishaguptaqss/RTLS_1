@@ -398,7 +398,7 @@ const StaffManagement = () => {
                 </div>
               </div>
               </PermissionGate>
-
+{/* 
               {user?.is_admin && (
                 <div className="form-group">
                   <label className="checkbox-label">
@@ -413,7 +413,7 @@ const StaffManagement = () => {
                     {editingStaff && isMainAdmin(editingStaff) && <span className="readonly-badge">Read-only</span>}
                   </label>
                 </div>
-              )}
+              )} */}
 
               {!editingStaff && (
                 <div className="info-message" style={{

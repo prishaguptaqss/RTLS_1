@@ -9,12 +9,14 @@ import {
 import PermissionGate from '../components/PermissionGate';
 import { useSearch } from '../contexts/SearchContext';
 import { useOrganization } from '../contexts/OrganizationContext';
+import { useToast } from '../contexts/ToastContext';
 import { Edit2, Trash2, Eye } from 'lucide-react';
 import './RoleManagement.css';
 
 const RoleManagement = () => {
   const { searchQuery } = useSearch();
   const { currentOrganization } = useOrganization();
+  const toast = useToast();
   const [roles, setRoles] = useState([]);
   const [permissionsGrouped, setPermissionsGrouped] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,6 +81,7 @@ const RoleManagement = () => {
       setPermissionsGrouped(permsData || []);
     } catch (error) {
       console.error('Error loading data:', error);
+      toast.error('Failed to load roles and permissions');
     } finally {
       setLoading(false);
     }
@@ -109,14 +112,16 @@ const RoleManagement = () => {
     try {
       if (editingRole) {
         await updateRole(editingRole.id, formData);
+        toast.success('Role updated successfully!');
       } else {
         await createRole(formData);
+        toast.success('Role created successfully!');
       }
       await loadData();
       handleCloseModal();
     } catch (error) {
       console.error('Error saving role:', error);
-      alert(error.response?.data?.detail || 'Failed to save role');
+      toast.error(error.response?.data?.detail || 'Failed to save role');
     }
   };
 
@@ -124,10 +129,11 @@ const RoleManagement = () => {
     if (window.confirm(`Are you sure you want to delete the role "${name}"?`)) {
       try {
         await deleteRole(id);
+        toast.success(`Role '${name}' deleted successfully!`);
         await loadData();
       } catch (error) {
         console.error('Error deleting role:', error);
-        alert(error.response?.data?.detail || 'Failed to delete role');
+        toast.error(error.response?.data?.detail || 'Failed to delete role');
       }
     }
   };
