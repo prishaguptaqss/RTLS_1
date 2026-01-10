@@ -124,16 +124,6 @@ const NotificationModal = ({ isOpen, onClose }) => {
     }
   };
 
-  // Format duration for display
-  const formatDuration = (seconds) => {
-    if (!seconds) return 'N/A';
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    if (minutes > 0) return `${minutes}m`;
-    return `${seconds}s`;
-  };
-
   // Format timestamp
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return 'N/A';
@@ -179,9 +169,6 @@ const NotificationModal = ({ isOpen, onClose }) => {
             )}
             <div>
               <strong>Last Room:</strong> {notification.last_room || 'Unknown'}
-            </div>
-            <div>
-              <strong>Missing Duration:</strong> {formatDuration(notification.missing_duration_seconds)}
             </div>
           </div>
         </div>
