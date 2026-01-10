@@ -49,6 +49,6 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
-
+test_notification_system.py
 #uploaded files
 uploads/

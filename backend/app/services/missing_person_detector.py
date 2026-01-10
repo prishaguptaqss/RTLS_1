@@ -54,112 +54,105 @@ class MissingPersonDetector:
 
     async def _check_missing_persons(self, db: Session):
         """
-        Check for missing persons and broadcast alerts.
-        Uses per-organization untracked threshold from organization_settings.
+        Check for untracked entities (offline tags assigned to entities) and broadcast alerts.
+        An entity is considered "untracked" when its assigned tag has status='offline'.
 
         Args:
             db: Database session
         """
         current_time = datetime.now(timezone.utc)
 
-        # Query active tags
-        active_tags = db.query(Tag).filter(Tag.status == TagStatus.active).all()
+        # Query all offline tags that are assigned to entities
+        offline_tags = db.query(Tag).filter(
+            Tag.status == TagStatus.offline,
+            Tag.assigned_entity_id.isnot(None)  # Only tags assigned to entities
+        ).all()
 
-        logger.debug(f"Checking {len(active_tags)} active tags for missing persons")
+        logger.debug(f"Checking {len(offline_tags)} offline entity tags for untracked notifications")
 
-        for tag in active_tags:
-            # Get organization-specific threshold
-            org_settings = db.query(OrganizationSettings).filter(
-                OrganizationSettings.organization_id == tag.organization_id
+        for tag in offline_tags:
+            # Check if notification already exists for this tag
+            existing_notification = db.query(Notification).filter(
+                Notification.tag_id == tag.tag_id,
+                Notification.is_read == False
             ).first()
 
-            # Use per-organization threshold, or fall back to global default
-            threshold_seconds = org_settings.untracked_threshold_seconds if org_settings else settings.MISSING_PERSON_THRESHOLD_SECONDS
-            threshold = timedelta(seconds=threshold_seconds)
-            if not tag.last_seen:
+            if existing_notification:
+                # Notification already exists, skip
+                logger.debug(f"Notification already exists for tag {tag.tag_id}")
                 continue
 
-            time_since_seen = current_time - tag.last_seen
+            # Get last known location
+            live_loc = db.query(LiveLocation).filter(
+                LiveLocation.tag_id == tag.tag_id
+            ).first()
 
-            if time_since_seen > threshold:
-                # Check for duplicate notification within last 5 minutes to prevent spam
-                five_minutes_ago = current_time - timedelta(minutes=5)
-                recent_notification = db.query(Notification).filter(
-                    Notification.tag_id == tag.tag_id,
-                    Notification.created_at >= five_minutes_ago
-                ).first()
+            last_room = "Unknown"
+            if live_loc and live_loc.room:
+                last_room = live_loc.room.room_name
 
-                if recent_notification:
-                    continue  # Skip creating duplicate notification
+            # Load entity details (we know tag is assigned to entity from query filter)
+            entity = db.query(Entity).filter(Entity.id == tag.assigned_entity_id).first()
+            if not entity:
+                logger.warning(f"Tag {tag.tag_id} assigned to non-existent entity {tag.assigned_entity_id}")
+                continue
 
-                # Get last known location
-                live_loc = db.query(LiveLocation).filter(
-                    LiveLocation.tag_id == tag.tag_id
-                ).first()
+            entity_name = entity.name
+            entity_id_value = entity.entity_id
+            entity_type = entity.type
+            entity_internal_id = entity.id
 
-                last_room = "Unknown"
-                if live_loc and live_loc.room:
-                    last_room = live_loc.room.room_name
+            # Calculate missing duration
+            if tag.last_seen:
+                time_since_seen = current_time - tag.last_seen
+                missing_duration_seconds = int(time_since_seen.total_seconds())
+            else:
+                missing_duration_seconds = 0
 
-                # Load entity details if tag is assigned to an entity
-                entity_name = None
-                entity_id_value = None
-                entity_type = None
-                entity_internal_id = None
+            # Set severity based on offline status (medium by default for untracked)
+            severity = "high"
 
-                if tag.assigned_entity_id:
-                    entity = db.query(Entity).filter(Entity.id == tag.assigned_entity_id).first()
-                    if entity:
-                        entity_name = entity.name
-                        entity_id_value = entity.entity_id
-                        entity_type = entity.type
-                        entity_internal_id = entity.id
+            # Persist notification to database
+            notification = Notification(
+                organization_id=tag.organization_id,
+                type=NotificationType.MISSING_PERSON,
+                tag_id=tag.tag_id,
+                entity_id=entity_internal_id,
+                entity_name=entity_name,
+                entity_type=entity_type,
+                user_id=tag.assigned_user_id,
+                user_name=tag.assigned_user.name if tag.assigned_user else None,
+                last_room=last_room,
+                last_seen=tag.last_seen,
+                missing_duration_seconds=missing_duration_seconds,
+                severity=severity,
+                is_read=False
+            )
+            db.add(notification)
+            db.commit()
+            db.refresh(notification)
 
-                # Calculate severity based on missing duration (using org-specific threshold)
-                severity = self._calculate_severity(int(time_since_seen.total_seconds()), threshold_seconds)
+            # Broadcast enhanced WebSocket message
+            await websocket_manager.broadcast({
+                "type": "MISSING_PERSON",
+                "notification_id": notification.id,
+                "tag_id": tag.tag_id,
+                "entity_name": entity_name,
+                "entity_id": entity_id_value,
+                "entity_type": entity_type.value if entity_type else None,
+                "user_name": tag.assigned_user.name if tag.assigned_user else None,
+                "last_room": last_room,
+                "last_seen": int(tag.last_seen.timestamp()) if tag.last_seen else None,
+                "missing_duration_seconds": missing_duration_seconds,
+                "severity": severity,
+                "organization_id": tag.organization_id
+            })
 
-                # Persist notification to database
-                notification = Notification(
-                    organization_id=tag.organization_id,
-                    type=NotificationType.MISSING_PERSON,
-                    tag_id=tag.tag_id,
-                    entity_id=entity_internal_id,
-                    entity_name=entity_name,
-                    entity_type=entity_type,
-                    user_id=tag.assigned_user_id,
-                    user_name=tag.assigned_user.name if tag.assigned_user else None,
-                    last_room=last_room,
-                    last_seen=tag.last_seen,
-                    missing_duration_seconds=int(time_since_seen.total_seconds()),
-                    severity=severity,
-                    is_read=False
-                )
-                db.add(notification)
-                db.commit()
-                db.refresh(notification)
-
-                # Broadcast enhanced WebSocket message
-                await websocket_manager.broadcast({
-                    "type": "MISSING_PERSON",
-                    "notification_id": notification.id,
-                    "tag_id": tag.tag_id,
-                    "entity_name": entity_name,
-                    "entity_id": entity_id_value,
-                    "entity_type": entity_type.value if entity_type else None,
-                    "user_name": tag.assigned_user.name if tag.assigned_user else None,
-                    "last_room": last_room,
-                    "last_seen": int(tag.last_seen.timestamp()),
-                    "missing_duration_seconds": int(time_since_seen.total_seconds()),
-                    "severity": severity,
-                    "organization_id": tag.organization_id
-                })
-
-                logger.warning(
-                    f"Missing person alert: {tag.tag_id} "
-                    f"(entity: {entity_name or 'N/A'}, "
-                    f"last seen {time_since_seen.total_seconds():.0f}s ago in {last_room}, "
-                    f"severity: {severity})"
-                )
+            logger.warning(
+                f"Untracked entity alert: {entity_name or entity_id_value} "
+                f"(tag: {tag.tag_id}, last location: {last_room}, "
+                f"severity: {severity})"
+            )
 
     def _calculate_severity(self, missing_duration_seconds: int, threshold_seconds: int) -> str:
         """

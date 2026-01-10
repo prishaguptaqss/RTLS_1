@@ -109,10 +109,11 @@ class LocationService:
         1. Lookup from_room and to_room by name
         2. Get or create tag
         3. Update tag: last_seen, status='active'
-        4. Update live_locations: SET room_id = to_room
-        5. Close previous location_history row: SET exited_at = timestamp
-        6. Insert new location_history row
-        7. Broadcast WebSocket event
+        4. Delete unread notifications for this tag (tag came back online)
+        5. Update live_locations: SET room_id = to_room
+        6. Close previous location_history row: SET exited_at = timestamp
+        7. Insert new location_history row
+        8. Broadcast WebSocket event
         """
         timestamp = datetime.fromtimestamp(event.timestamp)
 
@@ -144,6 +145,22 @@ class LocationService:
         else:
             tag.last_seen = timestamp
             tag.status = TagStatus.active
+
+            # IMPORTANT: Remove any unread notifications for this tag (entity is now tracked)
+            from app.models.notification import Notification
+            deleted_count = db.query(Notification).filter(
+                Notification.tag_id == event.tag_id,
+                Notification.is_read == False
+            ).delete()
+
+            if deleted_count > 0:
+                logger.info(f"Removed {deleted_count} unread notification(s) for tag {event.tag_id} (tag came back online)")
+                # Broadcast notification removal event
+                await websocket_manager.broadcast({
+                    "type": "NOTIFICATION_REMOVED",
+                    "tag_id": event.tag_id,
+                    "organization_id": tag.organization_id
+                })
 
         # Update live location
         live_loc = db.query(LiveLocation).filter(LiveLocation.tag_id == event.tag_id).first()
@@ -193,9 +210,10 @@ class LocationService:
         Steps:
         1. Lookup to_room by name
         2. Create or update tag
-        3. Insert live_locations
-        4. Insert location_history
-        5. Broadcast WebSocket event
+        3. Delete unread notifications for this tag (tag came back online)
+        4. Insert live_locations
+        5. Insert location_history
+        6. Broadcast WebSocket event
         """
         timestamp = datetime.fromtimestamp(event.timestamp)
         to_room = await get_room_from_anchor_or_name(db, event.to_room) if event.to_room else None
@@ -223,6 +241,22 @@ class LocationService:
         else:
             tag.last_seen = timestamp
             tag.status = TagStatus.active
+
+            # IMPORTANT: Remove any unread notifications for this tag (entity is now tracked)
+            from app.models.notification import Notification
+            deleted_count = db.query(Notification).filter(
+                Notification.tag_id == event.tag_id,
+                Notification.is_read == False
+            ).delete()
+
+            if deleted_count > 0:
+                logger.info(f"Removed {deleted_count} unread notification(s) for tag {event.tag_id} (tag came back online)")
+                # Broadcast notification removal event
+                await websocket_manager.broadcast({
+                    "type": "NOTIFICATION_REMOVED",
+                    "tag_id": event.tag_id,
+                    "organization_id": tag.organization_id
+                })
 
         # Insert or update live location
         live_loc = db.query(LiveLocation).filter(LiveLocation.tag_id == event.tag_id).first()

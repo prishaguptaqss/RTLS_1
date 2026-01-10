@@ -72,6 +72,23 @@ export const NotificationProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
+  // Listen for WebSocket NOTIFICATION_REMOVED events (when patient comes back online)
+  useEffect(() => {
+    const unsubscribe = websocketService.on('NOTIFICATION_REMOVED', (event) => {
+      console.log('[NotificationContext] Notification removed for tag:', event.tag_id);
+
+      // Decrement unread count (ensure it never goes below 0)
+      setUnreadCount(prev => Math.max(prev - 1, 0));
+
+      // Clear latest notification if it matches the removed tag
+      if (latestNotification?.tag_id === event.tag_id) {
+        setLatestNotification(null);
+      }
+    });
+
+    return unsubscribe;
+  }, [latestNotification]);
+
   // Refresh unread count (called after marking as read/unread)
   const refreshUnreadCount = useCallback(async () => {
     await fetchUnreadCount();
