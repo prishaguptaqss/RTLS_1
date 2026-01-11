@@ -2,7 +2,7 @@
 Room model - represents individual rooms in the hospital.
 CRITICAL: This model is used extensively for event processing.
 """
-from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint, Float
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -43,6 +43,16 @@ class Room(Base):
         String,
         nullable=True,
         comment="Room type (e.g., 'ICU', 'Ward', 'ER', 'Operating Room')"
+    )
+    x_coordinate = Column(
+        Float,
+        nullable=True,
+        comment="X coordinate for map visualization (in logical units or pixels)"
+    )
+    y_coordinate = Column(
+        Float,
+        nullable=True,
+        comment="Y coordinate for map visualization (in logical units or pixels)"
     )
 
     # Composite unique constraint: room name must be unique within organization

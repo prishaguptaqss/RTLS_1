@@ -1,7 +1,7 @@
 """
 Anchor model - represents ESP32 gateways that detect BLE beacons.
 """
-from sqlalchemy import Column, String, Integer, ForeignKey, Enum, DateTime
+from sqlalchemy import Column, String, Integer, ForeignKey, Enum, DateTime, Float
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.utils.enums import AnchorStatus
@@ -48,6 +48,16 @@ class Anchor(Base):
         DateTime(timezone=True),
         nullable=True,
         comment="Last time anchor reported data"
+    )
+    x_coordinate = Column(
+        Float,
+        nullable=True,
+        comment="X coordinate for map visualization (relative to room or floor)"
+    )
+    y_coordinate = Column(
+        Float,
+        nullable=True,
+        comment="Y coordinate for map visualization (relative to room or floor)"
     )
 
     # Relationships

@@ -10,6 +10,8 @@ class RoomBase(BaseModel):
     floor_id: int
     room_name: str
     room_type: Optional[str] = None
+    x_coordinate: Optional[float] = None
+    y_coordinate: Optional[float] = None
 
 
 class RoomCreate(RoomBase):
@@ -23,6 +25,8 @@ class RoomUpdate(BaseModel):
     floor_id: Optional[int] = None
     room_name: Optional[str] = None
     room_type: Optional[str] = None
+    x_coordinate: Optional[float] = None
+    y_coordinate: Optional[float] = None
     anchor_id: Optional[str] = None  # Update single anchor assignment (deprecated, use anchor_ids)
     anchor_ids: Optional[List[str]] = None  # Update list of anchor IDs to assign to this room
 

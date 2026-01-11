@@ -13,6 +13,8 @@ class AnchorBase(BaseModel):
     anchor_name: Optional[str] = None
     room_id: Optional[int] = None
     status: Optional[AnchorStatus] = AnchorStatus.inactive_in_store
+    x_coordinate: Optional[float] = None
+    y_coordinate: Optional[float] = None
 
 
 class AnchorCreate(AnchorBase):
@@ -26,6 +28,8 @@ class AnchorUpdate(BaseModel):
     room_id: Optional[int] = None
     status: Optional[AnchorStatus] = None
     last_seen: Optional[datetime] = None
+    x_coordinate: Optional[float] = None
+    y_coordinate: Optional[float] = None
 
 
 class Anchor(AnchorBase):
