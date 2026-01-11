@@ -19,6 +19,7 @@ const LiveTracking = () => {
   const [rooms, setRooms] = useState([]);
   const [anchors, setAnchors] = useState([]);
   const [liveTags, setLiveTags] = useState([]);
+  const [offlineTags, setOfflineTags] = useState([]); // Tags that went offline with last location
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -50,8 +51,30 @@ const LiveTracking = () => {
 
     const handleTagLost = (data) => {
       console.log('Tag lost:', data);
-      // Remove tag from live positions or mark as offline
-      setLiveTags(prev => prev.filter(tag => tag.tag_id !== data.tag_id));
+
+      // Find the tag that was lost
+      setLiveTags(prev => {
+        const lostTag = prev.find(tag => tag.tag_id === data.tag_id);
+
+        // Move to offline tags with last known location
+        if (lostTag) {
+          setOfflineTags(prevOffline => {
+            // Check if already in offline list
+            const exists = prevOffline.some(t => t.tag_id === data.tag_id);
+            if (!exists) {
+              return [...prevOffline, {
+                ...lostTag,
+                status: 'offline',
+                offlineAt: new Date().toISOString()
+              }];
+            }
+            return prevOffline;
+          });
+        }
+
+        // Remove from live tags
+        return prev.filter(tag => tag.tag_id !== data.tag_id);
+      });
     };
 
     // Subscribe to WebSocket events (using 'on' method)
@@ -106,8 +129,16 @@ const LiveTracking = () => {
         room_id: pos.room_id, // Note: API response doesn't include room_id, need to look it up
         lastSeenRoom: pos.lastSeenRoom,
         updatedAt: pos.updatedAt,
+        status: 'active',
       }));
       setLiveTags(tags);
+
+      // Remove any offline tags that are now active again
+      setOfflineTags(prev =>
+        prev.filter(offlineTag =>
+          !tags.some(activeTag => activeTag.tag_id === offlineTag.tag_id)
+        )
+      );
     } catch (err) {
       console.error('Error loading live positions:', err);
     }
@@ -156,6 +187,15 @@ const LiveTracking = () => {
     ...tag,
     room_id: getRoomIdByName(tag.lastSeenRoom),
   })).filter(tag => tag.room_id !== null); // Only show tags with valid room mappings
+
+  // Enhance offline tags with room_id lookup
+  const enhancedOfflineTags = offlineTags.map(tag => ({
+    ...tag,
+    room_id: getRoomIdByName(tag.lastSeenRoom),
+  })).filter(tag => tag.room_id !== null);
+
+  // Combine all tags for display (active + offline)
+  const allTags = [...enhancedLiveTags, ...enhancedOfflineTags];
 
   const getTimeAgo = () => {
     const now = new Date();
@@ -299,7 +339,7 @@ const LiveTracking = () => {
                 floors={floors}
                 rooms={rooms}
                 anchors={anchors}
-                tags={enhancedLiveTags}
+                tags={allTags}
                 selectedBuilding={selectedBuilding}
                 selectedFloor={selectedFloor}
                 selectedRoom={selectedRoom}
@@ -378,10 +418,10 @@ const LiveTracking = () => {
 
           {/* Tags List */}
           <div className="tags-list">
-            {enhancedLiveTags.length === 0 ? (
-              <div className="no-floor-message">No active tags detected</div>
+            {allTags.length === 0 ? (
+              <div className="no-floor-message">No tags detected</div>
             ) : (
-              enhancedLiveTags
+              allTags
                 .filter(tag => {
                   // Filter by search term
                   if (searchTerm && !tag.userName?.toLowerCase().includes(searchTerm.toLowerCase()) &&
@@ -403,16 +443,24 @@ const LiveTracking = () => {
                   return true;
                 })
                 .map(tag => (
-                  <div key={tag.tag_id} className="tag-item">
+                  <div
+                    key={tag.tag_id}
+                    className={`tag-item ${tag.status === 'offline' ? 'tag-offline' : ''}`}
+                  >
                     <div className="tag-info">
                       <strong>{tag.userName || tag.name}</strong>
                       <span className="tag-id">{tag.tag_id}</span>
+                      {tag.status === 'offline' && (
+                        <span className="tag-status-badge offline">LOST</span>
+                      )}
                     </div>
                     <div className="tag-location">
                       <MapPin size={14} />
                       <span>{tag.lastSeenRoom}</span>
                     </div>
-                    <div className="tag-time">{tag.updatedAt}</div>
+                    <div className="tag-time">
+                      {tag.status === 'offline' ? 'Last seen: ' : ''}{tag.updatedAt}
+                    </div>
                   </div>
                 ))
             )}
@@ -425,8 +473,12 @@ const LiveTracking = () => {
               <span className="stat-value">{enhancedLiveTags.length}</span>
             </div>
             <div className="stat-item">
+              <span className="stat-label">Lost Tags</span>
+              <span className="stat-value" style={{ color: '#e74c3c' }}>{enhancedOfflineTags.length}</span>
+            </div>
+            <div className="stat-item">
               <span className="stat-label">Rooms with Tags</span>
-              <span className="stat-value">{new Set(enhancedLiveTags.map(t => t.room_id)).size}</span>
+              <span className="stat-value">{new Set(allTags.map(t => t.room_id)).size}</span>
             </div>
           </div>
 

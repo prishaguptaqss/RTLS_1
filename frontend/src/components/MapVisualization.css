@@ -69,6 +69,42 @@
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
 }
 
+/* Tag marker animations */
+@keyframes pulse-active {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes pulse-offline {
+  0%, 100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Tag marker styles */
+.tag-marker-active {
+  animation: pulse-active 2s ease-in-out infinite;
+}
+
+.tag-marker-offline {
+  animation: pulse-offline 1.5s ease-in-out infinite;
+}
+
+/* Smooth transitions for tag movements */
+.leaflet-marker-icon,
+.leaflet-interactive {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Popup customization */
 .leaflet-popup-content-wrapper {
   border-radius: 8px;

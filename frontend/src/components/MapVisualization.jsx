@@ -434,26 +434,35 @@ const MapVisualization = ({
         })}
 
         {/* Render Live Tags */}
-        {tagPositions.map(tag => (
-          <Circle
-            key={`tag-${tag.tag_id}`}
-            center={tag.position}
-            radius={3}
-            pathOptions={{
-              color: '#f39c12',
-              weight: 2,
-              fillColor: '#f1c40f',
-              fillOpacity: 0.9,
-            }}
-          >
-            <Popup>
-              <strong>{tag.name || tag.tag_id}</strong>
-              <br />
-              {tag.entityName && `Entity: ${tag.entityName}`}
-              {tag.userName && `User: ${tag.userName}`}
-            </Popup>
-          </Circle>
-        ))}
+        {tagPositions.map(tag => {
+          const isOffline = tag.status === 'offline';
+          return (
+            <Circle
+              key={`tag-${tag.tag_id}`}
+              center={tag.position}
+              radius={3}
+              pathOptions={{
+                color: isOffline ? '#c0392b' : '#f39c12',
+                weight: 2,
+                fillColor: isOffline ? '#e74c3c' : '#f1c40f',
+                fillOpacity: 0.9,
+                className: isOffline ? 'tag-marker-offline' : 'tag-marker-active',
+              }}
+            >
+              <Popup>
+                <strong>{tag.name || tag.tag_id}</strong>
+                {isOffline && <span style={{color: '#e74c3c', fontWeight: 'bold'}}> (LOST)</span>}
+                <br />
+                {tag.entityName && `Entity: ${tag.entityName}`}
+                {tag.userName && `User: ${tag.userName}`}
+                <br />
+                Status: {isOffline ? 'Offline - Last seen' : 'Active'}
+                <br />
+                {tag.updatedAt}
+              </Popup>
+            </Circle>
+          );
+        })}
       </MapContainer>
 
       {/* Legend */}
@@ -477,7 +486,11 @@ const MapVisualization = ({
         </div>
         <div className="legend-item">
           <div className="legend-circle" style={{ background: '#f1c40f' }}></div>
-          <span>Live Tag</span>
+          <span>Active Tag</span>
+        </div>
+        <div className="legend-item">
+          <div className="legend-circle" style={{ background: '#e74c3c' }}></div>
+          <span>Lost Tag</span>
         </div>
       </div>
     </div>
