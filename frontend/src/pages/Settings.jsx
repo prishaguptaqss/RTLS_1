@@ -80,6 +80,21 @@ const Settings = () => {
       return;
     }
 
+    // Validate email format if provided
+    if (formData.smtp_from_email && formData.smtp_from_email !== '') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.smtp_from_email)) {
+        setError('Please enter a valid email address for "From Email"');
+        return;
+      }
+    }
+
+    // Validate SMTP port if provided
+    if (formData.smtp_port && (formData.smtp_port < 1 || formData.smtp_port > 65535)) {
+      setError('SMTP port must be between 1 and 65535');
+      return;
+    }
+
     try {
       setSaving(true);
       const updateData = {
@@ -112,7 +127,26 @@ const Settings = () => {
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       console.error('Error updating settings:', err);
-      setError(err.response?.data?.detail || 'Failed to update settings');
+
+      // Handle validation errors (422)
+      if (err.response?.status === 422 && err.response?.data?.detail) {
+        const detail = err.response.data.detail;
+
+        // If detail is an array of validation errors
+        if (Array.isArray(detail)) {
+          const errorMessages = detail.map(error => {
+            const field = error.loc?.join('.') || 'field';
+            return `${field}: ${error.msg}`;
+          }).join(', ');
+          setError(`Validation error: ${errorMessages}`);
+        } else if (typeof detail === 'string') {
+          setError(detail);
+        } else {
+          setError('Validation error. Please check your input.');
+        }
+      } else {
+        setError(err.response?.data?.detail || 'Failed to update settings');
+      }
     } finally {
       setSaving(false);
     }

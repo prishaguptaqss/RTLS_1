@@ -46,6 +46,8 @@ def run_migrations():
         return True
     except Exception as e:
         logger.error(f"Failed to run migrations: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return False
 
 
@@ -310,7 +312,7 @@ def initialize_database():
     is_initialized = check_database_initialized()
 
     if is_initialized:
-        logger.info("✓ Database already initialized")
+        logger.info("✓ Database tables already exist")
 
         # Even if initialized, check and seed missing data
         db = SessionLocal()
@@ -321,7 +323,9 @@ def initialize_database():
 
             if perm_count == 0:
                 logger.info("Permissions table is empty, seeding...")
-                seed_permissions(db)
+                if not seed_permissions(db):
+                    logger.error("Failed to seed permissions during post-initialization check")
+                    return False
 
             # Check and create Admin role if missing
             result = db.execute(
@@ -333,8 +337,12 @@ def initialize_database():
             if not admin_role:
                 logger.info("Admin role missing, creating...")
                 admin_role_id = create_admin_role(db)
+                if not admin_role_id:
+                    logger.error("Failed to create Admin role during post-initialization check")
+                    return False
             else:
                 admin_role_id = admin_role[0]
+                logger.info(f"Admin role already exists (ID: {admin_role_id})")
 
             # Check and create admin user if missing
             result = db.execute(
@@ -346,8 +354,12 @@ def initialize_database():
             if not admin_user:
                 logger.info("Admin user missing, creating...")
                 admin_user_id = create_default_admin(db)
+                if not admin_user_id:
+                    logger.error("Failed to create admin user during post-initialization check")
+                    return False
             else:
                 admin_user_id = admin_user[0]
+                logger.info(f"Admin user already exists (ID: {admin_user_id})")
 
             # Check if admin user has Admin role assigned
             if admin_role_id and admin_user_id:
@@ -359,12 +371,30 @@ def initialize_database():
 
                 if role_assigned == 0:
                     logger.info("Admin role not assigned to admin user, assigning...")
-                    assign_admin_role_to_user(db, admin_user_id, admin_role_id)
+                    if not assign_admin_role_to_user(db, admin_user_id, admin_role_id):
+                        logger.error("Failed to assign Admin role during post-initialization check")
+                        return False
+                else:
+                    logger.info("Admin role already assigned to admin user")
 
+            logger.info("=" * 60)
+            logger.info("✓ DATABASE INITIALIZATION VERIFIED")
+            logger.info("=" * 60)
+            logger.info("")
+            logger.info("Default Admin Credentials:")
+            logger.info(f"  Email:    {settings.DEFAULT_ADMIN_EMAIL}")
+            logger.info(f"  Password: {settings.DEFAULT_ADMIN_PASSWORD}")
+            logger.info("")
+            logger.info("=" * 60)
+
+        except Exception as e:
+            logger.error(f"Error during post-initialization check: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return False
         finally:
             db.close()
 
-        logger.info("=" * 60)
         return True
 
     logger.info("Database not initialized. Starting setup...")
