@@ -83,9 +83,8 @@ class LocationService:
             Exception: If event processing fails (transaction will be rolled back)
         """
         try:
-            # Normalize tag_id to uppercase for consistency
-            # (BLE MAC addresses can come in various cases)
-            event.tag_id = event.tag_id.upper()
+            # Do NOT normalize case here - use case-insensitive lookup instead
+            # This prevents creating duplicate tags when MAC addresses come in different cases
 
             if event.event_type == EventType.LOCATION_CHANGE:
                 return await self._handle_location_change(db, event)
@@ -125,8 +124,9 @@ class LocationService:
             logger.warning(f"Unknown room: {event.to_room} for tag {event.tag_id}")
             # Continue processing with room_id=None
 
-        # Get or create tag
-        tag = db.query(Tag).filter(Tag.tag_id == event.tag_id).first()
+        # Get or create tag (case-insensitive lookup to prevent duplicates)
+        from sqlalchemy import func
+        tag = db.query(Tag).filter(func.lower(Tag.tag_id) == func.lower(event.tag_id)).first()
         if not tag:
             # NEW TAG: Must set organization_id (required field)
             # Get organization_id from the room (rooms belong to organizations)
@@ -162,8 +162,8 @@ class LocationService:
                     "organization_id": tag.organization_id
                 })
 
-        # Update live location
-        live_loc = db.query(LiveLocation).filter(LiveLocation.tag_id == event.tag_id).first()
+        # Update live location (case-insensitive lookup)
+        live_loc = db.query(LiveLocation).filter(func.lower(LiveLocation.tag_id) == func.lower(event.tag_id)).first()
         if live_loc:
             live_loc.room_id = to_room.id if to_room else None
             live_loc.updated_at = timestamp
@@ -178,7 +178,7 @@ class LocationService:
 
         # Close ALL previous unclosed history entries (defensive: handles cases where multiple records are open)
         prev_histories = db.query(LocationHistory).filter(
-            LocationHistory.tag_id == event.tag_id,
+            func.lower(LocationHistory.tag_id) == func.lower(event.tag_id),
             LocationHistory.exited_at.is_(None)
         ).all()
         for prev_history in prev_histories:
@@ -221,8 +221,9 @@ class LocationService:
         if not to_room and event.to_room:
             logger.warning(f"Unknown room: {event.to_room} for tag {event.tag_id}")
 
-        # Create or update tag
-        tag = db.query(Tag).filter(Tag.tag_id == event.tag_id).first()
+        # Create or update tag (case-insensitive lookup to prevent duplicates)
+        from sqlalchemy import func
+        tag = db.query(Tag).filter(func.lower(Tag.tag_id) == func.lower(event.tag_id)).first()
         if not tag:
             # NEW TAG: Must set organization_id (required field)
             # Get organization_id from the room (rooms belong to organizations)
@@ -258,8 +259,8 @@ class LocationService:
                     "organization_id": tag.organization_id
                 })
 
-        # Insert or update live location
-        live_loc = db.query(LiveLocation).filter(LiveLocation.tag_id == event.tag_id).first()
+        # Insert or update live location (case-insensitive lookup)
+        live_loc = db.query(LiveLocation).filter(func.lower(LiveLocation.tag_id) == func.lower(event.tag_id)).first()
         if live_loc:
             # Already exists, update it
             live_loc.room_id = to_room.id if to_room else None
@@ -304,8 +305,9 @@ class LocationService:
         """
         timestamp = datetime.fromtimestamp(event.timestamp)
 
-        # Update tag status
-        tag = db.query(Tag).filter(Tag.tag_id == event.tag_id).first()
+        # Update tag status (case-insensitive lookup)
+        from sqlalchemy import func
+        tag = db.query(Tag).filter(func.lower(Tag.tag_id) == func.lower(event.tag_id)).first()
         if tag:
             tag.status = TagStatus.offline
         else:
@@ -314,7 +316,7 @@ class LocationService:
 
         # Close ALL open history entries (defensive: handles cases where multiple records are open)
         histories = db.query(LocationHistory).filter(
-            LocationHistory.tag_id == event.tag_id,
+            func.lower(LocationHistory.tag_id) == func.lower(event.tag_id),
             LocationHistory.exited_at.is_(None)
         ).all()
         for history in histories:
