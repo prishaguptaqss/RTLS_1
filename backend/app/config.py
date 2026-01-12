@@ -11,8 +11,7 @@ class Settings(BaseSettings):
 
 
     # Database Configuration
-    DATABASE_URL: str = "postgresql://qss_user:admin@localhost:5432/rtls_db44"
-
+    DATABASE_URL: str = "postgresql://rtls_user:rtls_password@localhost:5433/rtls_db"
     # Server Configuration
     HOST: str = "0.0.0.0"
     PORT: int = 3000
@@ -56,6 +55,11 @@ class Settings(BaseSettings):
 
     # Password Reset Settings
     RESET_TOKEN_EXPIRE_MINUTES: int = 1  # OTP expires in 1 minute
+
+    # Web Push Notification Settings (VAPID)
+    VAPID_PRIVATE_KEY: str = ""  # Set via environment variable or generate with vapid_keys.py
+    VAPID_PUBLIC_KEY: str = ""   # Set via environment variable or generate with vapid_keys.py
+    VAPID_SUBJECT: str = "mailto:qsssudhanshu@gmail.com"  # Contact email for push service
 
     @property
     def cors_origins_list(self) -> List[str]:

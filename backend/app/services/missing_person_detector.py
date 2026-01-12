@@ -13,6 +13,7 @@ from app.models.notification import Notification
 from app.models.organization_settings import OrganizationSettings
 from app.utils.enums import TagStatus, NotificationType
 from app.services.websocket_manager import websocket_manager
+from app.services.push_notification_service import push_notification_service
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -131,6 +132,16 @@ class MissingPersonDetector:
             db.add(notification)
             db.commit()
             db.refresh(notification)
+
+            # Send browser push notification to staff with NOTIFICATION_VIEW permission
+            try:
+                await push_notification_service.send_notification_to_staff(
+                    db=db,
+                    notification=notification
+                )
+            except Exception as push_error:
+                logger.error(f"Failed to send push notification: {push_error}", exc_info=True)
+                # Don't fail the entire notification process if push fails
 
             # Broadcast enhanced WebSocket message
             await websocket_manager.broadcast({
