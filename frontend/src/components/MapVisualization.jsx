@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Rectangle, Circle, Marker, Popup, useMap } from 'react-leaflet';
+import { renderToStaticMarkup } from 'react-dom/server';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapVisualization.css';
@@ -254,13 +255,11 @@ const MapVisualization = ({
       const room = layout.rooms[tag.room_id];
       if (!room) return null;
 
-      // Position tag at room center with slight random offset to avoid overlap
-      const offsetX = (Math.random() - 0.5) * room.width * 0.5;
-      const offsetY = (Math.random() - 0.5) * room.height * 0.5;
-
+      // Position tag at exact room center (no offset) to keep it inside the room
+      // This ensures tags are always visible within room boundaries at any zoom level
       return {
         ...tag,
-        position: [room.center[0] + offsetY, room.center[1] + offsetX],
+        position: room.center, // Use exact center position
       };
     }).filter(Boolean);
   };
@@ -435,19 +434,34 @@ const MapVisualization = ({
 
         {/* Render Live Tags */}
         {tagPositions.map(tag => {
+          // Filter tags based on selection (only show tags in visible rooms)
+          const tagRoom = rooms.find(r => r.id === tag.room_id);
+          if (!tagRoom) return null;
+
+          if (selectedRoom && tag.room_id !== selectedRoom) return null;
+          if (selectedFloor && tagRoom.floor_id !== selectedFloor) return null;
+          if (selectedBuilding) {
+            const roomFloor = floors.find(f => f.id === tagRoom.floor_id);
+            if (!roomFloor || roomFloor.building_id !== selectedBuilding) return null;
+          }
+
           const isOffline = tag.status === 'offline';
+
+          // Create custom DivIcon for tag with pulse animation
+          const tagIcon = L.divIcon({
+            className: 'custom-tag-marker',
+            html: `<div class="tag-pulse-container">
+                     <div class="tag-dot ${isOffline ? 'tag-dot-offline' : 'tag-dot-active'}"></div>
+                   </div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
+          });
+
           return (
-            <Circle
+            <Marker
               key={`tag-${tag.tag_id}`}
-              center={tag.position}
-              radius={3}
-              pathOptions={{
-                color: isOffline ? '#c0392b' : '#f39c12',
-                weight: 2,
-                fillColor: isOffline ? '#e74c3c' : '#f1c40f',
-                fillOpacity: 0.9,
-                className: isOffline ? 'tag-marker-offline' : 'tag-marker-active',
-              }}
+              position={tag.position}
+              icon={tagIcon}
             >
               <Popup>
                 <strong>{tag.name || tag.tag_id}</strong>
@@ -456,11 +470,13 @@ const MapVisualization = ({
                 {tag.entityName && `Entity: ${tag.entityName}`}
                 {tag.userName && `User: ${tag.userName}`}
                 <br />
+                Location: {tagRoom.room_name}
+                <br />
                 Status: {isOffline ? 'Offline - Last seen' : 'Active'}
                 <br />
                 {tag.updatedAt}
               </Popup>
-            </Circle>
+            </Marker>
           );
         })}
       </MapContainer>

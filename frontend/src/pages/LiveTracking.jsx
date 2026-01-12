@@ -121,24 +121,31 @@ const LiveTracking = () => {
     try {
       const response = await fetchLivePositions();
       // Transform the response to match our tag structure
-      const tags = response.positions.map(pos => ({
-        tag_id: pos.handbandSerial,
-        name: pos.handbandSerial,
-        userName: pos.userName,
-        entityName: pos.userName, // Using userName as entityName for now
-        room_id: pos.room_id, // Note: API response doesn't include room_id, need to look it up
-        lastSeenRoom: pos.lastSeenRoom,
-        updatedAt: pos.updatedAt,
-        status: 'active',
-      }));
-      setLiveTags(tags);
+      // Separate active and offline tags based on status from backend
+      const activeTags = [];
+      const offlineTags = [];
 
-      // Remove any offline tags that are now active again
-      setOfflineTags(prev =>
-        prev.filter(offlineTag =>
-          !tags.some(activeTag => activeTag.tag_id === offlineTag.tag_id)
-        )
-      );
+      response.positions.forEach(pos => {
+        const tag = {
+          tag_id: pos.handbandSerial,
+          name: pos.handbandSerial,
+          userName: pos.userName,
+          entityName: pos.userName, // Using userName as entityName for now
+          room_id: pos.roomId, // Use roomId directly from backend
+          lastSeenRoom: pos.lastSeenRoom,
+          updatedAt: pos.updatedAt,
+          status: pos.status, // Use status from backend
+        };
+
+        if (pos.status === 'offline') {
+          offlineTags.push(tag);
+        } else {
+          activeTags.push(tag);
+        }
+      });
+
+      setLiveTags(activeTags);
+      setOfflineTags(offlineTags);
     } catch (err) {
       console.error('Error loading live positions:', err);
     }
@@ -176,23 +183,9 @@ const LiveTracking = () => {
     }
   };
 
-  // Map room names to room IDs for live tag positioning
-  const getRoomIdByName = (roomName) => {
-    const room = rooms.find(r => r.room_name === roomName);
-    return room ? room.id : null;
-  };
-
-  // Enhance live tags with room_id lookup
-  const enhancedLiveTags = liveTags.map(tag => ({
-    ...tag,
-    room_id: getRoomIdByName(tag.lastSeenRoom),
-  })).filter(tag => tag.room_id !== null); // Only show tags with valid room mappings
-
-  // Enhance offline tags with room_id lookup
-  const enhancedOfflineTags = offlineTags.map(tag => ({
-    ...tag,
-    room_id: getRoomIdByName(tag.lastSeenRoom),
-  })).filter(tag => tag.room_id !== null);
+  // Filter tags to only show those with valid room_id
+  const enhancedLiveTags = liveTags.filter(tag => tag.room_id !== null);
+  const enhancedOfflineTags = offlineTags.filter(tag => tag.room_id !== null);
 
   // Combine all tags for display (active + offline)
   const allTags = [...enhancedLiveTags, ...enhancedOfflineTags];

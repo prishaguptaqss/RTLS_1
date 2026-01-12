@@ -37,8 +37,9 @@ async def get_live_positions(
     # Import Entity model
     from app.models.entity import Entity
 
-    # Query active tags with live locations, users, entities, and room hierarchy
+    # Query tags (both active and offline) with live locations, users, entities, and room hierarchy
     # CRITICAL: Filter by organization_id to ensure data isolation
+    # Include offline tags to show their last known location in red
     query = db.query(
         Tag, LiveLocation, User, Entity, Room, Floor, Building
     ).join(
@@ -54,8 +55,8 @@ async def get_live_positions(
     ).outerjoin(
         Building, Floor.building_id == Building.id
     ).filter(
-        Tag.status == TagStatus.active,
         Tag.organization_id == organization.id  # CRITICAL: Organization isolation
+        # Removed status filter to include both active and offline tags
     ).all()
 
     positions = []
@@ -91,11 +92,13 @@ async def get_live_positions(
             userName=person_name,
             handbandSerial=tag.tag_id,
             lastSeenRoom=room.room_name if room else None,
+            roomId=room.id if room else None,  # Include room_id for direct map positioning
             building=building_name,
             floor=floor_number,
             fullLocation=full_location,
             lastRSSI=None,  # Backend doesn't store RSSI
-            updatedAt=live_loc.updated_at.strftime("%b %d, %Y, %I:%M:%S %p")
+            updatedAt=live_loc.updated_at.strftime("%b %d, %Y, %I:%M:%S %p"),
+            status=tag.status.value  # Include tag status (active or offline)
         ))
         if room:
             unique_rooms.add(room.room_name)

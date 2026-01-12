@@ -15,11 +15,13 @@ class LivePositionItem(BaseModel):
     userName: str
     handbandSerial: str  # Tag ID (BLE MAC address)
     lastSeenRoom: Optional[str]
+    roomId: Optional[int] = None  # Room ID for direct positioning on map
     building: Optional[str] = None  # Building name
     floor: Optional[int] = None  # Floor number
     fullLocation: Optional[str] = None  # Full hierarchy: "Building > Floor N > Room"
     lastRSSI: Optional[int] = None  # Backend doesn't store RSSI, always None
     updatedAt: str  # Formatted datetime string
+    status: str = "active"  # Tag status: "active" or "offline"
 
 
 class LivePositionStats(BaseModel):
