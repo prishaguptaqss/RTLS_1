@@ -705,7 +705,7 @@ const Entities = () => {
 
                     {/* Page indicator */}
                     <span style={{
-                      color: '#374151',
+                      color: '#6b7280',
                       fontSize: '0.875rem',
                       fontWeight: '400',
                       padding: '0 0.5rem'
@@ -1181,7 +1181,7 @@ const Entities = () => {
 
                   {/* Page indicator */}
                   <span style={{
-                    color: '#374151',
+                    color: '#6b7280',
                     fontSize: '0.875rem',
                     fontWeight: '500',
                     padding: '0 0.5rem'
