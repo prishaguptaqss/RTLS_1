@@ -549,9 +549,9 @@ const Entities = () => {
                 <FiUser size={20} />
                 <h2>Patients</h2>
               </div>
-              <p className="section-subtitle">
+              {/* <p className="section-subtitle">
                 {filteredEntities.length} patient{filteredEntities.length !== 1 ? 's' : ''} configured
-              </p>
+              </p> */}
             </div>
             <PermissionGate permission="ENTITY_ADMIT">
               <button onClick={openCreateModal} className="btn btn-primary">

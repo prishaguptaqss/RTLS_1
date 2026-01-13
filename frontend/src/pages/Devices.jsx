@@ -587,7 +587,6 @@ const Devices = () => {
                   <FiWifi size={20} />
                   <h2>Anchors (Devices)</h2>
                 </div>
-                <p className="section-subtitle">{anchors.length} anchors configured</p>
               </div>
               <PermissionGate permission="DEVICE_CREATE">
                 <button onClick={openAnchorCreateModal} className="btn btn-primary">
@@ -805,7 +804,7 @@ const Devices = () => {
                   <FiBluetooth size={20} />
                   <h2>Tags (BLE Beacons)</h2>
                 </div>
-                <p className="section-subtitle">{tags.length} tags configured</p>
+                
               </div>
               <PermissionGate permission="DEVICE_CREATE">
                 <button onClick={openTagCreateModal} className="btn btn-primary">
