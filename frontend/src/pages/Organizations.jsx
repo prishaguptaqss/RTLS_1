@@ -680,7 +680,6 @@ const Organizations = () => {
                 name="org_id"
                 value={formData.org_id}
                 disabled
-                style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
               />
               <small>Organisation ID cannot be changed after creation</small>
             </div>

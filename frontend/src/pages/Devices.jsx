@@ -1207,7 +1207,6 @@ const Devices = () => {
                 name="tag_id"
                 value={tagFormData.tag_id}
                 disabled
-                style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
                 placeholder="e.g., E0:C0:74:C6:AD:C8"
                 required
               />
@@ -1305,7 +1304,6 @@ const Devices = () => {
                 name="anchor_id"
                 value={anchorFormData.anchor_id}
                 disabled
-                style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
                 placeholder="e.g. ANCHOR-A1, ESP32-001"
                 required
               />
@@ -1362,7 +1360,6 @@ const Devices = () => {
                 value={anchorFormData.room_id}
                 onChange={(e) => setAnchorFormData({ ...anchorFormData, room_id: e.target.value })}
                 disabled={anchorFormData.inactive_reason !== 'active'}
-                style={anchorFormData.inactive_reason !== 'active' ? { backgroundColor: '#f3f4f6', cursor: 'not-allowed' } : {}}
               >
                 <option value="">No room assigned</option>
                 {selectedAnchor && getAvailableRoomsForEdit(selectedAnchor.room_id).map((room) => {

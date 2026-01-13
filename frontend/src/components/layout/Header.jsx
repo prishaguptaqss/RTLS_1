@@ -2,12 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import { Search, Settings, Bell, User, LogOut, Lock, X, Moon, Sun, Menu } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSearch } from '../../contexts/SearchContext';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useTheme } from '../../contexts/theme';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ChangePasswordModal from '../ChangePasswordModal';
 import ProfileModal from '../ProfileModal';
 import NotificationModal from '../NotificationModal';
-import { useNotifications } from '../../contexts/NotificationContext';
+import { useNotifications } from '../../contexts/notification';
 import './Header.css';
 
 const Header = ({ toggleMobileMenu }) => {

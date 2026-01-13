@@ -914,7 +914,6 @@ const Entities = () => {
                 name="entity_id"
                 value={formData.entity_id}
                 disabled
-                style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
               />
             </div>
 

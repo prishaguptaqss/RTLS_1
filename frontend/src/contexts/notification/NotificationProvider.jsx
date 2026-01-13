@@ -1,16 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { websocketService } from '../services/websocket';
-import { getUnreadCount } from '../services/api';
+import { createContext, useState, useEffect, useCallback } from 'react';
+import { websocketService } from '../../services/websocket';
+import { getUnreadCount } from '../../services/api';
 
-const NotificationContext = createContext();
-
-export const useNotifications = () => {
-  const context = useContext(NotificationContext);
-  if (!context) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
-  }
-  return context;
-};
+export const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);

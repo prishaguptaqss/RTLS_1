@@ -6,7 +6,7 @@ import {
   markNotificationUnread,
   markAllNotificationsRead
 } from '../services/api';
-import { useNotifications } from '../contexts/NotificationContext';
+import { useNotifications } from '../contexts/notification';
 import { useToast } from '../contexts/ToastContext';
 import { Bell, Filter, X, Check } from 'lucide-react';
 import './NotificationModal.css';
