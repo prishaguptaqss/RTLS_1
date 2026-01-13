@@ -60,7 +60,7 @@
 
 /* Form error messages */
 .error-text {
-  color: var(--danger-text);
+  color: var(--danger-text) !important;
   font-size: 0.875rem;
   margin-top: 0.25rem;
   display: block;

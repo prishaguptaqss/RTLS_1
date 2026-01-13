@@ -347,12 +347,12 @@ const Organizations = () => {
     return (
       <div className="page-container">
         <div className="page-header">
-          <h1 className="page-title">Organizations</h1>
-          <p className="page-subtitle">Manage organizations and their buildings</p>
+          <h1 className="page-title">Organisations</h1>
+          <p className="page-subtitle">Manage organisations and their buildings</p>
         </div>
         <Card>
           <Card.Content>
-            <div className="loading-state">Loading organizations...</div>
+            <div className="loading-state">Loading organisations...</div>
           </Card.Content>
         </Card>
       </div>
@@ -363,8 +363,8 @@ const Organizations = () => {
     return (
       <div className="page-container">
         <div className="page-header">
-          <h1 className="page-title">Organizations</h1>
-          <p className="page-subtitle">Manage organizations and their buildings</p>
+          <h1 className="page-title">Organisations</h1>
+          <p className="page-subtitle">Manage organisations and their buildings</p>
         </div>
         <Card>
           <Card.Content>
@@ -384,12 +384,12 @@ const Organizations = () => {
     <div className="page-container">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Organizations</h1>
-          <p className="page-subtitle">Manage organizations and their buildings</p>
+          <h1 className="page-title">Organisations</h1>
+          <p className="page-subtitle">Manage organisations and their buildings</p>
         </div>
         <PermissionGate permission="ORGANIZATION_CREATE">
           <button onClick={openCreateModal} className="btn btn-primary">
-            + Create Organization
+            + Create Organisation
           </button>
         </PermissionGate>
       </div>
@@ -398,11 +398,11 @@ const Organizations = () => {
         <Card>
           <Card.Content>
             <div className="empty-state">
-             <p>{searchQuery.trim() ? 'No matching organizations found.' : 'No organizations found. Create your first organization to get started.'}</p>
+             <p>{searchQuery.trim() ? 'No matching organisations found.' : 'No organisations found. Create your first organisation to get started.'}</p>
               <PermissionGate permission="ORGANIZATION_CREATE">
                 {!searchQuery.trim() && (
                   <button onClick={openCreateModal} className="btn btn-primary">
-                    + Create Organization
+                    + Create Organisation
                   </button>
                 )}
               </PermissionGate>
@@ -463,7 +463,7 @@ const Organizations = () => {
       {/* Create Organization Modal */}
       <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)}>
         <Modal.Header onClose={() => setIsCreateModalOpen(false)}>
-          Create New Organization
+          Create New Organisation
         </Modal.Header>
         <form onSubmit={handleCreateOrganization}>
           <Modal.Body>
@@ -473,7 +473,7 @@ const Organizations = () => {
 
             <div className="form-group">
               <label htmlFor="org_id">
-                Organization ID <span className="required">*</span>
+                Organisation ID <span className="required">*</span>
               </label>
               <input
                 type="text"
@@ -488,7 +488,7 @@ const Organizations = () => {
               {formErrors.org_id && (
                 <small className="error-text">{formErrors.org_id}</small>
               )}
-              <small>Unique identifier for this organization</small>
+              <small>Unique identifier for this organisation</small>
             </div>
 
             <div className="form-group">
@@ -655,7 +655,7 @@ const Organizations = () => {
               className="btn btn-primary"
               disabled={submitting}
             >
-              {submitting ? 'Creating...' : 'Create Organization'}
+              {submitting ? 'Creating...' : 'Create Organisation'}
             </button>
           </Modal.Footer>
         </form>
@@ -664,7 +664,7 @@ const Organizations = () => {
       {/* Edit Organization Modal */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         <Modal.Header onClose={() => setIsEditModalOpen(false)}>
-          Edit Organization
+          Edit Organisation
         </Modal.Header>
         <form onSubmit={handleUpdateOrganization}>
           <Modal.Body>
@@ -673,7 +673,7 @@ const Organizations = () => {
             )}
 
             <div className="form-group">
-              <label htmlFor="edit-org_id">Organization ID</label>
+              <label htmlFor="edit-org_id">Organisation ID</label>
               <input
                 type="text"
                 id="edit-org_id"
@@ -682,7 +682,7 @@ const Organizations = () => {
                 disabled
                 style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
               />
-              <small>Organization ID cannot be changed after creation</small>
+              <small>Organisation ID cannot be changed after creation</small>
             </div>
 
             <div className="form-group">
@@ -849,7 +849,7 @@ const Organizations = () => {
               className="btn btn-primary"
               disabled={submitting}
             >
-              {submitting ? 'Updating...' : 'Update Organization'}
+              {submitting ? 'Updating...' : 'Update Organisation'}
             </button>
           </Modal.Footer>
         </form>
@@ -861,14 +861,14 @@ const Organizations = () => {
           Confirm Delete
         </Modal.Header>
         <Modal.Body>
-          <p>Are you sure you want to delete this organization?</p>
+          <p>Are you sure you want to delete this organisation?</p>
           {selectedOrg && (
             <div className="delete-org-info">
               <strong>{selectedOrg.name}</strong> ({selectedOrg.org_id})
             </div>
           )}
           <p className="warning-text">
-            This will also delete all buildings, floors, and rooms within this organization. This action cannot be undone.
+            This will also delete all buildings, floors, and rooms within this organisation. This action cannot be undone.
           </p>
         </Modal.Body>
         <Modal.Footer>
@@ -884,7 +884,7 @@ const Organizations = () => {
             className="btn btn-danger"
             disabled={submitting}
           >
-            {submitting ? 'Deleting...' : 'Delete Organization'}
+            {submitting ? 'Deleting...' : 'Delete Organisation'}
           </button>
         </Modal.Footer>
       </Modal>

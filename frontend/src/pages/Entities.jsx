@@ -92,6 +92,15 @@ const Entities = () => {
       }
     }
 
+    // Validate name (required)
+    if (!formData.name || !formData.name.trim()) {
+      errors.name = 'Patient name is required';
+    } else if (formData.name.trim().length < 2) {
+      errors.name = 'Name must be at least 2 characters long';
+    } else if (!/^[a-zA-Z\s.'-]+$/.test(formData.name.trim())) {
+      errors.name = 'Name can only contain letters, spaces, dots, hyphens, and apostrophes';
+    }
+
     // Validate age
     if (formData.age !== null && formData.age !== '') {
       const age = parseInt(formData.age);
@@ -100,12 +109,24 @@ const Entities = () => {
       }
     }
 
-    // Validate email format (basic)
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Invalid email format';
+    // Validate email format (improved validation)
+    if (formData.email && formData.email.trim()) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        errors.email = 'Invalid email format (e.g., user@example.com)';
+      }
     }
 
-    // Name and phone are optional
+    // Validate phone number format (improved validation)
+    if (formData.phone && formData.phone.trim()) {
+      // Remove spaces, dashes, and parentheses for validation
+      const cleanedPhone = formData.phone.replace(/[\s\-()]/g, '');
+      // Check if it contains only digits and optional + at start
+      const phoneRegex = /^\+?[0-9]{10,15}$/;
+      if (!phoneRegex.test(cleanedPhone)) {
+        errors.phone = 'Invalid phone number';
+      }
+    }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -765,20 +786,22 @@ const Entities = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="name">Name</label>
+              <label htmlFor="name">
+                Name <span className="required">*</span>
+              </label>
               <input
                 type="text"
                 id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="Enter patient name (optional)"
+                placeholder="Enter patient name"
                 className={formErrors.name ? 'input-error' : ''}
+                required
               />
               {formErrors.name && (
                 <small className="error-text">{formErrors.name}</small>
               )}
-              {/* <small>Optional - Descriptive name for this patient</small> */}
             </div>
 
             <div className="form-group">
@@ -896,15 +919,18 @@ const Entities = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="edit-name">Name</label>
+              <label htmlFor="edit-name">
+                Name <span className="required">*</span>
+              </label>
               <input
                 type="text"
                 id="edit-name"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="Enter patient name (optional)"
+                placeholder="Enter patient name"
                 className={formErrors.name ? 'input-error' : ''}
+                required
               />
               {formErrors.name && (
                 <small className="error-text">{formErrors.name}</small>
