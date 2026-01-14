@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
 import PermissionGate from '../components/PermissionGate';
-import Buildings from './Buildings'; // Reuse existing Buildings component
 import {
   fetchOrganizations,
   createOrganization,
@@ -11,7 +10,7 @@ import {
 } from '../services/api';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { useSearch } from '../contexts/SearchContext';
-import { FiEdit2, FiTrash2, FiCheckCircle, FiUpload } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiUpload } from 'react-icons/fi';
 import { COUNTRIES, getPincodeFormat } from '../utils/countries';
 import './Organizations.css';
 
@@ -19,12 +18,12 @@ const Organizations = () => {
   const { reloadOrganizations } = useOrganization();
   const { searchQuery } = useSearch();
   const [organizations, setOrganizations] = useState([]);
-  const [selectedOrg, setSelectedOrg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedOrg, setSelectedOrg] = useState(null);
   const [formData, setFormData] = useState({
     org_id: '',
     name: '',
@@ -327,10 +326,6 @@ const Organizations = () => {
     }
   };
 
-  const handleSelectOrganization = (org) => {
-    setSelectedOrg(selectedOrg?.id === org.id ? null : org);
-  };
-
   // Filter organizations based on global search
   const getFilteredOrganizations = () => {
     if (!searchQuery.trim()) return organizations;
@@ -410,54 +405,41 @@ const Organizations = () => {
           </Card.Content>
         </Card>
       ) : (
-        <>
-          <div className="organizations-grid">
-            {filteredOrganizations.map((org) => (
-              <div
-                key={org.id}
-                className={`organization-card ${selectedOrg?.id === org.id ? 'selected' : ''}`}
-                onClick={() => handleSelectOrganization(org)}
-              >
-                <div className="org-card-header">
-                  <div>
-                    <h3 className="org-card-title">{org.name}</h3>
-                    <p className="org-card-id">ID: {org.org_id}</p>
-                  </div>
-                  {selectedOrg?.id === org.id && (
-                    <FiCheckCircle className="selected-icon" size={24} />
-                  )}
-                </div>
-                <div className="org-card-actions" onClick={(e) => e.stopPropagation()}>
-                  <PermissionGate permission="ORGANIZATION_EDIT">
-                    <button
-                      onClick={() => openEditModal(org)}
-                      className="btn-icon btn-edit"
-                      title="Edit organization"
-                    >
-                      <FiEdit2 size={16} />
-                    </button>
-                  </PermissionGate>
-                  <PermissionGate permission="ORGANIZATION_DELETE">
-                    <button
-                      onClick={() => openDeleteModal(org)}
-                      className="btn-icon btn-delete"
-                      title="Delete organization"
-                    >
-                      <FiTrash2 size={16} />
-                    </button>
-                  </PermissionGate>
+        <div className="organizations-grid">
+          {filteredOrganizations.map((org) => (
+            <div
+              key={org.id}
+              className="organization-card"
+            >
+              <div className="org-card-header">
+                <div>
+                  <h3 className="org-card-title">{org.name}</h3>
+                  <p className="org-card-id">ID: {org.org_id}</p>
                 </div>
               </div>
-            ))}
-          </div>
-
-          {selectedOrg && (
-            <div className="buildings-section">
-              <h2 className="section-title">Buildings for {selectedOrg.name}</h2>
-              <Buildings organizationId={selectedOrg.id} />
+              <div className="org-card-actions">
+                <PermissionGate permission="ORGANIZATION_EDIT">
+                  <button
+                    onClick={() => openEditModal(org)}
+                    className="btn-icon btn-edit"
+                    title="Edit organization"
+                  >
+                    <FiEdit2 size={16} />
+                  </button>
+                </PermissionGate>
+                <PermissionGate permission="ORGANIZATION_DELETE">
+                  <button
+                    onClick={() => openDeleteModal(org)}
+                    className="btn-icon btn-delete"
+                    title="Delete organization"
+                  >
+                    <FiTrash2 size={16} />
+                  </button>
+                </PermissionGate>
+              </div>
             </div>
-          )}
-        </>
+          ))}
+        </div>
       )}
 
       {/* Create Organization Modal */}
