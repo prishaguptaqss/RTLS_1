@@ -31,7 +31,8 @@ from app.api import (
     roles,
     permissions,
     password_reset,
-    notifications
+    notifications,
+    push_subscriptions
 )
 from app.services.missing_person_detector import missing_person_detector
 from app.services.websocket_manager import websocket_manager
@@ -155,6 +156,7 @@ app.include_router(events.router, prefix="/api/events", tags=["Events"])
 app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
 app.include_router(settings_api.router, prefix="/api/settings", tags=["Settings"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+app.include_router(push_subscriptions.router, prefix="/api", tags=["Push Subscriptions"])
 
 
 # Health check endpoint

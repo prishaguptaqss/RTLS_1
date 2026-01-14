@@ -159,6 +159,11 @@
   color: var(--text-secondary);
 }
 
+[data-theme='dark'] .pagination-info,
+[data-theme='dark'] .pagination-range {
+  color: var(--text-primary);
+}
+
 .pagination-controls {
   display: flex;
   gap: 8px;
@@ -176,6 +181,11 @@
   cursor: pointer;
   color: var(--text-primary);
   transition: all 0.2s ease;
+}
+
+[data-theme='dark'] .pagination-btn {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
 }
 
 .pagination-btn:hover:not(:disabled) {

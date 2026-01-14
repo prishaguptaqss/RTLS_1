@@ -32,12 +32,14 @@ async def list_available_tags(
     Returns tags where both assigned_user_id and assigned_entity_id are NULL
     and status is 'active'.
     """
-    return db.query(TagModel).filter(
+    available_tags = db.query(TagModel).filter(
         TagModel.organization_id == organization.id,
-        TagModel.assigned_user_id == None,
-        TagModel.assigned_entity_id == None,
+        TagModel.assigned_user_id.is_(None),
+        TagModel.assigned_entity_id.is_(None),
         TagModel.status == "active"
     ).all()
+    print(f"[DEBUG] Available tags query returned {len(available_tags)} tags: {[t.tag_id for t in available_tags]}")
+    return available_tags
 
 
 @router.post("/", response_model=Tag, status_code=201)

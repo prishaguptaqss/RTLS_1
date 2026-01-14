@@ -73,7 +73,9 @@ const Entities = () => {
 
   const loadAvailableTags = async () => {
     try {
+      console.log('[DEBUG] Fetching available tags...');
       const data = await fetchAvailableTags();
+      console.log('[DEBUG] Available tags received:', data);
       setAvailableTags(data);
     } catch (err) {
       console.error('Error loading available tags:', err);
@@ -92,6 +94,15 @@ const Entities = () => {
       }
     }
 
+    // Validate name (required)
+    if (!formData.name || !formData.name.trim()) {
+      errors.name = 'Patient name is required';
+    } else if (formData.name.trim().length < 2) {
+      errors.name = 'Name must be at least 2 characters long';
+    } else if (!/^[a-zA-Z\s.'-]+$/.test(formData.name.trim())) {
+      errors.name = 'Name can only contain letters, spaces, dots, hyphens, and apostrophes';
+    }
+
     // Validate age
     if (formData.age !== null && formData.age !== '') {
       const age = parseInt(formData.age);
@@ -100,12 +111,24 @@ const Entities = () => {
       }
     }
 
-    // Validate email format (basic)
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Invalid email format';
+    // Validate email format (improved validation)
+    if (formData.email && formData.email.trim()) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        errors.email = 'Invalid email format (e.g., user@example.com)';
+      }
     }
 
-    // Name and phone are optional
+    // Validate phone number format (improved validation)
+    if (formData.phone && formData.phone.trim()) {
+      // Remove spaces, dashes, and parentheses for validation
+      const cleanedPhone = formData.phone.replace(/[\s\-()]/g, '');
+      // Check if it contains only digits and optional + at start
+      const phoneRegex = /^\+?[0-9]{10,15}$/;
+      if (!phoneRegex.test(cleanedPhone)) {
+        errors.phone = 'Invalid phone number';
+      }
+    }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -135,6 +158,7 @@ const Entities = () => {
       };
       await createEntity(entityData);
       await loadEntities();
+      await loadAvailableTags(); // Refresh available tags after creation (tag was assigned)
       setIsCreateModalOpen(false);
       resetForm();
     } catch (err) {
@@ -169,6 +193,7 @@ const Entities = () => {
       };
       await updateEntity(selectedEntity.entity_id, entityData);
       await loadEntities();
+      await loadAvailableTags(); // Refresh available tags after update (tag may have been unassigned)
       setIsEditModalOpen(false);
       resetForm();
       setSelectedEntity(null);
@@ -242,6 +267,7 @@ const Entities = () => {
       };
       await updateEntity(selectedEntity.entity_id, entityData);
       await loadEntities();
+      await loadAvailableTags(); // Refresh available tags after unassignment
       setIsUntrackModalOpen(false);
       setSelectedEntity(null);
     } catch (err) {
@@ -528,9 +554,9 @@ const Entities = () => {
                 <FiUser size={20} />
                 <h2>Patients</h2>
               </div>
-              <p className="section-subtitle">
+              {/* <p className="section-subtitle">
                 {filteredEntities.length} patient{filteredEntities.length !== 1 ? 's' : ''} configured
-              </p>
+              </p> */}
             </div>
             <PermissionGate permission="ENTITY_ADMIT">
               <button onClick={openCreateModal} className="btn btn-primary">
@@ -684,7 +710,7 @@ const Entities = () => {
 
                     {/* Page indicator */}
                     <span style={{
-                      color: '#374151',
+                      color: '#6b7280',
                       fontSize: '0.875rem',
                       fontWeight: '400',
                       padding: '0 0.5rem'
@@ -765,20 +791,22 @@ const Entities = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="name">Name</label>
+              <label htmlFor="name">
+                Name <span className="required">*</span>
+              </label>
               <input
                 type="text"
                 id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="Enter patient name (optional)"
+                placeholder="Enter patient name"
                 className={formErrors.name ? 'input-error' : ''}
+                required
               />
               {formErrors.name && (
                 <small className="error-text">{formErrors.name}</small>
               )}
-              {/* <small>Optional - Descriptive name for this patient</small> */}
             </div>
 
             <div className="form-group">
@@ -891,20 +919,22 @@ const Entities = () => {
                 name="entity_id"
                 value={formData.entity_id}
                 disabled
-                style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="edit-name">Name</label>
+              <label htmlFor="edit-name">
+                Name <span className="required">*</span>
+              </label>
               <input
                 type="text"
                 id="edit-name"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="Enter patient name (optional)"
+                placeholder="Enter patient name"
                 className={formErrors.name ? 'input-error' : ''}
+                required
               />
               {formErrors.name && (
                 <small className="error-text">{formErrors.name}</small>
@@ -1156,7 +1186,7 @@ const Entities = () => {
 
                   {/* Page indicator */}
                   <span style={{
-                    color: '#374151',
+                    color: '#6b7280',
                     fontSize: '0.875rem',
                     fontWeight: '500',
                     padding: '0 0.5rem'

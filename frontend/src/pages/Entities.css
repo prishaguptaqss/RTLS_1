@@ -52,6 +52,14 @@
   margin-bottom: 0.25rem;
 }
 
+[data-theme='dark'] .section-title {
+  color: #eff1f3;
+}
+
+[data-theme='dark'] .section-title svg {
+  color: #eff1f3;
+}
+
 .section-subtitle {
   font-size: 0.875rem;
   color: #6b7280;
@@ -60,7 +68,7 @@
 
 /* Form error messages */
 .error-text {
-  color: var(--danger-text);
+  color: var(--danger-text) !important;
   font-size: 0.875rem;
   margin-top: 0.25rem;
   display: block;

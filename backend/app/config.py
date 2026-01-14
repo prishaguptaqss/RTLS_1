@@ -57,6 +57,11 @@ class Settings(BaseSettings):
     # Password Reset Settings
     RESET_TOKEN_EXPIRE_MINUTES: int = 1  # OTP expires in 1 minute
 
+    # Web Push Notification Settings (VAPID)
+    VAPID_PRIVATE_KEY: str = ""  # Set via environment variable or generate with vapid_keys.py
+    VAPID_PUBLIC_KEY: str = ""   # Set via environment variable or generate with vapid_keys.py
+    VAPID_SUBJECT: str = "mailto:qsssudhanshu@gmail.com"  # Contact email for push service
+
     @property
     def cors_origins_list(self) -> List[str]:
         """Parse CORS_ORIGINS from comma-separated string to list."""

@@ -1,0 +1,138 @@
+.notification-prompt {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  left: 20px;
+  max-width: 500px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 9999;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.prompt-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prompt-content {
+  flex: 1;
+}
+
+.prompt-content h3 {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.prompt-content p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.95;
+  line-height: 1.4;
+}
+
+.prompt-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-enable {
+  background: white;
+  color: #667eea;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-enable:hover:not(:disabled) {
+  background: #f0f0f0;
+  transform: translateY(-1px);
+}
+
+.btn-enable:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-dismiss {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-dismiss:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .notification-prompt {
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
+    padding: 16px;
+    flex-wrap: wrap;
+  }
+
+  .prompt-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .prompt-content h3 {
+    font-size: 15px;
+  }
+
+  .prompt-content p {
+    font-size: 13px;
+  }
+
+  .prompt-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (min-width: 769px) {
+  .notification-prompt {
+    left: auto;
+  }
+}

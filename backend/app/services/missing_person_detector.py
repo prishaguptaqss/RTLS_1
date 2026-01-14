@@ -13,6 +13,7 @@ from app.models.notification import Notification
 from app.models.organization_settings import OrganizationSettings
 from app.utils.enums import TagStatus, NotificationType
 from app.services.websocket_manager import websocket_manager
+from app.services.push_notification_service import push_notification_service
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -54,23 +55,47 @@ class MissingPersonDetector:
 
     async def _check_missing_persons(self, db: Session):
         """
-        Check for untracked entities (offline tags assigned to entities) and broadcast alerts.
-        An entity is considered "untracked" when its assigned tag has status='offline'.
+        Check for untracked entities by monitoring last_seen timestamps.
+        Uses organization-specific threshold from settings (not hardcoded 30 seconds).
+
+        This detector works independently of TAG_LOST events - it checks ALL tags
+        assigned to entities and compares their last_seen time against the dynamic threshold.
 
         Args:
             db: Database session
         """
         current_time = datetime.now(timezone.utc)
 
-        # Query all offline tags that are assigned to entities
-        offline_tags = db.query(Tag).filter(
-            Tag.status == TagStatus.offline,
+        # Query ALL tags assigned to entities (not just offline ones)
+        # We'll check their last_seen timestamp against the threshold
+        all_entity_tags = db.query(Tag).filter(
             Tag.assigned_entity_id.isnot(None)  # Only tags assigned to entities
         ).all()
 
-        logger.debug(f"Checking {len(offline_tags)} offline entity tags for untracked notifications")
+        logger.debug(f"Checking {len(all_entity_tags)} entity tags for untracked status")
 
-        for tag in offline_tags:
+        for tag in all_entity_tags:
+            # Get organization settings for this tag's organization
+            org_settings = db.query(OrganizationSettings).filter(
+                OrganizationSettings.organization_id == tag.organization_id
+            ).first()
+
+            # Use organization-specific threshold or fall back to global config
+            threshold_seconds = org_settings.untracked_threshold_seconds if org_settings else settings.MISSING_PERSON_THRESHOLD_SECONDS
+
+            # Calculate how long since we last saw this tag
+            if tag.last_seen:
+                time_since_seen = current_time - tag.last_seen
+                missing_duration_seconds = int(time_since_seen.total_seconds())
+            else:
+                # Tag has never been seen (shouldn't happen, but handle gracefully)
+                missing_duration_seconds = 0
+
+            # IMPORTANT: Only create notification if tag has been unseen longer than threshold
+            if missing_duration_seconds < threshold_seconds:
+                # Tag is still active (seen recently), skip
+                continue
+
             # Check if notification already exists for this tag
             existing_notification = db.query(Notification).filter(
                 Notification.tag_id == tag.tag_id,
@@ -102,15 +127,8 @@ class MissingPersonDetector:
             entity_type = entity.type
             entity_internal_id = entity.id
 
-            # Calculate missing duration
-            if tag.last_seen:
-                time_since_seen = current_time - tag.last_seen
-                missing_duration_seconds = int(time_since_seen.total_seconds())
-            else:
-                missing_duration_seconds = 0
-
-            # Set severity based on offline status (medium by default for untracked)
-            severity = "high"
+            # Calculate severity based on how long the tag has been missing
+            severity = self._calculate_severity(missing_duration_seconds, threshold_seconds)
 
             # Persist notification to database
             notification = Notification(
@@ -131,6 +149,16 @@ class MissingPersonDetector:
             db.add(notification)
             db.commit()
             db.refresh(notification)
+
+            # Send browser push notification to staff with NOTIFICATION_VIEW permission
+            try:
+                await push_notification_service.send_notification_to_staff(
+                    db=db,
+                    notification=notification
+                )
+            except Exception as push_error:
+                logger.error(f"Failed to send push notification: {push_error}", exc_info=True)
+                # Don't fail the entire notification process if push fails
 
             # Broadcast enhanced WebSocket message
             await websocket_manager.broadcast({

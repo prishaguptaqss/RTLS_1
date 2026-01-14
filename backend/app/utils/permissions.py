@@ -15,6 +15,7 @@ class PermissionModule(str, Enum):
     DEVICE = "device"
     LIVE_POSITION = "live_position"
     LIVE_TRACKING = "live_tracking"
+    NOTIFICATION = "notification"
     STAFF = "staff"
     ROLE = "role"
     SETTINGS = "settings"
@@ -57,6 +58,9 @@ class Permission(str, Enum):
 
     # Live Tracking
     LIVE_TRACKING_VIEW = "LIVE_TRACKING_VIEW"
+
+    # Notifications
+    NOTIFICATION_VIEW = "NOTIFICATION_VIEW"
 
     # Staff Management (Admin only)
     STAFF_VIEW = "STAFF_VIEW"
@@ -226,6 +230,14 @@ PERMISSION_DEFINITIONS: List[Dict[str, str]] = [
         "description": "Access live tracking feature with map view"
     },
 
+    # Notifications
+    {
+        "code": Permission.NOTIFICATION_VIEW,
+        "name": "View Notifications",
+        "module": PermissionModule.NOTIFICATION,
+        "description": "View and receive browser push notifications for missing persons and alerts"
+    },
+
     # Staff Management
     {
         "code": Permission.STAFF_VIEW,
@@ -357,6 +369,10 @@ PERMISSION_HIERARCHY: Dict[str, Dict] = {
     },
     "Live Tracking": {
         "parent": Permission.LIVE_TRACKING_VIEW,
+        "children": []
+    },
+    "Notifications": {
+        "parent": Permission.NOTIFICATION_VIEW,
         "children": []
     },
     "Organizations": {

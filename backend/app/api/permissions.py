@@ -73,6 +73,7 @@ def list_permissions_grouped(
         'device': 'DEVICE_VIEW',
         'live_position': 'LIVE_POSITION_VIEW',
         'live_tracking': 'LIVE_TRACKING_VIEW',
+        'notification': 'NOTIFICATION_VIEW',
         'organization': 'ORGANIZATION_VIEW',
         'staff': 'STAFF_VIEW',
         'role': 'ROLE_VIEW',

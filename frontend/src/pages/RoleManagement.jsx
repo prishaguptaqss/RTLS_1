@@ -49,6 +49,7 @@ const RoleManagement = () => {
     },
     live_position: { parent: 'LIVE_POSITION_VIEW', children: [] },
     live_tracking: { parent: 'LIVE_TRACKING_VIEW', children: [] },
+    notification: { parent: 'NOTIFICATION_VIEW', children: [] },
     organization: {
       parent: 'ORGANIZATION_VIEW',
       children: ['ORGANIZATION_CREATE', 'ORGANIZATION_EDIT', 'ORGANIZATION_DELETE']
@@ -194,6 +195,7 @@ const RoleManagement = () => {
       device: 'Devices',
       live_position: 'Live Positions',
       live_tracking: 'Live Tracking',
+      notification: 'Notifications',
       organization: 'Organizations',
       staff: 'Staff Management',
       role: 'Role Management',

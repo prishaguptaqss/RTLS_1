@@ -183,6 +183,16 @@ code {
   font-weight: 500;
 }
 
+/* Disabled Input Fields - Theme-aware */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-secondary) !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
+}
+
 /* Responsive Typography and Spacing */
 @media (max-width: 1024px) {
   .page-header {

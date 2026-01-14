@@ -587,7 +587,6 @@ const Devices = () => {
                   <FiWifi size={20} />
                   <h2>Anchors (Devices)</h2>
                 </div>
-                <p className="section-subtitle">{anchors.length} anchors configured</p>
               </div>
               <PermissionGate permission="DEVICE_CREATE">
                 <button onClick={openAnchorCreateModal} className="btn btn-primary">
@@ -745,7 +744,7 @@ const Devices = () => {
 
                       {/* Page indicator */}
                       <span style={{
-                        color: '#374151',
+                        color: '#6b7280',
                         fontSize: '0.875rem',
                         fontWeight: '400',
                         padding: '0 0.5rem'
@@ -805,7 +804,7 @@ const Devices = () => {
                   <FiBluetooth size={20} />
                   <h2>Tags (BLE Beacons)</h2>
                 </div>
-                <p className="section-subtitle">{tags.length} tags configured</p>
+                
               </div>
               <PermissionGate permission="DEVICE_CREATE">
                 <button onClick={openTagCreateModal} className="btn btn-primary">
@@ -946,7 +945,7 @@ const Devices = () => {
 
                       {/* Page indicator */}
                       <span style={{
-                        color: '#374151',
+                        color: '#6b7280',
                         fontSize: '0.875rem',
                         fontWeight: '400',
                         padding: '0 0.5rem'
@@ -1207,7 +1206,6 @@ const Devices = () => {
                 name="tag_id"
                 value={tagFormData.tag_id}
                 disabled
-                style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
                 placeholder="e.g., E0:C0:74:C6:AD:C8"
                 required
               />
@@ -1305,7 +1303,6 @@ const Devices = () => {
                 name="anchor_id"
                 value={anchorFormData.anchor_id}
                 disabled
-                style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
                 placeholder="e.g. ANCHOR-A1, ESP32-001"
                 required
               />
@@ -1362,7 +1359,6 @@ const Devices = () => {
                 value={anchorFormData.room_id}
                 onChange={(e) => setAnchorFormData({ ...anchorFormData, room_id: e.target.value })}
                 disabled={anchorFormData.inactive_reason !== 'active'}
-                style={anchorFormData.inactive_reason !== 'active' ? { backgroundColor: '#f3f4f6', cursor: 'not-allowed' } : {}}
               >
                 <option value="">No room assigned</option>
                 {selectedAnchor && getAvailableRoomsForEdit(selectedAnchor.room_id).map((room) => {

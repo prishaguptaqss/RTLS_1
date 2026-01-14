@@ -176,9 +176,11 @@ async def update_entity(
     # Handle tag assignment changes
     if 'assigned_tag_id' in entity_update.model_dump(exclude_unset=True):
         new_tag_id = entity_update.assigned_tag_id
+        print(f"[DEBUG] Updating tag assignment for entity {entity_id}: new_tag_id={new_tag_id}")
 
         # Get current tag if any
         current_tag = db.query(TagModel).filter(TagModel.assigned_entity_id == entity.id).first()
+        print(f"[DEBUG] Current tag: {current_tag.tag_id if current_tag else None}")
 
         # If changing to a different tag (or assigning for first time)
         if new_tag_id:
@@ -244,6 +246,7 @@ async def update_entity(
                 new_tag.assigned_entity_id = entity.id
         else:
             # Unassigning tag (set to None/null)
+            print(f"[DEBUG] Unassigning tag from entity {entity_id}")
             if current_tag:
                 from datetime import datetime, timezone
                 from app.models.entity_tag_assignment import EntityTagAssignment
@@ -251,6 +254,7 @@ async def update_entity(
                 from app.models.live_location import LiveLocation
 
                 unassignment_time = datetime.now(timezone.utc)
+                print(f"[DEBUG] Found current tag {current_tag.tag_id} to unassign")
 
                 # Close the current assignment record
                 current_assignment = db.query(EntityTagAssignment).filter(
@@ -260,6 +264,7 @@ async def update_entity(
                 ).first()
                 if current_assignment:
                     current_assignment.unassigned_at = unassignment_time
+                    print(f"[DEBUG] Closed assignment record")
 
                 # Close any open location history entry (set exited_at)
                 open_location = db.query(LocationHistory).filter(
@@ -268,6 +273,7 @@ async def update_entity(
                 ).first()
                 if open_location:
                     open_location.exited_at = unassignment_time
+                    print(f"[DEBUG] Closed location history")
 
                 # Remove from live location
                 live_location = db.query(LiveLocation).filter(
@@ -275,8 +281,12 @@ async def update_entity(
                 ).first()
                 if live_location:
                     db.delete(live_location)
+                    print(f"[DEBUG] Removed from live location")
 
                 current_tag.assigned_entity_id = None
+                print(f"[DEBUG] Set tag {current_tag.tag_id} assigned_entity_id to None")
+            else:
+                print(f"[DEBUG] No current tag found to unassign")
 
     # Update other entity fields
     update_data = entity_update.model_dump(exclude_unset=True, exclude={'assigned_tag_id'})

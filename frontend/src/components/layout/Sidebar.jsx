@@ -36,7 +36,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, isMobileMenuOpen, closeMobileMenu
     },
     {
       icon: Building,
-      label: 'Organizations',
+      label: 'Organisations',
       path: '/organizations',
       permission: 'ORGANIZATION_VIEW'
     },

@@ -460,7 +460,7 @@ from flask import Flask, request, jsonify
 # Configuration Flask app for runtime threshold updates
 config_app = Flask(__name__)
 
-BROKER = "192.168.1.245"
+BROKER = "192.168.1.142"
 PORT = 1883
 TOPIC = "Hospital"
 COLLECT_SECONDS = 2.0  # 3, Scan window duration in seconds
