@@ -56,7 +56,8 @@ async def get_settings(
         # Create default settings
         settings = OrganizationSettings(
             organization_id=organization_id,
-            untracked_threshold_seconds=30
+            untracked_threshold_seconds=30,
+            history_retention_days=1
         )
         db.add(settings)
         db.commit()
@@ -101,7 +102,8 @@ async def get_settings(
         organization_phone=settings.organization_phone,
         organization_address_line=settings.organization_address_line,
         social_links=social_links,
-        browser_notifications_enabled=settings.browser_notifications_enabled
+        browser_notifications_enabled=settings.browser_notifications_enabled,
+        history_retention_days=settings.history_retention_days
     )
 
 
@@ -181,6 +183,10 @@ async def update_settings(
     if settings_update.browser_notifications_enabled is not None:
         settings.browser_notifications_enabled = settings_update.browser_notifications_enabled
 
+    # Update history settings if provided
+    if settings_update.history_retention_days is not None:
+        settings.history_retention_days = settings_update.history_retention_days
+
     # Commit all changes to database
     db.commit()
     db.refresh(settings)
@@ -231,7 +237,8 @@ async def update_settings(
         organization_phone=settings.organization_phone,
         organization_address_line=settings.organization_address_line,
         social_links=social_links,
-        browser_notifications_enabled=settings.browser_notifications_enabled
+        browser_notifications_enabled=settings.browser_notifications_enabled,
+        history_retention_days=settings.history_retention_days
     )
 
 

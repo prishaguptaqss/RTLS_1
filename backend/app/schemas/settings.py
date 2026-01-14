@@ -39,6 +39,9 @@ class SettingsUpdate(BaseModel):
     # Notification Settings
     browser_notifications_enabled: Optional[bool] = Field(None, description="Enable/disable browser push notifications")
 
+    # History Settings
+    history_retention_days: Optional[int] = Field(None, ge=1, le=365, description="Number of days of history to show in recent history view (1-365)")
+
 
 class Settings(BaseModel):
     """Complete settings schema returned by API."""
@@ -64,3 +67,6 @@ class Settings(BaseModel):
 
     # Notification Settings
     browser_notifications_enabled: bool = True
+
+    # History Settings
+    history_retention_days: int = 1

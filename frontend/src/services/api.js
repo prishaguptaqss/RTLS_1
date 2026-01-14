@@ -159,8 +159,13 @@ export const deleteEntity = async (entityId) => {
   return api.delete(`/entities/${entityId}`);
 };
 
-export const fetchEntityLocationHistory = async (entityId) => {
-  return api.get(`/entities/${entityId}/location-history`);
+export const fetchEntityLocationHistory = async (entityId, recent = false) => {
+  const params = recent ? '?recent=true' : '';
+  return api.get(`/entities/${entityId}/location-history${params}`);
+};
+
+export const fetchEntityFullLocationHistory = async (entityId) => {
+  return api.get(`/entities/${entityId}/location-history?recent=false`);
 };
 
 export const fetchAvailableTags = async () => {

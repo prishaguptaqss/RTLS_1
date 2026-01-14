@@ -32,7 +32,8 @@ const Settings = () => {
     organization_phone: '',
     organization_address_line: '',
     social_links: [],
-    browser_notifications_enabled: true
+    browser_notifications_enabled: true,
+    history_retention_days: 1
   });
 
   useEffect(() => {
@@ -61,7 +62,8 @@ const Settings = () => {
         organization_phone: data.organization_phone || '',
         organization_address_line: data.organization_address_line || '',
         social_links: data.social_links || [],
-        browser_notifications_enabled: data.browser_notifications_enabled !== undefined ? data.browser_notifications_enabled : true
+        browser_notifications_enabled: data.browser_notifications_enabled !== undefined ? data.browser_notifications_enabled : true,
+        history_retention_days: data.history_retention_days || 1
       });
     } catch (err) {
       console.error('Error loading settings:', err);
@@ -123,6 +125,7 @@ const Settings = () => {
       updateData.organization_address_line = formData.organization_address_line || '';
       updateData.social_links = formData.social_links || [];
       updateData.browser_notifications_enabled = formData.browser_notifications_enabled;
+      updateData.history_retention_days = parseInt(formData.history_retention_days);
 
       await updateSettings(updateData);
       setSuccess(true);
@@ -396,6 +399,39 @@ const Settings = () => {
                 <small className="help-text">
                   When enabled, staff will receive browser push notifications for missing person alerts in addition to normal in-app notifications.
                   When disabled, only normal in-app notifications will work (no browser push notifications).
+                </small>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <h2 className="section-title">History Settings</h2>
+              <p className="section-description">
+                Configure location history retention for {currentOrganization.name}
+              </p>
+
+              <div className="form-group">
+                <label htmlFor="history_retention_days">
+                  Active History Days
+                </label>
+                <input
+                  type="number"
+                  id="history_retention_days"
+                  name="history_retention_days"
+                  value={formData.history_retention_days}
+                  onChange={handleInputChange}
+                  min="1"
+                  max="365"
+                  step="1"
+                  required
+                  className="settings-input"
+                />
+                <small className="help-text">
+                  Number of days of location history to show in the "Recent History" view (clock icon).
+                  Full history is always available in the "Full History" view.
+                  <br />
+                  <strong>Range:</strong> 1-365 days
+                  <br />
+                  <strong>Current:</strong> {formData.history_retention_days} day{formData.history_retention_days !== 1 ? 's' : ''}
                 </small>
               </div>
             </div>

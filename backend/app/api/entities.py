@@ -325,20 +325,26 @@ async def delete_entity(
 @router.get("/{entity_id}/location-history", response_model=LocationHistoryResponse)
 async def get_entity_location_history(
     entity_id: str,
+    recent: bool = Query(False, description="If true, return only recent history based on organization settings"),
     organization: Organization = Depends(get_current_organization),
     db: Session = Depends(get_db)
 ):
     """
     Get location history for a specific entity within the organization.
 
-    Returns all location history records for tags that were assigned to this entity
+    Returns location history records for tags that were assigned to this entity
     during the time periods they were assigned, with full building hierarchy information.
 
     NEW BEHAVIOR: Uses temporal assignment records to filter history by assignment periods.
     Entity keeps ALL its history even after tag unassignment.
+
+    If 'recent' parameter is True, only returns history from the last N days
+    (where N is configured in organization settings as history_retention_days).
     """
     import sqlalchemy as sa
+    from datetime import datetime, timedelta, timezone
     from app.models.entity_tag_assignment import EntityTagAssignment
+    from app.models.organization_settings import OrganizationSettings
 
     # First, verify entity exists within this organization
     entity = db.query(EntityModel).filter(
@@ -348,12 +354,18 @@ async def get_entity_location_history(
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found in this organization")
 
+    # Get organization settings for history retention
+    org_settings = db.query(OrganizationSettings).filter(
+        OrganizationSettings.organization_id == organization.id
+    ).first()
+    history_retention_days = org_settings.history_retention_days if org_settings else 1
+
     # Query location history with temporal join through assignment periods
     # Join: LocationHistory -> EntityTagAssignment (temporal) -> Room -> Floor -> Building
     # Logic: Include location records where:
     #   - The tag was assigned to this entity
     #   - The location timestamp falls within the assignment period
-    history_records = (
+    query = (
         db.query(
             LocationHistoryModel.id,
             RoomModel.room_name,
@@ -380,9 +392,14 @@ async def get_entity_location_history(
                 LocationHistoryModel.entered_at < EntityTagAssignment.unassigned_at
             )
         )
-        .order_by(LocationHistoryModel.entered_at.desc())
-        .all()
     )
+
+    # If recent flag is True, filter by retention days
+    if recent:
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=history_retention_days)
+        query = query.filter(LocationHistoryModel.entered_at >= cutoff_date)
+
+    history_records = query.order_by(LocationHistoryModel.entered_at.desc()).all()
 
     # Build response with duration calculation
     history_items = []

@@ -34,6 +34,9 @@ class OrganizationSettings(Base):
     # Notification Settings
     browser_notifications_enabled = Column(Boolean, nullable=False, default=True, comment="Enable/disable browser push notifications")
 
+    # History Settings
+    history_retention_days = Column(Integer, nullable=False, default=1, comment="Number of days of history to show in recent history view")
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

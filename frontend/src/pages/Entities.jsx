@@ -8,12 +8,13 @@ import {
   createEntity,
   updateEntity,
   fetchEntityLocationHistory,
+  fetchEntityFullLocationHistory,
   fetchAvailableTags
 } from '../services/api';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { useSearch } from '../contexts/SearchContext';
 import './Entities.css';
-import { FiEdit2, FiTrash2, FiClock, FiUserX, FiUser, FiPackage, FiEye } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiClock, FiUserX, FiUser, FiPackage, FiEye, FiDatabase } from "react-icons/fi";
 
 const Entities = () => {
   const { currentOrganization, loading: orgLoading } = useOrganization();
@@ -26,10 +27,13 @@ const Entities = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isFullHistoryModalOpen, setIsFullHistoryModalOpen] = useState(false);
   const [isUntrackModalOpen, setIsUntrackModalOpen] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [locationHistory, setLocationHistory] = useState([]);
+  const [fullLocationHistory, setFullLocationHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [loadingFullHistory, setLoadingFullHistory] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [formData, setFormData] = useState({
@@ -241,13 +245,31 @@ const Entities = () => {
     setLoadingHistory(true);
     setCurrentPage(1); // Reset to first page
     try {
-      const data = await fetchEntityLocationHistory(entity.entity_id);
+      // Fetch recent history only (based on organization settings)
+      const data = await fetchEntityLocationHistory(entity.entity_id, true);
       setLocationHistory(data.history);
     } catch (err) {
       console.error('Error loading location history:', err);
       setLocationHistory([]);
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const openFullHistoryModal = async (entity) => {
+    setSelectedEntity(entity);
+    setIsFullHistoryModalOpen(true);
+    setLoadingFullHistory(true);
+    setCurrentPage(1); // Reset to first page
+    try {
+      // Fetch full history (all time)
+      const data = await fetchEntityFullLocationHistory(entity.entity_id);
+      setFullLocationHistory(data.history);
+    } catch (err) {
+      console.error('Error loading full location history:', err);
+      setFullLocationHistory([]);
+    } finally {
+      setLoadingFullHistory(false);
     }
   };
 
@@ -316,14 +338,14 @@ const Entities = () => {
     });
   };
 
-  const downloadHistoryAsCSV = () => {
-    if (!selectedEntity || locationHistory.length === 0) return;
+  const downloadHistoryAsCSV = (historyData = locationHistory) => {
+    if (!selectedEntity || historyData.length === 0) return;
 
     // CSV header
     const headers = ['Location', 'Entered At', 'Exited At', 'Duration (minutes)'];
 
     // CSV rows
-    const rows = locationHistory.map(record => [
+    const rows = historyData.map(record => [
       `${record.building_name} > Floor ${record.floor_number} > ${record.room_name}`,
       formatHistoryDate(record.entered_at),
       record.exited_at ? formatHistoryDate(record.exited_at) : 'Currently here',
@@ -348,8 +370,8 @@ const Entities = () => {
     document.body.removeChild(link);
   };
 
-  const downloadHistoryAsPDF = () => {
-    if (!selectedEntity || locationHistory.length === 0) return;
+  const downloadHistoryAsPDF = (historyData = locationHistory) => {
+    if (!selectedEntity || historyData.length === 0) return;
 
     // Create a new window for printing
     const printWindow = window.open('', '', 'width=800,height=600');
@@ -415,7 +437,7 @@ const Entities = () => {
             </tr>
           </thead>
           <tbody>
-            ${locationHistory.map(record => `
+            ${historyData.map(record => `
               <tr>
                 <td><strong>${record.building_name}</strong> &gt; Floor ${record.floor_number} &gt; ${record.room_name}</td>
                 <td>${formatHistoryDate(record.entered_at)}</td>
@@ -620,9 +642,16 @@ const Entities = () => {
                             <button
                               onClick={() => openHistoryModal(entity)}
                               className="btn-icon btn-info"
-                              title="View location history"
+                              title="View recent location history"
                             >
                               <FiClock size={16} />
+                            </button>
+                            <button
+                              onClick={() => openFullHistoryModal(entity)}
+                              className="btn-icon btn-info"
+                              title="View full location history"
+                            >
+                              <FiDatabase size={16} />
                             </button>
                             {entity.assigned_tag_id && (
                               <button
@@ -1038,14 +1067,14 @@ const Entities = () => {
         </form>
       </Modal>
 
-      {/* Location History Modal */}
+      {/* Recent Location History Modal */}
       <Modal
         isOpen={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
         size="large"
       >
         <Modal.Header onClose={() => setIsHistoryModalOpen(false)}>
-          Location History
+          Recent Location History
           {selectedEntity && (
             <div style={{ fontSize: '0.9rem', fontWeight: 'normal', marginTop: '0.5rem', color: '#666' }}>
               {selectedEntity.name || selectedEntity.entity_id} ({selectedEntity.entity_id})
@@ -1238,6 +1267,214 @@ const Entities = () => {
             {/* Right side - Close button */}
             <button
               onClick={() => setIsHistoryModalOpen(false)}
+              className="btn btn-secondary"
+            >
+              Close
+            </button>
+          </div>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Full Location History Modal */}
+      <Modal
+        isOpen={isFullHistoryModalOpen}
+        onClose={() => setIsFullHistoryModalOpen(false)}
+        size="large"
+      >
+        <Modal.Header onClose={() => setIsFullHistoryModalOpen(false)}>
+          Full Location History
+          {selectedEntity && (
+            <div style={{ fontSize: '0.9rem', fontWeight: 'normal', marginTop: '0.5rem', color: '#666' }}>
+              {selectedEntity.name || selectedEntity.entity_id} ({selectedEntity.entity_id})
+            </div>
+          )}
+        </Modal.Header>
+        <Modal.Body>
+          {loadingFullHistory ? (
+            <div className="loading-state">Loading full location history...</div>
+          ) : fullLocationHistory.length === 0 ? (
+            <div className="empty-state">
+              <p>No location history found for this patient.</p>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <Table.Header>
+                  <Table.Row>
+                    <Table.Head>Location</Table.Head>
+                    <Table.Head>Entered At</Table.Head>
+                    <Table.Head>Exited At</Table.Head>
+                    <Table.Head>Duration</Table.Head>
+                  </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                  {fullLocationHistory
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((record) => (
+                      <Table.Row key={record.id}>
+                        <Table.Cell>
+                          <strong>{record.building_name}</strong> &gt; Floor {record.floor_number} &gt; {record.room_name}
+                        </Table.Cell>
+                        <Table.Cell>{formatHistoryDate(record.entered_at)}</Table.Cell>
+                        <Table.Cell>
+                          {record.exited_at ? formatHistoryDate(record.exited_at) : (
+                            <span className="status-badge status-admitted">Currently here</span>
+                          )}
+                        </Table.Cell>
+                        <Table.Cell>
+                          {record.duration_minutes !== null ? (
+                            `${record.duration_minutes} min`
+                          ) : (
+                            '-'
+                          )}
+                        </Table.Cell>
+                      </Table.Row>
+                    ))}
+                </Table.Body>
+              </Table>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {/* Left side - Download buttons */}
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              {fullLocationHistory.length > 0 && (
+                <>
+                  <button
+                    onClick={() => downloadHistoryAsCSV(fullLocationHistory)}
+                    className="btn btn-primary"
+                    title="Download as CSV"
+                  >
+                    Download CSV
+                  </button>
+                  <button
+                    onClick={() => downloadHistoryAsPDF(fullLocationHistory)}
+                    className="btn btn-primary"
+                    title="Download/Print as PDF"
+                  >
+                    Download PDF
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Center - Pagination Controls */}
+            {fullLocationHistory.length > 0 && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '1.5rem',
+                fontSize: '0.875rem'
+              }}>
+                {/* Left side - Record count */}
+                <span style={{
+                  color: '#6b7280',
+                  fontSize: '0.875rem',
+                  fontWeight: '400'
+                }}>
+                  {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, fullLocationHistory.length)} of {fullLocationHistory.length}
+                </span>
+
+                {/* Navigation buttons */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  {/* First page */}
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      border: '1px solid #e5e7eb',
+                      background: 'white',
+                      borderRadius: '4px',
+                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                      opacity: currentPage === 1 ? 0.5 : 1,
+                      fontSize: '0.875rem',
+                      color: '#374151'
+                    }}
+                    title="First page"
+                  >
+                    ⟪
+                  </button>
+
+                  {/* Previous page */}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      border: '1px solid #e5e7eb',
+                      background: 'white',
+                      borderRadius: '4px',
+                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                      opacity: currentPage === 1 ? 0.5 : 1,
+                      fontSize: '0.875rem',
+                      color: '#374151'
+                    }}
+                    title="Previous page"
+                  >
+                    ‹
+                  </button>
+
+                  {/* Page indicator */}
+                  <span style={{
+                    color: '#6b7280',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    padding: '0 0.5rem'
+                  }}>
+                    Page {currentPage} of {Math.ceil(fullLocationHistory.length / itemsPerPage)}
+                  </span>
+
+                  {/* Next page */}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(fullLocationHistory.length / itemsPerPage)))}
+                    disabled={currentPage === Math.ceil(fullLocationHistory.length / itemsPerPage)}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      border: '1px solid #e5e7eb',
+                      background: 'white',
+                      borderRadius: '4px',
+                      cursor: currentPage === Math.ceil(fullLocationHistory.length / itemsPerPage) ? 'not-allowed' : 'pointer',
+                      opacity: currentPage === Math.ceil(fullLocationHistory.length / itemsPerPage) ? 0.5 : 1,
+                      fontSize: '0.875rem',
+                      color: '#374151'
+                    }}
+                    title="Next page"
+                  >
+                    ›
+                  </button>
+
+                  {/* Last page */}
+                  <button
+                    onClick={() => setCurrentPage(Math.ceil(fullLocationHistory.length / itemsPerPage))}
+                    disabled={currentPage === Math.ceil(fullLocationHistory.length / itemsPerPage)}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      border: '1px solid #e5e7eb',
+                      background: 'white',
+                      borderRadius: '4px',
+                      cursor: currentPage === Math.ceil(fullLocationHistory.length / itemsPerPage) ? 'not-allowed' : 'pointer',
+                      opacity: currentPage === Math.ceil(fullLocationHistory.length / itemsPerPage) ? 0.5 : 1,
+                      fontSize: '0.875rem',
+                      color: '#374151'
+                    }}
+                    title="Last page"
+                  >
+                    ⟫
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Right side - Close button */}
+            <button
+              onClick={() => setIsFullHistoryModalOpen(false)}
               className="btn btn-secondary"
             >
               Close
