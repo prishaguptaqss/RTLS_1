@@ -104,7 +104,7 @@ const LivePositions = () => {
           style={{ cursor: 'pointer' }}
         >
           <div className="stat-card-content">
-            <h4 className="stat-card-title">Tracked Entities</h4>
+            <h4 className="stat-card-title">Tracked Patients</h4>
             <p className="stat-card-value" style={{ color: '#10b981', fontSize: '2rem', fontWeight: 'bold' }}>
               {stats.trackedCount}
             </p>
@@ -121,7 +121,7 @@ const LivePositions = () => {
           style={{ cursor: 'pointer' }}
         >
           <div className="stat-card-content">
-            <h4 className="stat-card-title">Untracked Entities</h4>
+            <h4 className="stat-card-title">Untracked Patients</h4>
             <p className="stat-card-value" style={{ color: '#ef4444', fontSize: '2rem', fontWeight: 'bold' }}>
               {stats.untrackedCount}
             </p>
@@ -152,7 +152,7 @@ const LivePositions = () => {
         <Card.Header>
           <div className="card-header-content">
             <div>
-              <Card.Title>Entity Positions</Card.Title>
+              <Card.Title>Patient Positions</Card.Title>
               {/* <p className="table-subtitle">Showing {filteredEntities.length} of {tabFilteredEntities.length} entities</p> */}
             </div>
             {/* <div className="search-box">
@@ -197,7 +197,7 @@ const LivePositions = () => {
             <Table>
               <Table.Header>
                 <Table.Row>
-                  <Table.Head>Entity ID</Table.Head>
+                  <Table.Head>Patient ID</Table.Head>
                   <Table.Head>Name</Table.Head>
                   <Table.Head>Tag</Table.Head>
                   <Table.Head>{activeTab === 'tracked' ? 'Current Location' : 'Last Location'}</Table.Head>

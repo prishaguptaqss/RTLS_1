@@ -402,7 +402,7 @@ const Entities = () => {
       <body>
         <h1>Location History Report</h1>
         <div class="subtitle">
-          <strong>Entity:</strong> ${selectedEntity.name || selectedEntity.entity_id} (${selectedEntity.entity_id})<br>
+          <strong>Patient:</strong> ${selectedEntity.name || selectedEntity.entity_id} (${selectedEntity.entity_id})<br>
           <strong>Generated:</strong> ${new Date().toLocaleString()}
         </div>
         <table>

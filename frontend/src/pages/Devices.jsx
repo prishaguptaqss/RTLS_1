@@ -1162,7 +1162,7 @@ const Devices = () => {
                   </option>
                 ))}
               </select>
-              <small>Select which patient this tag will be assigned to. Only unassigned active patients are shown.</small>
+              <small>Select which patient this tag will be assigned to. Only unassigned patients are shown.</small>
             </div>
           </Modal.Body>
           <Modal.Footer>

@@ -467,7 +467,7 @@ const MapVisualization = ({
                 <strong>{tag.name || tag.tag_id}</strong>
                 {isOffline && <span style={{color: '#e74c3c', fontWeight: 'bold'}}> (LOST)</span>}
                 <br />
-                {tag.entityName && `Entity: ${tag.entityName}`}
+                {tag.entityName && `Patient: ${tag.entityName}`}
                 {tag.userName && `User: ${tag.userName}`}
                 <br />
                 Location: {tagRoom.room_name}

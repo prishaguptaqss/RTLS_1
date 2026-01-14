@@ -11,8 +11,7 @@ class Settings(BaseSettings):
 
 
     # Database Configuration
-    DATABASE_URL: str = "postgresql://qss_user:admin@localhost:5432/rtls_db44"
-
+    DATABASE_URL: str = "postgresql://rtls_user:rtls_password@localhost:5433/rtls_db"
     # Server Configuration
     HOST: str = "0.0.0.0"
     PORT: int = 3000
