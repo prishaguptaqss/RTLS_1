@@ -31,7 +31,8 @@ const Settings = () => {
     organization_website: '',
     organization_phone: '',
     organization_address_line: '',
-    social_links: []
+    social_links: [],
+    browser_notifications_enabled: true
   });
 
   useEffect(() => {
@@ -59,7 +60,8 @@ const Settings = () => {
         organization_website: data.organization_website || '',
         organization_phone: data.organization_phone || '',
         organization_address_line: data.organization_address_line || '',
-        social_links: data.social_links || []
+        social_links: data.social_links || [],
+        browser_notifications_enabled: data.browser_notifications_enabled !== undefined ? data.browser_notifications_enabled : true
       });
     } catch (err) {
       console.error('Error loading settings:', err);
@@ -120,6 +122,7 @@ const Settings = () => {
       updateData.organization_phone = formData.organization_phone || '';
       updateData.organization_address_line = formData.organization_address_line || '';
       updateData.social_links = formData.social_links || [];
+      updateData.browser_notifications_enabled = formData.browser_notifications_enabled;
 
       await updateSettings(updateData);
       setSuccess(true);
@@ -369,6 +372,30 @@ const Settings = () => {
                   <strong>Current:</strong> {formData.untracked_threshold_seconds} seconds (~{Math.round(formData.untracked_threshold_seconds / 60)} minutes)
                   <br />
                   <em>Note: After changing this value, restart the Python scanner service for it to take effect.</em>
+                </small>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <h2 className="section-title">Notification Settings</h2>
+              <p className="section-description">
+                Configure notification preferences for {currentOrganization.name}
+              </p>
+
+              <div className="form-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="browser_notifications_enabled"
+                    checked={formData.browser_notifications_enabled}
+                    onChange={(e) => setFormData(prev => ({ ...prev, browser_notifications_enabled: e.target.checked }))}
+                    className="settings-checkbox"
+                  />
+                  <span>Enable Browser Push Notifications</span>
+                </label>
+                <small className="help-text">
+                  When enabled, staff will receive browser push notifications for missing person alerts in addition to normal in-app notifications.
+                  When disabled, only normal in-app notifications will work (no browser push notifications).
                 </small>
               </div>
             </div>

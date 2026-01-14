@@ -100,7 +100,8 @@ async def get_settings(
         organization_website=settings.organization_website,
         organization_phone=settings.organization_phone,
         organization_address_line=settings.organization_address_line,
-        social_links=social_links
+        social_links=social_links,
+        browser_notifications_enabled=settings.browser_notifications_enabled
     )
 
 
@@ -176,6 +177,10 @@ async def update_settings(
         else:
             settings.social_links = None
 
+    # Update notification settings if provided
+    if settings_update.browser_notifications_enabled is not None:
+        settings.browser_notifications_enabled = settings_update.browser_notifications_enabled
+
     # Commit all changes to database
     db.commit()
     db.refresh(settings)
@@ -225,7 +230,8 @@ async def update_settings(
         organization_website=settings.organization_website,
         organization_phone=settings.organization_phone,
         organization_address_line=settings.organization_address_line,
-        social_links=social_links
+        social_links=social_links,
+        browser_notifications_enabled=settings.browser_notifications_enabled
     )
 
 

@@ -57,6 +57,16 @@ class PushNotificationService:
         if not self._validate_vapid_config():
             return
 
+        # Check if browser notifications are enabled for this organization
+        from app.models.organization_settings import OrganizationSettings
+        org_settings = db.query(OrganizationSettings).filter(
+            OrganizationSettings.organization_id == notification.organization_id
+        ).first()
+
+        if org_settings and not org_settings.browser_notifications_enabled:
+            logger.info(f"Browser notifications disabled for organization {notification.organization_id}, skipping push notification")
+            return
+
         # Get staff members to notify
         if staff_members is None:
             staff_members = self._get_staff_with_notification_permission(

@@ -36,6 +36,9 @@ class SettingsUpdate(BaseModel):
     organization_address_line: Optional[str] = Field(None, description="Organization address for email footer")
     social_links: Optional[List[SocialLink]] = Field(None, description="List of social media links")
 
+    # Notification Settings
+    browser_notifications_enabled: Optional[bool] = Field(None, description="Enable/disable browser push notifications")
+
 
 class Settings(BaseModel):
     """Complete settings schema returned by API."""
@@ -58,3 +61,6 @@ class Settings(BaseModel):
     organization_phone: Optional[str] = None
     organization_address_line: Optional[str] = None
     social_links: Optional[List[SocialLink]] = None
+
+    # Notification Settings
+    browser_notifications_enabled: bool = True

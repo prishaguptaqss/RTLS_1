@@ -1,7 +1,7 @@
 """
 OrganizationSettings model for RTLS system.
 """
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -30,6 +30,9 @@ class OrganizationSettings(Base):
     organization_phone = Column(String, nullable=True, comment="Organization phone number")
     organization_address_line = Column(String, nullable=True, comment="Organization address for email footer")
     social_links = Column(String, nullable=True, comment="JSON string of social media links")
+
+    # Notification Settings
+    browser_notifications_enabled = Column(Boolean, nullable=False, default=True, comment="Enable/disable browser push notifications")
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
