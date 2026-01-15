@@ -1,7 +1,7 @@
 """
 Floor model - represents floors within buildings.
 """
-from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -26,6 +26,11 @@ class Floor(Base):
         Integer,
         nullable=False,
         comment="Floor number (e.g., 1, 2, 3)"
+    )
+    floor_plan_path = Column(
+        String,
+        nullable=True,
+        comment="Path to floor plan image file"
     )
 
     # Unique constraint: same floor number cannot exist twice in same building

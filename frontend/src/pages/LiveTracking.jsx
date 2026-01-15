@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Search, ChevronDown } from 'lucide-react';
-import { fetchBuildings, fetchFloors, fetchRooms, fetchDevices, fetchLivePositions } from '../services/api';
+import { MapPin, Search, ChevronDown, Upload, MapPinned } from 'lucide-react';
+import { fetchBuildings, fetchFloors, fetchRooms, fetchDevices, fetchLivePositions, updateRoom } from '../services/api';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { websocketService } from '../services/websocket';
 import MapVisualization from '../components/MapVisualization';
+import FloorPlanUploadModal from '../components/FloorPlanUploadModal';
+import PermissionGate from '../components/PermissionGate';
 import './LiveTracking.css';
 
 const LiveTracking = () => {
@@ -22,6 +24,9 @@ const LiveTracking = () => {
   const [offlineTags, setOfflineTags] = useState([]); // Tags that went offline with last location
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showFloorPlanModal, setShowFloorPlanModal] = useState(false);
+  const [coordinateMarkingMode, setCoordinateMarkingMode] = useState(false);
+  const [selectedRoomForMarking, setSelectedRoomForMarking] = useState(null);
 
   // Fetch buildings and anchors when organization changes
   useEffect(() => {
@@ -31,12 +36,24 @@ const LiveTracking = () => {
       loadLivePositions();
     }
 
-    // Auto-refresh timestamp
-    const interval = setInterval(() => {
+    // Auto-refresh data every 10 seconds
+    const dataRefreshInterval = setInterval(() => {
+      if (!orgLoading && currentOrganization) {
+        // Refresh anchors and live positions
+        loadAnchors();
+        loadLivePositions();
+      }
+    }, 10000); // Refresh every 10 seconds
+
+    // Auto-refresh timestamp display
+    const timestampInterval = setInterval(() => {
       setLastUpdate(new Date());
     }, 5000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(dataRefreshInterval);
+      clearInterval(timestampInterval);
+    };
   }, [orgLoading, currentOrganization]);
 
   // WebSocket integration for real-time updates
@@ -110,7 +127,9 @@ const LiveTracking = () => {
 
   const loadAnchors = async () => {
     try {
+      console.log('Loading anchors...');
       const anchorsData = await fetchDevices();
+      console.log('Loaded anchors:', anchorsData);
       setAnchors(anchorsData);
     } catch (err) {
       console.error('Error loading anchors:', err);
@@ -160,9 +179,11 @@ const LiveTracking = () => {
 
   const loadAllFloors = async () => {
     try {
+      console.log('Loading all floors for buildings:', buildings);
       const allFloorsPromises = buildings.map(building => fetchFloors(building.id));
       const allFloorsArrays = await Promise.all(allFloorsPromises);
       const allFloors = allFloorsArrays.flat();
+      console.log('Loaded floors:', allFloors);
       setFloors(allFloors);
 
       // Load rooms for all floors
@@ -199,6 +220,65 @@ const LiveTracking = () => {
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     return `${Math.floor(seconds / 3600)}h ago`;
   };
+
+  const handleFloorPlanUploadSuccess = async () => {
+    // Reload floors to get updated floor_plan_path
+    console.log('Reloading floors after floor plan change...');
+    await loadAllFloors();
+    // Force a re-render by briefly deselecting and reselecting the floor
+    const currentFloor = selectedFloor;
+    setSelectedFloor(null);
+    setTimeout(() => {
+      setSelectedFloor(currentFloor);
+    }, 100);
+  };
+
+  const handleRoomCoordinateClick = async (coordinates) => {
+    if (!coordinateMarkingMode || !selectedRoomForMarking) return;
+
+    try {
+      // Update room with new coordinates
+      await updateRoom(selectedRoomForMarking.id, {
+        x_coordinate: coordinates.x,
+        y_coordinate: coordinates.y
+      });
+
+      // Reload rooms to reflect changes
+      const floorsData = floors.length > 0 ? floors : await fetchFloors();
+      await loadAllRooms(floorsData);
+
+      // Clear marking mode
+      setCoordinateMarkingMode(false);
+      setSelectedRoomForMarking(null);
+
+      alert(`Room "${selectedRoomForMarking.room_name}" coordinates updated successfully!`);
+    } catch (err) {
+      console.error('Error updating room coordinates:', err);
+      alert('Failed to update room coordinates');
+    }
+  };
+
+  const handleStartMarkingRoom = (room) => {
+    setSelectedRoomForMarking(room);
+    setCoordinateMarkingMode(true);
+  };
+
+  const handleCancelMarking = () => {
+    setCoordinateMarkingMode(false);
+    setSelectedRoomForMarking(null);
+  };
+
+  const selectedFloorData = floors.find(f => f.id === selectedFloor);
+  const hasFloorPlan = selectedFloorData?.floor_plan_path;
+
+  // Debug logging
+  useEffect(() => {
+    if (selectedFloor && selectedFloorData) {
+      console.log('Selected floor:', selectedFloor);
+      console.log('Selected floor data:', selectedFloorData);
+      console.log('Has floor plan:', hasFloorPlan);
+    }
+  }, [selectedFloor, selectedFloorData, hasFloorPlan]);
 
   return (
     <div className="live-tracking">
@@ -298,6 +378,56 @@ const LiveTracking = () => {
             </div>
           </div>
         </div>
+
+        {/* Floor Plan Actions */}
+        <div className="controls-right">
+          <PermissionGate permission="FLOOR_EDIT">
+            {selectedFloor && (
+              <>
+                <button
+                  onClick={() => setShowFloorPlanModal(true)}
+                  className="action-btn floor-plan-btn"
+                  title="Upload floor plan"
+                >
+                  <Upload size={18} />
+                  {hasFloorPlan ? 'Manage Floor Plan' : 'Upload Floor Plan'}
+                </button>
+
+                {hasFloorPlan && !coordinateMarkingMode && (
+                  <button
+                    onClick={() => {
+                      const roomsOnFloor = rooms.filter(r => r.floor_id === selectedFloor);
+                      if (roomsOnFloor.length === 0) {
+                        alert('No rooms on this floor to mark coordinates.');
+                        return;
+                      }
+                      handleStartMarkingRoom(roomsOnFloor[0]);
+                    }}
+                    className="action-btn mark-coordinates-btn"
+                    title="Mark room coordinates on floor plan"
+                  >
+                    <MapPinned size={18} />
+                    Mark Room Locations
+                  </button>
+                )}
+
+                {coordinateMarkingMode && (
+                  <div className="marking-mode-indicator">
+                    <span className="marking-text">
+                      Click on floor plan to mark: <strong>{selectedRoomForMarking?.room_name}</strong>
+                    </span>
+                    <button
+                      onClick={handleCancelMarking}
+                      className="btn-cancel-marking"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </PermissionGate>
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -362,6 +492,7 @@ const LiveTracking = () => {
                     }
                   }
                 }}
+                onRoomCoordinateClick={coordinateMarkingMode ? handleRoomCoordinateClick : null}
               />
             </div>
           ) : null}
@@ -486,6 +617,16 @@ const LiveTracking = () => {
           </div> */}
         </div>
       </div>
+
+      {/* Floor Plan Upload Modal */}
+      {showFloorPlanModal && selectedFloorData && (
+        <FloorPlanUploadModal
+          isOpen={showFloorPlanModal}
+          onClose={() => setShowFloorPlanModal(false)}
+          floor={selectedFloorData}
+          onUploadSuccess={handleFloorPlanUploadSuccess}
+        />
+      )}
     </div>
   );
 };

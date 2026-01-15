@@ -754,3 +754,96 @@
     min-width: 120px;
   }
 }
+
+/* Floor Plan Actions */
+.controls-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--primary-color, #3498db);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.action-btn:hover {
+  background: var(--primary-dark, #2980b9);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.floor-plan-btn {
+  background: #3498db;
+}
+
+.floor-plan-btn:hover {
+  background: #2980b9;
+}
+
+.mark-coordinates-btn {
+  background: #9b59b6;
+}
+
+.mark-coordinates-btn:hover {
+  background: #8e44ad;
+}
+
+/* Marking Mode Indicator */
+.marking-mode-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 6px;
+  animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: #ffc107;
+  }
+  50% {
+    border-color: #ff9800;
+  }
+}
+
+.marking-text {
+  font-size: 14px;
+  color: #856404;
+}
+
+.marking-text strong {
+  color: #000;
+  font-weight: 600;
+}
+
+.btn-cancel-marking {
+  padding: 6px 12px;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-cancel-marking:hover {
+  background: #c0392b;
+}

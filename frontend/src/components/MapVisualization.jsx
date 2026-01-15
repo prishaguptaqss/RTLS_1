@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, Rectangle, Circle, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Rectangle, Circle, Marker, Popup, useMap, ImageOverlay, useMapEvents } from 'react-leaflet';
 import { renderToStaticMarkup } from 'react-dom/server';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapVisualization.css';
+import { getFloorPlanBlobUrl } from '../services/api';
 
 // Fix for default marker icons in Leaflet with Webpack/Vite
 delete L.Icon.Default.prototype._getIconUrl;
@@ -28,6 +29,95 @@ function MapViewControl({ bounds, zoom }) {
   }, [map, bounds, zoom]);
 
   return null;
+}
+
+/**
+ * FloorPlanLayer - Component that displays floor plan image overlay
+ */
+function FloorPlanLayer({ floor, rooms, onRoomCoordinateClick }) {
+  const [imageBounds, setImageBounds] = useState(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageUrl, setImageUrl] = useState(null);
+  const map = useMap();
+
+  useEffect(() => {
+    if (!floor?.floor_plan_path) {
+      setImageLoaded(false);
+      setImageBounds(null);
+      setImageUrl(null);
+      return;
+    }
+
+    // Fetch floor plan image as blob URL with authentication
+    const loadFloorPlan = async () => {
+      try {
+        const blobUrl = await getFloorPlanBlobUrl(floor.id);
+        if (!blobUrl) {
+          console.error('Failed to load floor plan');
+          return;
+        }
+
+        setImageUrl(blobUrl);
+
+        // Load image to get dimensions
+        const img = new Image();
+        img.onload = () => {
+          console.log('Floor plan image loaded:', img.width, 'x', img.height);
+          // Set bounds based on image dimensions
+          // Use image pixel dimensions as coordinate system
+          const bounds = [[0, 0], [img.height, img.width]];
+          setImageBounds(bounds);
+          setImageLoaded(true);
+
+          // Fit map to image bounds with padding
+          map.fitBounds(bounds, { padding: [50, 50] });
+        };
+
+        img.onerror = () => {
+          console.error('Failed to load floor plan image');
+          setImageLoaded(false);
+          setImageBounds(null);
+        };
+
+        img.src = blobUrl;
+      } catch (error) {
+        console.error('Error loading floor plan:', error);
+      }
+    };
+
+    loadFloorPlan();
+
+    // Cleanup blob URL on unmount
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+  }, [floor, map]);
+
+  useMapEvents({
+    click: (e) => {
+      if (onRoomCoordinateClick && imageLoaded) {
+        // Pass click coordinates to parent
+        const { lat, lng } = e.latlng;
+        console.log('Floor plan clicked at:', lng, lat);
+        onRoomCoordinateClick({ x: lng, y: lat });
+      }
+    }
+  });
+
+  if (!floor?.floor_plan_path || !imageBounds || !imageLoaded || !imageUrl) {
+    return null;
+  }
+
+  return (
+    <ImageOverlay
+      url={imageUrl}
+      bounds={imageBounds}
+      opacity={0.9}
+      zIndex={10}
+    />
+  );
 }
 
 /**
@@ -196,11 +286,16 @@ const MapVisualization = ({
   onSelectRoom = () => {},
   onCoordinateUpdate = () => {}, // Callback for coordinate editing
   editMode = false, // Enable coordinate editing
+  onRoomCoordinateClick = null, // Callback when clicking on floor plan to mark room coordinates
 }) => {
   const [layout, setLayout] = useState(null);
   const [viewBounds, setViewBounds] = useState(null);
   const [viewZoom, setViewZoom] = useState(null);
   const layoutEngine = useRef(new LogicalLayoutEngine());
+
+  // Check if selected floor has a floor plan
+  const selectedFloorData = floors.find(f => f.id === selectedFloor);
+  const hasFloorPlan = selectedFloorData?.floor_plan_path;
 
   // Calculate layout whenever data changes
   useEffect(() => {
@@ -208,22 +303,30 @@ const MapVisualization = ({
       const newLayout = layoutEngine.current.calculateLayout(buildings, floors, rooms, anchors);
       setLayout(newLayout);
 
-      // Set initial view to show all buildings
-      if (newLayout.bounds) {
+      // Set initial view to show all buildings (only if no floor plan is active)
+      if (newLayout.bounds && !hasFloorPlan) {
         setViewBounds(newLayout.bounds);
       }
     }
-  }, [buildings, floors, rooms, anchors]);
+  }, [buildings, floors, rooms, anchors, hasFloorPlan]);
 
   // Handle hierarchy selection and zoom
   useEffect(() => {
     if (!layout) return;
 
+    // If floor has a floor plan, don't set bounds yet - let FloorPlanLayer handle it
+    if (hasFloorPlan && selectedFloor) {
+      // Bounds will be set by FloorPlanLayer when image loads
+      return;
+    }
+
+    // When floor plan is removed or not present, use logical layout bounds
     if (selectedRoom && layout.rooms[selectedRoom]) {
       // Zoom to specific room
       setViewBounds(layout.rooms[selectedRoom].bounds);
     } else if (selectedFloor && layout.floors[selectedFloor]) {
-      // Zoom to floor
+      // Zoom to floor (this will show rooms in logical layout)
+      console.log('Setting view to floor bounds:', layout.floors[selectedFloor].bounds);
       setViewBounds(layout.floors[selectedFloor].bounds);
     } else if (selectedBuilding && layout.buildings[selectedBuilding]) {
       // Zoom to building
@@ -232,7 +335,7 @@ const MapVisualization = ({
       // Show all buildings
       setViewBounds(layout.bounds);
     }
-  }, [selectedBuilding, selectedFloor, selectedRoom, layout]);
+  }, [selectedBuilding, selectedFloor, selectedRoom, layout, hasFloorPlan]);
 
   // Get room color based on type
   const getRoomColor = (roomType) => {
@@ -247,19 +350,28 @@ const MapVisualization = ({
     return colors[roomType] || colors.default;
   };
 
-  // Get tag positions
+  // Get tag positions - works for both logical layout and floor plan
   const getTagPositions = () => {
     if (!layout) return [];
 
     return tags.map(tag => {
-      const room = layout.rooms[tag.room_id];
+      const room = rooms.find(r => r.id === tag.room_id);
       if (!room) return null;
 
-      // Position tag at exact room center (no offset) to keep it inside the room
-      // This ensures tags are always visible within room boundaries at any zoom level
+      let position;
+      // If floor plan exists and room has coordinates, use those
+      if (hasFloorPlan && selectedFloor && room.x_coordinate != null && room.y_coordinate != null) {
+        position = [room.y_coordinate, room.x_coordinate];
+      } else {
+        // Use logical layout
+        const roomLayout = layout.rooms[tag.room_id];
+        if (!roomLayout) return null;
+        position = roomLayout.center;
+      }
+
       return {
         ...tag,
-        position: room.center, // Use exact center position
+        position: position,
       };
     }).filter(Boolean);
   };
@@ -286,8 +398,17 @@ const MapVisualization = ({
       >
         <MapViewControl bounds={viewBounds} zoom={viewZoom} />
 
-        {/* Render Buildings */}
-        {buildings.map(building => {
+        {/* Render Floor Plan if available and floor is selected */}
+        {hasFloorPlan && selectedFloor && (
+          <FloorPlanLayer
+            floor={selectedFloorData}
+            rooms={rooms.filter(r => r.floor_id === selectedFloor)}
+            onRoomCoordinateClick={onRoomCoordinateClick}
+          />
+        )}
+
+        {/* Render Buildings (only if no floor plan is showing) */}
+        {!hasFloorPlan && buildings.map(building => {
           const buildingLayout = layout.buildings[building.id];
           if (!buildingLayout) return null;
 
@@ -316,8 +437,8 @@ const MapVisualization = ({
           );
         })}
 
-        {/* Render Floors (only if building is selected or showing all) */}
-        {floors.map(floor => {
+        {/* Render Floors (only if no floor plan is showing) */}
+        {!hasFloorPlan && floors.map(floor => {
           const floorLayout = layout.floors[floor.id];
           if (!floorLayout) return null;
 
@@ -350,11 +471,8 @@ const MapVisualization = ({
           );
         })}
 
-        {/* Render Rooms */}
+        {/* Render Rooms - show on both floor plan and logical view */}
         {rooms.map(room => {
-          const roomLayout = layout.rooms[room.id];
-          if (!roomLayout) return null;
-
           // Filter rooms based on selection
           if (selectedFloor) {
             if (room.floor_id !== selectedFloor) return null;
@@ -363,13 +481,34 @@ const MapVisualization = ({
             if (!roomFloor || roomFloor.building_id !== selectedBuilding) return null;
           }
 
+          // If floor plan exists and room has coordinates, use those; otherwise use layout
+          let roomBounds, roomCenter;
+          if (hasFloorPlan && selectedFloor && room.x_coordinate != null && room.y_coordinate != null) {
+            // Use room's actual coordinates on floor plan
+            const size = 50; // Room marker size in pixels on floor plan
+            roomBounds = [
+              [room.y_coordinate - size/2, room.x_coordinate - size/2],
+              [room.y_coordinate + size/2, room.x_coordinate + size/2]
+            ];
+            roomCenter = [room.y_coordinate, room.x_coordinate];
+          } else {
+            // Use logical layout
+            const roomLayout = layout.rooms[room.id];
+            if (!roomLayout) {
+              console.warn(`No layout found for room ${room.id} (${room.room_name})`);
+              return null;
+            }
+            roomBounds = roomLayout.bounds;
+            roomCenter = roomLayout.center;
+          }
+
           const isSelected = selectedRoom === room.id;
           const roomColor = getRoomColor(room.room_type);
 
           return (
             <Rectangle
               key={`room-${room.id}`}
-              bounds={roomLayout.bounds}
+              bounds={roomBounds}
               pathOptions={{
                 color: isSelected ? '#2c3e50' : roomColor,
                 weight: isSelected ? 3 : 2,
@@ -386,6 +525,12 @@ const MapVisualization = ({
                 Type: {room.room_type || 'N/A'}
                 <br />
                 Anchors: {anchors.filter(a => a.room_id === room.id).length}
+                {hasFloorPlan && room.x_coordinate != null && (
+                  <>
+                    <br />
+                    Coords: ({room.x_coordinate.toFixed(0)}, {room.y_coordinate.toFixed(0)})
+                  </>
+                )}
               </Popup>
             </Rectangle>
           );

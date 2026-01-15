@@ -239,6 +239,56 @@ export const deleteFloor = async (id) => {
   return api.delete(`/floors/${id}`);
 };
 
+// Floor Plans
+export const uploadFloorPlan = async (floorId, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post(`/floors/${floorId}/upload-plan`, formData);
+};
+
+export const deleteFloorPlan = async (floorId) => {
+  return api.delete(`/floors/${floorId}/floor-plan`);
+};
+
+export const getFloorPlanUrl = (floorId) => {
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  // Create a URL with proper authentication headers by using a data URL approach
+  // Note: For production, consider using a blob URL with proper fetch
+  return `${baseUrl}/floors/${floorId}/floor-plan`;
+};
+
+// Helper to fetch floor plan as blob URL with authentication
+export const getFloorPlanBlobUrl = async (floorId) => {
+  try {
+    const url = `${api.defaults.baseURL}/floors/${floorId}/floor-plan`;
+    console.log('Fetching floor plan from:', url);
+
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        'X-Organization-ID': localStorage.getItem('currentOrganizationId')
+      }
+    });
+
+    console.log('Floor plan fetch response:', response.status, response.statusText);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Floor plan fetch failed:', errorText);
+      throw new Error(`Failed to fetch floor plan: ${response.status} ${response.statusText}`);
+    }
+
+    const blob = await response.blob();
+    console.log('Floor plan blob size:', blob.size, 'type:', blob.type);
+    const blobUrl = URL.createObjectURL(blob);
+    console.log('Created blob URL:', blobUrl);
+    return blobUrl;
+  } catch (error) {
+    console.error('Error fetching floor plan:', error);
+    return null;
+  }
+};
+
 // Devices (ESP32 Anchors)
 export const fetchDevices = async () => {
   return api.get('/devices');

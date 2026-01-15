@@ -20,10 +20,12 @@ class FloorUpdate(BaseModel):
     """Schema for updating a floor (all fields optional)."""
     building_id: Optional[int] = None
     floor_number: Optional[int] = None
+    floor_plan_path: Optional[str] = None
 
 
 class Floor(FloorBase):
     """Schema for reading a floor (includes database fields)."""
     id: int
+    floor_plan_path: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
