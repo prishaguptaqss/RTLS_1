@@ -174,11 +174,11 @@ export const fetchAvailableTags = async () => {
 
 // Settings
 export const fetchSettings = async () => {
-  return api.get('/settings');
+  return api.get('/settings/');
 };
 
 export const updateSettings = async (settingsData) => {
-  return api.put('/settings', settingsData);
+  return api.put('/settings/', settingsData);
 };
 
 // Rooms
