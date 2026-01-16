@@ -232,4 +232,4 @@ echo ""
  
 # Start the backend with macOS-friendly settings
 echo "Starting uvicorn server..."
-uvicorn app.main:app --reload --host 127.0.0.1 --port 3000
+uvicorn app.main:app --host 127.0.0.1 --port 3000
