@@ -357,6 +357,17 @@ const MapVisualization = ({
   const selectedFloorData = floors.find(f => f.id === selectedFloor);
   const hasFloorPlan = selectedFloorData?.floor_plan_path;
 
+  // Debug logging
+  console.log('[MapVisualization] Rendering with:', {
+    buildings: buildings.length,
+    floors: floors.length,
+    rooms: rooms.length,
+    anchors: anchors.length,
+    tags: tags.length,
+    selectedFloor,
+    hasFloorPlan
+  });
+
   // Calculate layout whenever data changes
   useEffect(() => {
     if (buildings.length > 0) {
@@ -414,9 +425,15 @@ const MapVisualization = ({
   const getTagPositions = () => {
     if (!layout) return [];
 
-    return tags.map(tag => {
+    console.log('[MapVisualization] Getting tag positions for', tags.length, 'tags');
+    console.log('[MapVisualization] hasFloorPlan:', hasFloorPlan, 'selectedFloor:', selectedFloor);
+
+    const positions = tags.map(tag => {
       const room = rooms.find(r => r.id === tag.room_id);
-      if (!room) return null;
+      if (!room) {
+        console.log('[MapVisualization] Tag', tag.tag_id, 'has no matching room. room_id:', tag.room_id);
+        return null;
+      }
 
       let position;
 
@@ -428,16 +445,22 @@ const MapVisualization = ({
         const centerX = sumX / room.polygon_coordinates.length;
         const centerY = sumY / room.polygon_coordinates.length;
         position = [centerY, centerX]; // Leaflet format [lat, lng] = [y, x]
+        console.log('[MapVisualization] Tag', tag.tag_id, 'in room', room.room_name, 'at polygon center:', position);
       }
       // If floor plan exists and room has single point coordinates (legacy), use those
       else if (hasFloorPlan && selectedFloor && room.x_coordinate != null && room.y_coordinate != null) {
         position = [room.y_coordinate, room.x_coordinate];
+        console.log('[MapVisualization] Tag', tag.tag_id, 'in room', room.room_name, 'at point:', position);
       }
       // Use logical layout
       else {
         const roomLayout = layout.rooms[tag.room_id];
-        if (!roomLayout) return null;
+        if (!roomLayout) {
+          console.log('[MapVisualization] Tag', tag.tag_id, 'has no room layout');
+          return null;
+        }
         position = roomLayout.center;
+        console.log('[MapVisualization] Tag', tag.tag_id, 'in room', room.room_name, 'at logical layout:', position);
       }
 
       return {
@@ -445,6 +468,9 @@ const MapVisualization = ({
         position: position,
       };
     }).filter(Boolean);
+
+    console.log('[MapVisualization] Calculated', positions.length, 'tag positions');
+    return positions;
   };
 
   const tagPositions = getTagPositions();
@@ -666,9 +692,6 @@ const MapVisualization = ({
 
         {/* Render Anchors */}
         {anchors.map(anchor => {
-          const anchorLayout = layout.anchors[anchor.anchor_id];
-          if (!anchorLayout) return null;
-
           // Filter anchors based on selection
           const anchorRoom = rooms.find(r => r.id === anchor.room_id);
           if (!anchorRoom) return null;
@@ -680,13 +703,50 @@ const MapVisualization = ({
             if (!roomFloor || roomFloor.building_id !== selectedBuilding) return null;
           }
 
+          // Determine anchor position based on floor plan or logical layout
+          let anchorPosition;
+          let anchorRadius;
+
+          // If floor plan exists and floor is selected
+          if (hasFloorPlan && selectedFloor) {
+            // First priority: Use anchor's explicit coordinates
+            if (anchor.x_coordinate != null && anchor.y_coordinate != null) {
+              anchorPosition = [anchor.y_coordinate, anchor.x_coordinate]; // Leaflet format [lat, lng] = [y, x]
+              anchorRadius = 15;
+            }
+            // Second priority: If anchor has no coordinates but room has polygon, use room center
+            else if (anchorRoom.polygon_coordinates && Array.isArray(anchorRoom.polygon_coordinates) && anchorRoom.polygon_coordinates.length >= 3) {
+              // Calculate centroid of room polygon
+              const sumX = anchorRoom.polygon_coordinates.reduce((sum, coord) => sum + coord.x, 0);
+              const sumY = anchorRoom.polygon_coordinates.reduce((sum, coord) => sum + coord.y, 0);
+              const centerX = sumX / anchorRoom.polygon_coordinates.length;
+              const centerY = sumY / anchorRoom.polygon_coordinates.length;
+              anchorPosition = [centerY, centerX];
+              anchorRadius = 15;
+            }
+            // Third priority: Room has single point coordinates
+            else if (anchorRoom.x_coordinate != null && anchorRoom.y_coordinate != null) {
+              anchorPosition = [anchorRoom.y_coordinate, anchorRoom.x_coordinate];
+              anchorRadius = 15;
+            } else {
+              // Room has no coordinates on floor plan, don't show anchor
+              return null;
+            }
+          } else {
+            // Use logical layout (no floor plan)
+            const anchorLayout = layout.anchors[anchor.anchor_id];
+            if (!anchorLayout) return null;
+            anchorPosition = anchorLayout.position;
+            anchorRadius = 2;
+          }
+
           const isActive = anchor.status === 'active';
 
           return (
             <Circle
               key={`anchor-${anchor.anchor_id}`}
-              center={anchorLayout.position}
-              radius={2}
+              center={anchorPosition}
+              radius={anchorRadius}
               pathOptions={{
                 color: isActive ? '#27ae60' : '#e74c3c',
                 weight: 2,
@@ -700,6 +760,12 @@ const MapVisualization = ({
                 Status: {anchor.status}
                 <br />
                 Room: {anchorRoom.room_name}
+                {hasFloorPlan && anchor.x_coordinate != null && anchor.y_coordinate != null && (
+                  <>
+                    <br />
+                    Coords: ({anchor.x_coordinate.toFixed(0)}, {anchor.y_coordinate.toFixed(0)})
+                  </>
+                )}
               </Popup>
             </Circle>
           );

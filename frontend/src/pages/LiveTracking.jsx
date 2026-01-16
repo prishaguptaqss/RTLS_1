@@ -171,6 +171,10 @@ const LiveTracking = () => {
       console.log('Loading anchors...');
       const anchorsData = await fetchDevices();
       console.log('Loaded anchors:', anchorsData);
+      console.log('Number of anchors:', anchorsData?.length || 0);
+      if (anchorsData && anchorsData.length > 0) {
+        console.log('Sample anchor:', anchorsData[0]);
+      }
       setAnchors(anchorsData);
     } catch (err) {
       console.error('Error loading anchors:', err);
@@ -180,6 +184,7 @@ const LiveTracking = () => {
   const loadLivePositions = async () => {
     try {
       const response = await fetchLivePositions();
+      console.log('Live positions response:', response);
       // Transform the response to match our tag structure
       // Separate active and offline tags based on status from backend
       const activeTags = [];
@@ -204,6 +209,8 @@ const LiveTracking = () => {
         }
       });
 
+      console.log('Active tags:', activeTags);
+      console.log('Offline tags:', offlineTags);
       setLiveTags(activeTags);
       setOfflineTags(offlineTags);
     } catch (err) {
