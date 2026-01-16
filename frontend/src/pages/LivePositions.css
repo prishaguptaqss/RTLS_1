@@ -1,3 +1,27 @@
+/* Patient Tracking Container with Transitions */
+.patient-tracking-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.view-wrapper {
+  width: 100%;
+  height: 100%;
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+.view-wrapper.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.view-wrapper.transitioning {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
 .live-positions {
   max-width: 1400px;
   margin: 0 auto;

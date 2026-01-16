@@ -284,7 +284,10 @@ async def update_entity(
                     print(f"[DEBUG] Removed from live location")
 
                 current_tag.assigned_entity_id = None
-                print(f"[DEBUG] Set tag {current_tag.tag_id} assigned_entity_id to None")
+                # Reset status to active when unassigned to make it available in dropdowns
+                from app.utils.enums import TagStatus
+                current_tag.status = TagStatus.active
+                print(f"[DEBUG] Set tag {current_tag.tag_id} assigned_entity_id to None and status to active")
             else:
                 print(f"[DEBUG] No current tag found to unassign")
 

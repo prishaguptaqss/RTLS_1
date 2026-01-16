@@ -44,13 +44,13 @@ async def list_available_devices(
 ):
     """
     List all available devices (anchors) that can be assigned to rooms.
-    This includes all anchors that are either unassigned or have status 'inactive_in_store'.
+    This includes all unassigned anchors regardless of status.
+    Status filter removed to include recently unassigned anchors.
     Used for populating anchor selection dropdowns when creating/editing rooms.
     """
     return db.query(AnchorModel).filter(
         AnchorModel.organization_id == organization.id,
-        AnchorModel.room_id == None,
-        AnchorModel.status.in_([AnchorStatus.inactive_in_store, AnchorStatus.inactive_defective])
+        AnchorModel.room_id == None
     ).all()
 
 

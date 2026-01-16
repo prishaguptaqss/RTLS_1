@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { MapContainer, TileLayer, Rectangle, Circle, Marker, Popup, useMap, ImageOverlay, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Rectangle, Circle, Marker, Popup, useMap, ImageOverlay, useMapEvents, Polygon, Polyline } from 'react-leaflet';
 import { renderToStaticMarkup } from 'react-dom/server';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -32,9 +32,9 @@ function MapViewControl({ bounds, zoom }) {
 }
 
 /**
- * FloorPlanLayer - Component that displays floor plan image overlay
+ * FloorPlanLayer - Component that displays floor plan image overlay with polygon drawing support
  */
-function FloorPlanLayer({ floor, rooms, onRoomCoordinateClick }) {
+function FloorPlanLayer({ floor, rooms, onRoomCoordinateClick, polygonPoints, onAddPolygonPoint }) {
   const [imageBounds, setImageBounds] = useState(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
@@ -97,11 +97,18 @@ function FloorPlanLayer({ floor, rooms, onRoomCoordinateClick }) {
 
   useMapEvents({
     click: (e) => {
-      if (onRoomCoordinateClick && imageLoaded) {
-        // Pass click coordinates to parent
+      if (imageLoaded) {
         const { lat, lng } = e.latlng;
         console.log('Floor plan clicked at:', lng, lat);
-        onRoomCoordinateClick({ x: lng, y: lat });
+
+        // If in polygon drawing mode, add point to polygon
+        if (onAddPolygonPoint) {
+          onAddPolygonPoint({ x: lng, y: lat });
+        }
+        // Legacy single-point mode
+        else if (onRoomCoordinateClick) {
+          onRoomCoordinateClick({ x: lng, y: lat });
+        }
       }
     }
   });
@@ -111,12 +118,62 @@ function FloorPlanLayer({ floor, rooms, onRoomCoordinateClick }) {
   }
 
   return (
-    <ImageOverlay
-      url={imageUrl}
-      bounds={imageBounds}
-      opacity={0.9}
-      zIndex={10}
-    />
+    <>
+      <ImageOverlay
+        url={imageUrl}
+        bounds={imageBounds}
+        opacity={0.9}
+        zIndex={10}
+      />
+
+      {/* Show polygon being drawn */}
+      {polygonPoints && polygonPoints.length > 0 && (
+        <>
+          {/* Draw lines connecting the points */}
+          {polygonPoints.length > 1 && (
+            <Polyline
+              positions={polygonPoints.map(p => [p.y, p.x])}
+              pathOptions={{
+                color: '#ffc107',
+                weight: 3,
+                dashArray: '5, 5',
+              }}
+            />
+          )}
+
+          {/* Draw line from last point to first (closing the polygon preview) */}
+          {polygonPoints.length >= 3 && (
+            <Polyline
+              positions={[
+                [polygonPoints[polygonPoints.length - 1].y, polygonPoints[polygonPoints.length - 1].x],
+                [polygonPoints[0].y, polygonPoints[0].x]
+              ]}
+              pathOptions={{
+                color: '#ffc107',
+                weight: 2,
+                dashArray: '10, 10',
+                opacity: 0.5,
+              }}
+            />
+          )}
+
+          {/* Draw circles at each point */}
+          {polygonPoints.map((point, index) => (
+            <Circle
+              key={`polygon-point-${index}`}
+              center={[point.y, point.x]}
+              radius={10}
+              pathOptions={{
+                color: index === 0 ? '#4caf50' : '#ffc107',
+                fillColor: index === 0 ? '#4caf50' : '#ffc107',
+                fillOpacity: 0.8,
+                weight: 2,
+              }}
+            />
+          ))}
+        </>
+      )}
+    </>
   );
 }
 
@@ -286,7 +343,9 @@ const MapVisualization = ({
   onSelectRoom = () => {},
   onCoordinateUpdate = () => {}, // Callback for coordinate editing
   editMode = false, // Enable coordinate editing
-  onRoomCoordinateClick = null, // Callback when clicking on floor plan to mark room coordinates
+  onRoomCoordinateClick = null, // Callback when clicking on floor plan to mark room coordinates (legacy single-point)
+  polygonPoints = null, // Array of {x, y} points for polygon being drawn
+  onAddPolygonPoint = null, // Callback when user clicks to add a point to polygon
 }) => {
   const [layout, setLayout] = useState(null);
   const [viewBounds, setViewBounds] = useState(null);
@@ -359,11 +418,22 @@ const MapVisualization = ({
       if (!room) return null;
 
       let position;
-      // If floor plan exists and room has coordinates, use those
-      if (hasFloorPlan && selectedFloor && room.x_coordinate != null && room.y_coordinate != null) {
+
+      // If floor plan exists and room has polygon coordinates, calculate center
+      if (hasFloorPlan && selectedFloor && room.polygon_coordinates && Array.isArray(room.polygon_coordinates) && room.polygon_coordinates.length >= 3) {
+        // Calculate centroid of polygon
+        const sumX = room.polygon_coordinates.reduce((sum, coord) => sum + coord.x, 0);
+        const sumY = room.polygon_coordinates.reduce((sum, coord) => sum + coord.y, 0);
+        const centerX = sumX / room.polygon_coordinates.length;
+        const centerY = sumY / room.polygon_coordinates.length;
+        position = [centerY, centerX]; // Leaflet format [lat, lng] = [y, x]
+      }
+      // If floor plan exists and room has single point coordinates (legacy), use those
+      else if (hasFloorPlan && selectedFloor && room.x_coordinate != null && room.y_coordinate != null) {
         position = [room.y_coordinate, room.x_coordinate];
-      } else {
-        // Use logical layout
+      }
+      // Use logical layout
+      else {
         const roomLayout = layout.rooms[tag.room_id];
         if (!roomLayout) return null;
         position = roomLayout.center;
@@ -404,6 +474,8 @@ const MapVisualization = ({
             floor={selectedFloorData}
             rooms={rooms.filter(r => r.floor_id === selectedFloor)}
             onRoomCoordinateClick={onRoomCoordinateClick}
+            polygonPoints={polygonPoints}
+            onAddPolygonPoint={onAddPolygonPoint}
           />
         )}
 
@@ -481,34 +553,88 @@ const MapVisualization = ({
             if (!roomFloor || roomFloor.building_id !== selectedBuilding) return null;
           }
 
-          // If floor plan exists and room has coordinates, use those; otherwise use layout
-          let roomBounds, roomCenter;
+          const isSelected = selectedRoom === room.id;
+          const roomColor = getRoomColor(room.room_type);
+
+          // If floor plan exists and room has polygon coordinates, use those
+          if (hasFloorPlan && selectedFloor && room.polygon_coordinates && Array.isArray(room.polygon_coordinates) && room.polygon_coordinates.length >= 3) {
+            // Convert polygon coordinates to Leaflet format [lat, lng] = [y, x]
+            const polygonPositions = room.polygon_coordinates.map(coord => [coord.y, coord.x]);
+
+            return (
+              <Polygon
+                key={`room-${room.id}`}
+                positions={polygonPositions}
+                pathOptions={{
+                  color: isSelected ? '#2c3e50' : roomColor,
+                  weight: isSelected ? 3 : 2,
+                  fillColor: roomColor,
+                  fillOpacity: isSelected ? 0.4 : 0.2,
+                }}
+                eventHandlers={{
+                  click: () => onSelectRoom(room.id),
+                }}
+              >
+                <Popup>
+                  <strong>{room.room_name}</strong>
+                  <br />
+                  Type: {room.room_type || 'N/A'}
+                  <br />
+                  Anchors: {anchors.filter(a => a.room_id === room.id).length}
+                  <br />
+                  Points: {room.polygon_coordinates.length}
+                </Popup>
+              </Polygon>
+            );
+          }
+
+          // If floor plan exists and room has single point coordinates (legacy), use those
           if (hasFloorPlan && selectedFloor && room.x_coordinate != null && room.y_coordinate != null) {
             // Use room's actual coordinates on floor plan
             const size = 50; // Room marker size in pixels on floor plan
-            roomBounds = [
+            const roomBounds = [
               [room.y_coordinate - size/2, room.x_coordinate - size/2],
               [room.y_coordinate + size/2, room.x_coordinate + size/2]
             ];
-            roomCenter = [room.y_coordinate, room.x_coordinate];
-          } else {
-            // Use logical layout
-            const roomLayout = layout.rooms[room.id];
-            if (!roomLayout) {
-              console.warn(`No layout found for room ${room.id} (${room.room_name})`);
-              return null;
-            }
-            roomBounds = roomLayout.bounds;
-            roomCenter = roomLayout.center;
+
+            return (
+              <Rectangle
+                key={`room-${room.id}`}
+                bounds={roomBounds}
+                pathOptions={{
+                  color: isSelected ? '#2c3e50' : roomColor,
+                  weight: isSelected ? 3 : 2,
+                  fillColor: roomColor,
+                  fillOpacity: isSelected ? 0.4 : 0.2,
+                }}
+                eventHandlers={{
+                  click: () => onSelectRoom(room.id),
+                }}
+              >
+                <Popup>
+                  <strong>{room.room_name}</strong>
+                  <br />
+                  Type: {room.room_type || 'N/A'}
+                  <br />
+                  Anchors: {anchors.filter(a => a.room_id === room.id).length}
+                  <br />
+                  Coords: ({room.x_coordinate.toFixed(0)}, {room.y_coordinate.toFixed(0)})
+                </Popup>
+              </Rectangle>
+            );
           }
 
-          const isSelected = selectedRoom === room.id;
-          const roomColor = getRoomColor(room.room_type);
+          // Use logical layout
+          const roomLayout = layout.rooms[room.id];
+          if (!roomLayout) {
+            console.warn(`No layout found for room ${room.id} (${room.room_name})`);
+            return null;
+          }
 
           return (
             <Rectangle
               key={`room-${room.id}`}
-              bounds={roomBounds}
+              bounds={roomLayout.bounds}
               pathOptions={{
                 color: isSelected ? '#2c3e50' : roomColor,
                 weight: isSelected ? 3 : 2,
@@ -525,12 +651,6 @@ const MapVisualization = ({
                 Type: {room.room_type || 'N/A'}
                 <br />
                 Anchors: {anchors.filter(a => a.room_id === room.id).length}
-                {hasFloorPlan && room.x_coordinate != null && (
-                  <>
-                    <br />
-                    Coords: ({room.x_coordinate.toFixed(0)}, {room.y_coordinate.toFixed(0)})
-                  </>
-                )}
               </Popup>
             </Rectangle>
           );

@@ -20,32 +20,79 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Migrate notifications table from patient_id/patient_name to entity_id/entity_name/entity_type."""
-    # Add new entity columns
-    op.add_column('notifications', sa.Column('entity_id', sa.Integer(), nullable=True))
-    op.add_column('notifications', sa.Column('entity_name', sa.String(), nullable=True))
+    # Check if columns already exist before adding (for idempotency)
+    connection = op.get_bind()
 
-    # Add entity_type column - the entitytype enum should already exist from entities table
-    # Just add the column
-    op.execute("ALTER TABLE notifications ADD COLUMN entity_type entitytype")
+    # Check and add entity_id column if it doesn't exist
+    result = connection.execute(sa.text("""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name='notifications' AND column_name='entity_id'
+    """))
+    if not result.fetchone():
+        op.add_column('notifications', sa.Column('entity_id', sa.Integer(), nullable=True))
 
-    # Migrate data from patient columns to entity columns
-    op.execute("""
-        UPDATE notifications
-        SET entity_name = patient_name
-        WHERE patient_name IS NOT NULL
-    """)
+    # Check and add entity_name column if it doesn't exist
+    result = connection.execute(sa.text("""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name='notifications' AND column_name='entity_name'
+    """))
+    if not result.fetchone():
+        op.add_column('notifications', sa.Column('entity_name', sa.String(), nullable=True))
 
-    # Create foreign key constraint for entity_id
-    op.create_foreign_key(
-        'fk_notifications_entity_id',
-        'notifications', 'entities',
-        ['entity_id'], ['id'],
-        ondelete='SET NULL'
-    )
+    # Check and add entity_type column if it doesn't exist
+    result = connection.execute(sa.text("""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name='notifications' AND column_name='entity_type'
+    """))
+    if not result.fetchone():
+        op.execute("ALTER TABLE notifications ADD COLUMN entity_type entitytype")
 
-    # Drop old patient columns
-    op.drop_column('notifications', 'patient_name')
-    op.drop_column('notifications', 'patient_id')
+    # Migrate data from patient columns to entity columns (only if patient_name column exists)
+    result = connection.execute(sa.text("""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name='notifications' AND column_name='patient_name'
+    """))
+    if result.fetchone():
+        op.execute("""
+            UPDATE notifications
+            SET entity_name = patient_name
+            WHERE patient_name IS NOT NULL
+        """)
+
+    # Create foreign key constraint for entity_id if it doesn't exist
+    result = connection.execute(sa.text("""
+        SELECT constraint_name
+        FROM information_schema.table_constraints
+        WHERE table_name='notifications' AND constraint_name='fk_notifications_entity_id'
+    """))
+    if not result.fetchone():
+        op.create_foreign_key(
+            'fk_notifications_entity_id',
+            'notifications', 'entities',
+            ['entity_id'], ['id'],
+            ondelete='SET NULL'
+        )
+
+    # Drop old patient columns if they exist
+    result = connection.execute(sa.text("""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name='notifications' AND column_name='patient_name'
+    """))
+    if result.fetchone():
+        op.drop_column('notifications', 'patient_name')
+
+    result = connection.execute(sa.text("""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name='notifications' AND column_name='patient_id'
+    """))
+    if result.fetchone():
+        op.drop_column('notifications', 'patient_id')
 
 
 def downgrade() -> None:

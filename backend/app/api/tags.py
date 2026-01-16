@@ -29,14 +29,13 @@ async def list_available_tags(
 ):
     """List all available (unassigned) tags within the organization.
 
-    Returns tags where both assigned_user_id and assigned_entity_id are NULL
-    and status is 'active'.
+    Returns tags where both assigned_user_id and assigned_entity_id are NULL.
+    Status filter removed to include recently unassigned tags.
     """
     available_tags = db.query(TagModel).filter(
         TagModel.organization_id == organization.id,
         TagModel.assigned_user_id.is_(None),
-        TagModel.assigned_entity_id.is_(None),
-        TagModel.status == "active"
+        TagModel.assigned_entity_id.is_(None)
     ).all()
     print(f"[DEBUG] Available tags query returned {len(available_tags)} tags: {[t.tag_id for t in available_tags]}")
     return available_tags
@@ -134,6 +133,10 @@ async def update_tag(
             ).first()
             if current_assignment:
                 current_assignment.unassigned_at = now
+
+            # Reset status to active when unassigned to make it available in dropdowns
+            from app.utils.enums import TagStatus
+            tag.status = TagStatus.active
 
         # Case 2: Assigning to a new entity
         elif new_entity_id is not None:

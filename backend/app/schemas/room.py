@@ -2,7 +2,7 @@
 Pydantic schemas for Room model.
 """
 from pydantic import BaseModel, ConfigDict
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 
 class RoomBase(BaseModel):
@@ -12,6 +12,7 @@ class RoomBase(BaseModel):
     room_type: Optional[str] = None
     x_coordinate: Optional[float] = None
     y_coordinate: Optional[float] = None
+    polygon_coordinates: Optional[List[Dict[str, float]]] = None  # Array of {x, y} points
 
 
 class RoomCreate(RoomBase):
@@ -27,6 +28,7 @@ class RoomUpdate(BaseModel):
     room_type: Optional[str] = None
     x_coordinate: Optional[float] = None
     y_coordinate: Optional[float] = None
+    polygon_coordinates: Optional[List[Dict[str, float]]] = None  # Array of {x, y} points
     anchor_id: Optional[str] = None  # Update single anchor assignment (deprecated, use anchor_ids)
     anchor_ids: Optional[List[str]] = None  # Update list of anchor IDs to assign to this room
 

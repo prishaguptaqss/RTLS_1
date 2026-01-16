@@ -27,6 +27,7 @@ const LiveTracking = () => {
   const [showFloorPlanModal, setShowFloorPlanModal] = useState(false);
   const [coordinateMarkingMode, setCoordinateMarkingMode] = useState(false);
   const [selectedRoomForMarking, setSelectedRoomForMarking] = useState(null);
+  const [polygonPoints, setPolygonPoints] = useState([]); // Points being drawn for polygon
 
   // Fetch buildings and anchors when organization changes
   useEffect(() => {
@@ -233,14 +234,24 @@ const LiveTracking = () => {
     }, 100);
   };
 
-  const handleRoomCoordinateClick = async (coordinates) => {
+  const handleAddPolygonPoint = (coordinates) => {
     if (!coordinateMarkingMode || !selectedRoomForMarking) return;
 
+    // Add point to polygon
+    setPolygonPoints(prev => [...prev, coordinates]);
+    console.log('Added polygon point:', coordinates);
+  };
+
+  const handleCompletePolygon = async () => {
+    if (!selectedRoomForMarking || polygonPoints.length < 3) {
+      alert('Please mark at least 3 points to create a room boundary');
+      return;
+    }
+
     try {
-      // Update room with new coordinates
+      // Update room with polygon coordinates
       await updateRoom(selectedRoomForMarking.id, {
-        x_coordinate: coordinates.x,
-        y_coordinate: coordinates.y
+        polygon_coordinates: polygonPoints
       });
 
       // Reload rooms to reflect changes
@@ -250,8 +261,9 @@ const LiveTracking = () => {
       // Clear marking mode
       setCoordinateMarkingMode(false);
       setSelectedRoomForMarking(null);
+      setPolygonPoints([]);
 
-      alert(`Room "${selectedRoomForMarking.room_name}" coordinates updated successfully!`);
+      alert(`Room "${selectedRoomForMarking.room_name}" boundary marked successfully with ${polygonPoints.length} points!`);
     } catch (err) {
       console.error('Error updating room coordinates:', err);
       alert('Failed to update room coordinates');
@@ -261,11 +273,17 @@ const LiveTracking = () => {
   const handleStartMarkingRoom = (room) => {
     setSelectedRoomForMarking(room);
     setCoordinateMarkingMode(true);
+    setPolygonPoints([]); // Reset polygon points
   };
 
   const handleCancelMarking = () => {
     setCoordinateMarkingMode(false);
     setSelectedRoomForMarking(null);
+    setPolygonPoints([]);
+  };
+
+  const handleUndoLastPoint = () => {
+    setPolygonPoints(prev => prev.slice(0, -1));
   };
 
   const selectedFloorData = floors.find(f => f.id === selectedFloor);
@@ -414,14 +432,36 @@ const LiveTracking = () => {
                 {coordinateMarkingMode && (
                   <div className="marking-mode-indicator">
                     <span className="marking-text">
-                      Click on floor plan to mark: <strong>{selectedRoomForMarking?.room_name}</strong>
+                      Drawing boundary for: <strong>{selectedRoomForMarking?.room_name}</strong>
+                      <br />
+                      Points: {polygonPoints.length} {polygonPoints.length >= 3 ? '(Ready to complete)' : '(Need at least 3)'}
                     </span>
-                    <button
-                      onClick={handleCancelMarking}
-                      className="btn-cancel-marking"
-                    >
-                      Cancel
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {polygonPoints.length > 0 && (
+                        <button
+                          onClick={handleUndoLastPoint}
+                          className="btn-undo-point"
+                          title="Undo last point"
+                        >
+                          Undo
+                        </button>
+                      )}
+                      {polygonPoints.length >= 3 && (
+                        <button
+                          onClick={handleCompletePolygon}
+                          className="btn-complete-polygon"
+                          title="Complete the room boundary"
+                        >
+                          Complete
+                        </button>
+                      )}
+                      <button
+                        onClick={handleCancelMarking}
+                        className="btn-cancel-marking"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 )}
               </>
@@ -492,7 +532,8 @@ const LiveTracking = () => {
                     }
                   }
                 }}
-                onRoomCoordinateClick={coordinateMarkingMode ? handleRoomCoordinateClick : null}
+                polygonPoints={coordinateMarkingMode ? polygonPoints : null}
+                onAddPolygonPoint={coordinateMarkingMode ? handleAddPolygonPoint : null}
               />
             </div>
           ) : null}

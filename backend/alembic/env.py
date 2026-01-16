@@ -12,6 +12,9 @@ from app.database import Base
 # Import all models to ensure they're registered with SQLAlchemy Base
 from app.models import (
     User,
+    Entity,
+    Organization,
+    OrganizationSettings,
     Building,
     Floor,
     Room,
@@ -20,14 +23,22 @@ from app.models import (
     LiveLocation,
     LocationHistory,
     PasswordResetToken,
+    Staff,
+    Role,
+    Permission,
+    EntityTagAssignment,
+    UserTagAssignment,
+    Notification,
 )
 
-# Import models not in __init__.py
-from app.models.staff import Staff, staff_roles
-from app.models.role import Role
-from app.models.permission import Permission
-from app.models.entity_tag_assignment import EntityTagAssignment
-from app.models.user_tag_assignment import UserTagAssignment
+# Import models not in __init__.py (if any)
+from app.models.staff import staff_roles
+
+# Import PushSubscription if it exists
+try:
+    from app.models.push_subscription import PushSubscription
+except ImportError:
+    pass
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
