@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Upload, X, Image as ImageIcon, Trash2 } from 'lucide-react';
 import Modal from './ui/Modal';
-import { uploadFloorPlan, deleteFloorPlan, getFloorPlanBlobUrl } from '../services/api';
+import ConfirmModal from './ConfirmModal';
+import { uploadFloorPlan, deleteFloorPlan, getFloorPlanBlobUrl, fetchRooms, updateRoom } from '../services/api';
 import './FloorPlanUploadModal.css';
 
 const FloorPlanUploadModal = ({ isOpen, onClose, floor, onUploadSuccess }) => {
@@ -11,6 +12,7 @@ const FloorPlanUploadModal = ({ isOpen, onClose, floor, onUploadSuccess }) => {
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [existingPlanUrl, setExistingPlanUrl] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const hasExistingPlan = floor?.floor_plan_path;
 
@@ -86,28 +88,50 @@ const FloorPlanUploadModal = ({ isOpen, onClose, floor, onUploadSuccess }) => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this floor plan?')) {
-      return;
-    }
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
 
+  const handleDeleteConfirm = async () => {
+    setShowDeleteConfirm(false);
     setDeleting(true);
     setError(null);
 
     try {
+      // First, fetch all rooms on this floor
+      const roomsOnFloor = await fetchRooms(floor.id);
+      console.log(`Deleting floor plan for floor ${floor.id}, found ${roomsOnFloor.length} rooms`);
+
+      // Delete polygon coordinates for all rooms on this floor
+      const updatePromises = roomsOnFloor.map(room => {
+        if (room.polygon_coordinates && room.polygon_coordinates.length > 0) {
+          console.log(`Clearing coordinates for room: ${room.room_name}`);
+          return updateRoom(room.id, { polygon_coordinates: null });
+        }
+        return Promise.resolve();
+      });
+
+      // Wait for all room updates to complete
+      await Promise.all(updatePromises);
+      console.log('All room coordinates cleared');
+
+      // Then delete the floor plan
       await deleteFloorPlan(floor.id);
+      console.log('Floor plan deleted');
+
       // Clean up blob URL
       if (existingPlanUrl) {
         URL.revokeObjectURL(existingPlanUrl);
         setExistingPlanUrl(null);
       }
+
       if (onUploadSuccess) {
         onUploadSuccess(); // This reloads floors in parent component
       }
       onClose();
     } catch (err) {
       console.error('Error deleting floor plan:', err);
-      setError(err.response?.data?.detail || 'Failed to delete floor plan');
+      setError(err.response?.data?.detail || 'Failed to delete floor plan and room coordinates');
     } finally {
       setDeleting(false);
     }
@@ -143,7 +167,7 @@ const FloorPlanUploadModal = ({ isOpen, onClose, floor, onUploadSuccess }) => {
                 />
               </div>
               <button
-                onClick={handleDelete}
+                onClick={handleDeleteClick}
                 disabled={deleting}
                 className="delete-plan-btn"
               >
@@ -234,6 +258,18 @@ const FloorPlanUploadModal = ({ isOpen, onClose, floor, onUploadSuccess }) => {
           </button>
         )}
       </Modal.Footer>
+
+      {/* Confirmation Modal for Delete */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        title="Delete Floor Plan"
+        message={`Are you sure you want to delete the floor plan for Floor ${floor?.floor_number}? This action cannot be undone. The floor plan image and all room coordinate markings will be permanently deleted.`}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setShowDeleteConfirm(false)}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
     </Modal>
   );
 };

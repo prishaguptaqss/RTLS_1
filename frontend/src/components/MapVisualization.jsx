@@ -385,15 +385,42 @@ const MapVisualization = ({
   useEffect(() => {
     if (!layout) return;
 
-    // If floor has a floor plan, don't set bounds yet - let FloorPlanLayer handle it
-    if (hasFloorPlan && selectedFloor) {
+    // If floor has a floor plan and a room is selected, zoom to that room on the floor plan
+    if (hasFloorPlan && selectedFloor && selectedRoom) {
+      const room = rooms.find(r => r.id === selectedRoom);
+      if (room && room.polygon_coordinates && Array.isArray(room.polygon_coordinates) && room.polygon_coordinates.length >= 3) {
+        // Calculate bounds from room polygon coordinates
+        const xCoords = room.polygon_coordinates.map(coord => coord.x);
+        const yCoords = room.polygon_coordinates.map(coord => coord.y);
+        const minX = Math.min(...xCoords);
+        const maxX = Math.max(...xCoords);
+        const minY = Math.min(...yCoords);
+        const maxY = Math.max(...yCoords);
+
+        // Add padding around the room (20% of room size)
+        const paddingX = (maxX - minX) * 0.2;
+        const paddingY = (maxY - minY) * 0.2;
+
+        const roomBounds = [
+          [minY - paddingY, minX - paddingX],
+          [maxY + paddingY, maxX + paddingX]
+        ];
+
+        console.log('Zooming to room on floor plan:', room.room_name, roomBounds);
+        setViewBounds(roomBounds);
+        return;
+      }
+    }
+
+    // If floor has a floor plan but no room selected, let FloorPlanLayer handle initial bounds
+    if (hasFloorPlan && selectedFloor && !selectedRoom) {
       // Bounds will be set by FloorPlanLayer when image loads
       return;
     }
 
     // When floor plan is removed or not present, use logical layout bounds
     if (selectedRoom && layout.rooms[selectedRoom]) {
-      // Zoom to specific room
+      // Zoom to specific room in logical layout
       setViewBounds(layout.rooms[selectedRoom].bounds);
     } else if (selectedFloor && layout.floors[selectedFloor]) {
       // Zoom to floor (this will show rooms in logical layout)
@@ -406,7 +433,7 @@ const MapVisualization = ({
       // Show all buildings
       setViewBounds(layout.bounds);
     }
-  }, [selectedBuilding, selectedFloor, selectedRoom, layout, hasFloorPlan]);
+  }, [selectedBuilding, selectedFloor, selectedRoom, layout, hasFloorPlan, rooms]);
 
   // Get room color based on type
   const getRoomColor = (roomType) => {
