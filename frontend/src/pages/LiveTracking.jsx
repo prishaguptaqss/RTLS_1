@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Search, ChevronDown, Upload, MapPinned } from 'lucide-react';
+import { MapPin, Search, ChevronDown, Upload, MapPinned, Trash2 } from 'lucide-react';
 import { fetchBuildings, fetchFloors, fetchRooms, fetchDevices, fetchLivePositions, updateRoom } from '../services/api';
 import { useOrganization } from '../contexts/OrganizationContext';
 import { websocketService } from '../services/websocket';
 import MapVisualization from '../components/MapVisualization';
 import FloorPlanUploadModal from '../components/FloorPlanUploadModal';
 import PermissionGate from '../components/PermissionGate';
+import ConfirmModal from '../components/ConfirmModal';
+import Snackbar from '../components/Snackbar';
 import './LiveTracking.css';
 
 const LiveTracking = () => {
@@ -28,6 +30,44 @@ const LiveTracking = () => {
   const [coordinateMarkingMode, setCoordinateMarkingMode] = useState(false);
   const [selectedRoomForMarking, setSelectedRoomForMarking] = useState(null);
   const [polygonPoints, setPolygonPoints] = useState([]); // Points being drawn for polygon
+  const [showRoomActions, setShowRoomActions] = useState(null); // {roomId, position} for showing update/delete menu
+  const [isEditingCoordinates, setIsEditingCoordinates] = useState(false); // Track if in edit mode
+
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    variant: 'danger'
+  });
+
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState({
+    isOpen: false,
+    message: '',
+    type: 'success'
+  });
+
+  // Helper function to show snackbar
+  const showSnackbar = (message, type = 'success') => {
+    setSnackbar({
+      isOpen: true,
+      message,
+      type
+    });
+  };
+
+  // Helper function to show confirmation modal
+  const showConfirmModal = (title, message, onConfirm, variant = 'danger') => {
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      variant
+    });
+  };
 
   // Fetch buildings and anchors when organization changes
   useEffect(() => {
@@ -244,7 +284,7 @@ const LiveTracking = () => {
 
   const handleCompletePolygon = async () => {
     if (!selectedRoomForMarking || polygonPoints.length < 3) {
-      alert('Please mark at least 3 points to create a room boundary');
+      showSnackbar('Please mark at least 3 points to create a room boundary', 'warning');
       return;
     }
 
@@ -258,36 +298,121 @@ const LiveTracking = () => {
       const floorsData = floors.length > 0 ? floors : await fetchFloors();
       await loadAllRooms(floorsData);
 
+      const action = isEditingCoordinates ? 'updated' : 'marked';
+      const roomName = selectedRoomForMarking.room_name;
+      const pointsCount = polygonPoints.length;
+
       // Clear marking mode
       setCoordinateMarkingMode(false);
       setSelectedRoomForMarking(null);
       setPolygonPoints([]);
+      setIsEditingCoordinates(false);
 
-      alert(`Room "${selectedRoomForMarking.room_name}" boundary marked successfully with ${polygonPoints.length} points!`);
+      showSnackbar(`Room "${roomName}" boundary ${action} successfully with ${pointsCount} points!`, 'success');
     } catch (err) {
       console.error('Error updating room coordinates:', err);
-      alert('Failed to update room coordinates');
+      showSnackbar('Failed to update room coordinates', 'error');
     }
   };
 
-  const handleStartMarkingRoom = (room) => {
+  const handleStartMarkingRoom = (room, isEdit = false) => {
     setSelectedRoomForMarking(room);
     setCoordinateMarkingMode(true);
-    setPolygonPoints([]); // Reset polygon points
+    setIsEditingCoordinates(isEdit);
+
+    // If editing, pre-populate with existing polygon points
+    if (isEdit && room.polygon_coordinates && Array.isArray(room.polygon_coordinates)) {
+      setPolygonPoints([...room.polygon_coordinates]);
+    } else {
+      setPolygonPoints([]);
+    }
+
+    // Close the actions menu if open
+    setShowRoomActions(null);
   };
 
   const handleCancelMarking = () => {
     setCoordinateMarkingMode(false);
     setSelectedRoomForMarking(null);
     setPolygonPoints([]);
+    setIsEditingCoordinates(false);
   };
 
   const handleUndoLastPoint = () => {
     setPolygonPoints(prev => prev.slice(0, -1));
   };
 
+  // Handle clicking on a room polygon to show update/delete options
+  const handleRoomPolygonClick = (room) => {
+    if (coordinateMarkingMode) return; // Don't show menu while marking
+
+    setShowRoomActions({
+      roomId: room.id,
+      roomName: room.room_name
+    });
+  };
+
+  // Handle updating room coordinates
+  const handleUpdateRoomCoordinates = () => {
+    const room = rooms.find(r => r.id === showRoomActions?.roomId);
+    if (room) {
+      handleStartMarkingRoom(room, true); // true = edit mode
+    }
+  };
+
+  // Handle deleting room coordinates
+  const handleDeleteRoomCoordinates = async () => {
+    const room = rooms.find(r => r.id === showRoomActions?.roomId);
+    if (!room) return;
+
+    showConfirmModal(
+      'Delete Room Coordinates',
+      `Are you sure you want to delete the coordinates for "${room.room_name}"? The room will remain but its location on the floor plan will be removed.`,
+      async () => {
+        try {
+          // Update room with null polygon coordinates
+          await updateRoom(room.id, {
+            polygon_coordinates: null
+          });
+
+          // Reload rooms to reflect changes
+          const floorsData = floors.length > 0 ? floors : await fetchFloors();
+          await loadAllRooms(floorsData);
+
+          setShowRoomActions(null);
+          showSnackbar(`Coordinates for "${room.room_name}" have been deleted successfully.`, 'success');
+        } catch (err) {
+          console.error('Error deleting room coordinates:', err);
+          showSnackbar('Failed to delete room coordinates', 'error');
+        }
+      },
+      'danger'
+    );
+  };
+
+  // Close actions menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (showRoomActions && !coordinateMarkingMode) {
+        setShowRoomActions(null);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showRoomActions, coordinateMarkingMode]);
+
   const selectedFloorData = floors.find(f => f.id === selectedFloor);
   const hasFloorPlan = selectedFloorData?.floor_plan_path;
+
+  // Check if there are rooms without coordinates on the selected floor
+  const roomsOnSelectedFloor = rooms.filter(r => r.floor_id === selectedFloor);
+  const roomsWithoutCoordinates = roomsOnSelectedFloor.filter(room =>
+    !room.polygon_coordinates ||
+    !Array.isArray(room.polygon_coordinates) ||
+    room.polygon_coordinates.length < 3
+  );
+  const hasRoomsNeedingCoordinates = roomsWithoutCoordinates.length > 0;
 
   // Debug logging
   useEffect(() => {
@@ -411,28 +536,30 @@ const LiveTracking = () => {
                   {hasFloorPlan ? 'Manage Floor Plan' : 'Upload Floor Plan'}
                 </button>
 
-                {hasFloorPlan && !coordinateMarkingMode && (
+                {hasFloorPlan && !coordinateMarkingMode && hasRoomsNeedingCoordinates && (
                   <button
                     onClick={() => {
                       const roomsOnFloor = rooms.filter(r => r.floor_id === selectedFloor);
                       if (roomsOnFloor.length === 0) {
-                        alert('No rooms on this floor to mark coordinates.');
+                        showSnackbar('No rooms on this floor to mark coordinates.', 'warning');
                         return;
                       }
-                      handleStartMarkingRoom(roomsOnFloor[0]);
+                      // Find first room without coordinates
+                      const firstRoomWithoutCoords = roomsWithoutCoordinates[0];
+                      handleStartMarkingRoom(firstRoomWithoutCoords || roomsOnFloor[0]);
                     }}
                     className="action-btn mark-coordinates-btn"
-                    title="Mark room coordinates on floor plan"
+                    title={`Mark coordinates for ${roomsWithoutCoordinates.length} room(s) without location`}
                   >
                     <MapPinned size={18} />
-                    Mark Room Locations
+                    Mark Room Locations ({roomsWithoutCoordinates.length})
                   </button>
                 )}
 
                 {coordinateMarkingMode && (
                   <div className="marking-mode-indicator">
                     <span className="marking-text">
-                      Drawing boundary for: <strong>{selectedRoomForMarking?.room_name}</strong>
+                      {isEditingCoordinates ? 'Editing' : 'Drawing'} boundary for: <strong>{selectedRoomForMarking?.room_name}</strong>
                       <br />
                       Points: {polygonPoints.length} {polygonPoints.length >= 3 ? '(Ready to complete)' : '(Need at least 3)'}
                     </span>
@@ -534,7 +661,104 @@ const LiveTracking = () => {
                 }}
                 polygonPoints={coordinateMarkingMode ? polygonPoints : null}
                 onAddPolygonPoint={coordinateMarkingMode ? handleAddPolygonPoint : null}
+                onRoomPolygonClick={!coordinateMarkingMode ? handleRoomPolygonClick : null}
               />
+
+              {/* Room Actions Menu */}
+              {showRoomActions && (
+                <div
+                  className="room-actions-menu"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    background: 'white',
+                    border: '2px solid #3b82f6',
+                    borderRadius: '10px',
+                    padding: '7px',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
+                    zIndex: 1000,
+                    minWidth: '130px'
+                  }}
+                >
+                  <div style={{
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#1e293b',
+                    textAlign: 'center',
+                    marginBottom: '10px',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {showRoomActions.roomName}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    <button
+                      onClick={handleUpdateRoomCoordinates}
+                      title="Update Coordinates"
+                      style={{
+                        width: '35px',
+                        height: '35px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#3b82f6',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        color: 'white',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#2563eb';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.4)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#3b82f6';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.3)';
+                      }}
+                    >
+                      <MapPinned size={20} />
+                    </button>
+                    <button
+                      onClick={handleDeleteRoomCoordinates}
+                      title="Delete Coordinates"
+                      style={{
+                        width: '35px',
+                        height: '35px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#ef4444',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        color: 'white',
+                        transition: 'all 0.2s ease',
+                        boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#dc2626';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(239, 68, 68, 0.4)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#ef4444';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(239, 68, 68, 0.3)';
+                      }}
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : null}
         </div>
@@ -668,6 +892,27 @@ const LiveTracking = () => {
           onUploadSuccess={handleFloorPlanUploadSuccess}
         />
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={() => {
+          confirmModal.onConfirm();
+          setConfirmModal({ ...confirmModal, isOpen: false });
+        }}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        variant={confirmModal.variant}
+      />
+
+      {/* Snackbar Notification */}
+      <Snackbar
+        isOpen={snackbar.isOpen}
+        message={snackbar.message}
+        type={snackbar.type}
+        onClose={() => setSnackbar({ ...snackbar, isOpen: false })}
+      />
     </div>
   );
 };

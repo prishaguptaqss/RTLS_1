@@ -346,6 +346,7 @@ const MapVisualization = ({
   onRoomCoordinateClick = null, // Callback when clicking on floor plan to mark room coordinates (legacy single-point)
   polygonPoints = null, // Array of {x, y} points for polygon being drawn
   onAddPolygonPoint = null, // Callback when user clicks to add a point to polygon
+  onRoomPolygonClick = null, // Callback when clicking on a room polygon (for update/delete actions)
 }) => {
   const [layout, setLayout] = useState(null);
   const [viewBounds, setViewBounds] = useState(null);
@@ -572,7 +573,14 @@ const MapVisualization = ({
                   fillOpacity: isSelected ? 0.4 : 0.2,
                 }}
                 eventHandlers={{
-                  click: () => onSelectRoom(room.id),
+                  click: (e) => {
+                    e.originalEvent.stopPropagation(); // Prevent event from bubbling
+                    if (onRoomPolygonClick) {
+                      onRoomPolygonClick(room);
+                    } else {
+                      onSelectRoom(room.id);
+                    }
+                  },
                 }}
               >
                 <Popup>
