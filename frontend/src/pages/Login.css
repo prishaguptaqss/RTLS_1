@@ -3,6 +3,13 @@
   display: flex;
   background: #ffffff;
   overflow: hidden;
+  /* Force light theme colors regardless of global theme */
+  color: #0F172A;
+}
+
+/* Override any inherited theme styles */
+.login-container * {
+  color: inherit;
 }
 
 /* Left Panel - Brand Section */
@@ -189,13 +196,13 @@
 .login-header h1 {
   font-size: 28px;
   font-weight: 700;
-  color: #1a202c;
+  color: #1a202c !important;
   margin: 0 0 8px 0;
 }
 
 .login-header p {
   font-size: 14px;
-  color: #64748b;
+  color: #64748b !important;
   margin: 0;
   font-weight: 400;
 }
@@ -215,7 +222,7 @@
 .form-group label {
   font-size: 13px;
   font-weight: 600;
-  color: #1a202c;
+  color: #1a202c !important;
   margin-bottom: 2px;
 }
 
@@ -224,8 +231,8 @@
   border: 1px solid #cbd5e0;
   border-radius: 8px;
   font-size: 14px;
-  background: #ffffff;
-  color: #1a202c;
+  background: #ffffff !important;
+  color: #1a202c !important;
   transition: all 0.2s ease;
 }
 
