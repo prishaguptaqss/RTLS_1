@@ -17,7 +17,8 @@
   border: 1px solid var(--border-color, #e0e0e0);
   border-radius: 6px;
   font-size: 0.875rem;
-  background: white;
+  background: var(--bg-card, white);
+  color: var(--text-primary, #212529);
   flex: 1;
   min-width: 150px;
 }
@@ -76,7 +77,8 @@
   border: 1px solid var(--border-color, #e0e0e0);
   border-radius: 6px;
   font-size: 0.875rem;
-  background: white;
+  background: var(--bg-card, white);
+  color: var(--text-primary, #212529);
   flex: 1;
 }
 
@@ -95,7 +97,7 @@
 }
 
 .notification-item {
-  background: white;
+  background: var(--bg-card, white);
   border: 1px solid var(--border-color, #e0e0e0);
   border-radius: 8px;
   padding: 0.75rem;
@@ -104,7 +106,7 @@
 }
 
 .notification-item.unread {
-  background: #f0f7ff;
+  background: var(--info-bg, #f0f7ff);
   border-left: 4px solid var(--primary, #4a90e2);
 }
 
@@ -157,18 +159,18 @@
 }
 
 .severity-badge.severity-medium {
-  background: #fff3cd;
-  color: #856404;
+  background: var(--warning-bg, #fff3cd);
+  color: var(--warning-text, #856404);
 }
 
 .severity-badge.severity-high {
-  background: #ffe5d0;
-  color: #d14;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger-text, #d14);
 }
 
 .severity-badge.severity-critical {
-  background: #f8d7da;
-  color: #721c24;
+  background: var(--danger-bg, #f8d7da);
+  color: var(--danger-text, #721c24);
 }
 
 .notification-body {
@@ -205,7 +207,8 @@
   padding: 0.5rem;
   border: 1px solid var(--border-color, #e0e0e0);
   border-radius: 6px;
-  background: white;
+  background: var(--bg-card, white);
+  color: var(--text-primary, #212529);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -260,7 +263,8 @@
   height: 32px;
   border: 1px solid var(--border-color, #e0e0e0);
   border-radius: 6px;
-  background: white;
+  background: var(--bg-card, white);
+  color: var(--text-primary, #212529);
   cursor: pointer;
   display: flex;
   align-items: center;
